@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tempel Stempel — Penempel Spesimen Terkendali ke PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#EEEBE2;
+    --paper:#FFFFFF;
+    --ink:#1F2A24;
+    --ink-soft:#5B6760;
+    --primary:#2F5D50;
+    --primary-dark:#20423A;
+    --accent:#B33A3A;
+    --accent-soft:#F1DCDA;
+    --line:#D8D3C4;
+    --line-soft:#E7E3D8;
+    --ok:#2F5D50;
+    --radius:10px;
+    --shadow: 0 1px 2px rgba(31,42,36,0.06), 0 8px 24px -12px rgba(31,42,36,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;height:100%;}
+  ::selection{background:var(--accent-soft);}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---------- App shell ---------- */
+  #app{display:flex;flex-direction:column;height:100vh;}
+
+  header.topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 22px;border-bottom:1px solid var(--line);
+    background:var(--paper);flex-shrink:0;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .seal{
+    width:38px;height:38px;border-radius:50%;
+    border:2px solid var(--accent);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;font-weight:700;font-size:15px;
+    transform:rotate(-8deg);flex-shrink:0;
+    box-shadow:inset 0 0 0 3px rgba(179,58,58,0.08);
+  }
+  .brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0;letter-spacing:.2px;}
+  .brand p{margin:1px 0 0;font-size:12px;color:var(--ink-soft);}
+  .trust-badge{
+    margin-left:auto;display:flex;align-items:center;gap:8px;
+    font-size:11.5px;color:var(--primary-dark);background:#EAF1EE;
+    border:1px solid #C9DBD3;padding:6px 12px;border-radius:20px;
+  }
+  .trust-badge svg{width:13px;height:13px;flex-shrink:0;}
+
+  main.workspace{flex:1;display:flex;min-height:0;}
+  nav.app-tabs{
+    display:flex;gap:4px;padding:10px 22px 0;background:var(--paper);
+    border-bottom:1px solid var(--line);flex-shrink:0;
+  }
+  .app-tab{
+    display:flex;align-items:center;gap:7px;border:none;background:transparent;
+    padding:9px 16px;font-size:13px;font-family:inherit;color:var(--ink-soft);cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+  }
+  .app-tab svg{width:14px;height:14px;flex-shrink:0;}
+  .app-tab.active{color:var(--primary-dark);border-bottom-color:var(--primary);font-weight:600;}
+  .app-tab:hover:not(.active){color:var(--ink);}
+  .merge-item{
+    display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;margin-bottom:3px;background:#FAF9F5;
+    border:1px solid var(--line-soft);
+  }
+  .merge-item .mi-num{
+    width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;flex-shrink:0;
+    font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;
+  }
+  .merge-item .mi-meta{flex:1;min-width:0;}
+  .merge-item .mi-name{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .merge-item .mi-sub{font-size:10.5px;color:var(--ink-soft);}
+  .merge-item .mi-actions{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+  .merge-item .mi-actions button{
+    width:18px;height:15px;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;border-radius:3px;
+  }
+  .merge-item .mi-actions button:hover:not(:disabled){background:var(--line-soft);color:var(--ink);}
+  .merge-item .mi-actions button:disabled{opacity:.25;cursor:not-allowed;}
+  .merge-item .mi-remove{
+    flex-shrink:0;width:20px;height:20px;border-radius:50%;border:none;background:transparent;
+    color:var(--ink-soft);cursor:pointer;font-size:15px;line-height:1;
+  }
+  .merge-item .mi-remove:hover{background:var(--accent-soft);color:var(--accent);}
+
+  .group-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin:0 0 14px;max-width:560px;
+  }
+  .group-card-head{display:flex;align-items:center;gap:8px;margin-bottom:11px;}
+  .group-card-head .gc-badge{
+    width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;flex-shrink:0;
+    font-size:11px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;
+  }
+  .group-card-head input[type=text]{
+    flex:1;border:1px solid var(--line);border-radius:7px;padding:7px 10px;
+    font-size:12.5px;font-family:inherit;color:var(--ink);background:#FAF9F5;
+  }
+  .group-card-head input[type=text]:focus{outline:none;border-color:var(--primary);background:#fff;}
+  .group-card-head .gc-del{
+    flex-shrink:0;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    font-size:16px;width:22px;height:22px;border-radius:50%;
+  }
+  .group-card-head .gc-del:hover{background:var(--accent-soft);color:var(--accent);}
+  .group-empty{font-size:12px;color:var(--ink-soft);padding:10px 4px;}
+  .group-add-row{display:flex;gap:8px;margin-top:9px;}
+  .group-add-row select{
+    flex:1;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:12px;
+    font-family:inherit;color:var(--ink);background:#fff;
+  }
+  .group-summary{font-size:11px;color:var(--ink-soft);margin-top:9px;}
+
+  /* ---------- Sidebar ---------- */
+  aside.sidebar{
+    width:290px;flex-shrink:0;border-right:1px solid var(--line);
+    background:var(--paper);display:flex;flex-direction:column;min-height:0;
+  }
+  .sidebar-section{padding:16px 16px 14px;border-bottom:1px solid var(--line-soft);}
+  .sidebar-section h2{
+    font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--ink-soft);margin:0 0 10px;font-weight:600;
+  }
+  .drop{
+    border:1.5px dashed var(--line);border-radius:var(--radius);
+    padding:16px 10px;text-align:center;cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.dragover{border-color:var(--primary);background:#F5F8F6;}
+  .drop svg{width:20px;height:20px;color:var(--ink-soft);margin-bottom:6px;}
+  .drop p{margin:0;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+  .drop p b{color:var(--ink);font-weight:600;}
+  input[type=file]{display:none;}
+
+  .stamp-preview{
+    display:flex;align-items:center;gap:10px;margin-top:10px;
+    padding:8px;border:1px solid var(--line-soft);border-radius:8px;background:#FAF9F5;
+  }
+  .stamp-preview img{width:40px;height:40px;object-fit:contain;background:#fff;border:1px solid var(--line-soft);border-radius:4px;}
+  .stamp-preview .meta{min-width:0;}
+  .stamp-preview .meta div:first-child{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stamp-preview .meta div:last-child{font-size:11px;color:var(--ink-soft);}
+
+  .filelist{flex:1;overflow-y:auto;padding:8px 10px;min-height:0;}
+  .file-item{
+    padding:9px 10px;border-radius:8px;cursor:pointer;margin-bottom:3px;
+    display:flex;align-items:center;gap:9px;
+  }
+  .file-item:hover{background:#F5F3EC;}
+  .file-item.active{background:#EAF1EE;}
+  .file-item .fi-icon{width:26px;height:26px;flex-shrink:0;border-radius:5px;background:var(--primary);
+    color:#fff;font-size:9px;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;font-weight:500;}
+  .file-item .fi-meta{min-width:0;flex:1;}
+  .file-item .fi-name{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-item .fi-sub{font-size:10.5px;color:var(--ink-soft);}
+  .file-item .fi-count{
+    font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--primary-dark);
+    background:#DCEAE4;padding:1px 6px;border-radius:10px;flex-shrink:0;
+  }
+  .file-item .fi-remove{
+    flex-shrink:0;width:18px;height:18px;border-radius:50%;border:none;background:transparent;
+    color:var(--ink-soft);cursor:pointer;font-size:14px;line-height:1;display:none;
+  }
+  .file-item:hover .fi-remove{display:block;}
+  .file-item .fi-remove:hover{background:var(--accent-soft);color:var(--accent);}
+
+  .empty-hint{padding:22px 16px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
+
+  .sidebar-footer{padding:14px 16px;border-top:1px solid var(--line-soft);}
+  button.primary-action{
+    width:100%;background:var(--primary);color:#fff;border:none;border-radius:8px;
+    padding:12px 14px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:background .15s;
+  }
+  button.primary-action:hover:not(:disabled){background:var(--primary-dark);}
+  button.primary-action:disabled{background:#C7CDC9;cursor:not-allowed;}
+  .footer-sub{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:8px;line-height:1.5;}
+
+  /* ---------- Canvas / viewer ---------- */
+  section.viewer{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);}
+  .viewer-toolbar{
+    display:flex;align-items:center;gap:16px;padding:10px 20px;
+    border-bottom:1px solid var(--line);background:var(--paper);flex-shrink:0;flex-wrap:wrap;
+  }
+  .toolbar-group{display:flex;align-items:center;gap:8px;}
+  .toolbar-group label{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;}
+  .page-nav{display:flex;align-items:center;gap:6px;}
+  .page-nav button{
+    width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:6px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink);
+  }
+  .page-nav button:hover:not(:disabled){border-color:var(--primary);color:var(--primary);}
+  .page-nav button:disabled{opacity:.35;cursor:not-allowed;}
+  .page-nav .page-indicator{font-size:12.5px;font-family:'IBM Plex Mono',monospace;min-width:64px;text-align:center;}
+  input[type=range]{accent-color:var(--primary);width:100px;}
+  .toolbar-group input[type=number]{
+    border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--ink);background:#fff;
+  }
+  .toolbar-group input[type=number]:focus{outline:none;border-color:var(--primary);}
+  .toolbar-group select{
+    border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:11.5px;
+    font-family:inherit;color:var(--ink);background:#fff;
+  }
+  .toolbar-group .val{font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;min-width:32px;}
+  .tb-btn{
+    border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 11px;
+    font-size:12px;cursor:pointer;color:var(--ink);font-family:inherit;display:flex;align-items:center;gap:6px;
+  }
+  .tb-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .tb-btn.danger:hover{border-color:var(--accent);color:var(--accent);}
+  .tb-spacer{flex:1;}
+  .mode-toggle{display:flex;gap:4px;background:#F0EEE6;padding:3px;border-radius:8px;}
+  .mode-btn{
+    display:flex;align-items:center;gap:6px;border:none;background:transparent;border-radius:6px;
+    padding:6px 11px;font-size:12px;font-family:inherit;color:var(--ink-soft);cursor:pointer;
+  }
+  .mode-btn svg{width:13px;height:13px;flex-shrink:0;}
+  .mode-btn.active{background:#fff;color:var(--primary-dark);box-shadow:0 1px 2px rgba(31,42,36,0.12);font-weight:500;}
+  .mode-btn:hover:not(.active){color:var(--ink);}
+
+  .canvas-wrap{
+    flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;
+    padding:28px;min-height:0;
+  }
+  .page-stage{
+    position:relative;box-shadow:var(--shadow);background:#fff;flex-shrink:0;
+  }
+  .page-stage canvas{display:block;}
+
+  .stamp-el{
+    position:absolute;cursor:grab;touch-action:none;
+    outline:2px solid transparent;
+  }
+  .stamp-el img{width:100%;height:100%;display:block;pointer-events:none;user-select:none;}
+  .stamp-el.selected{outline:2px solid var(--accent);}
+  .stamp-el:active{cursor:grabbing;}
+  .stamp-el .handle{
+    position:absolute;right:-6px;bottom:-6px;width:13px;height:13px;
+    background:var(--accent);border:2px solid #fff;border-radius:50%;cursor:nwse-resize;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+  }
+  .stamp-el .del{
+    position:absolute;top:-9px;right:-9px;width:18px;height:18px;border-radius:50%;
+    background:#fff;border:1.5px solid var(--accent);color:var(--accent);
+    display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer;line-height:1;
+  }
+  .stamp-el.selected .del{display:flex;}
+  @keyframes stampdown{
+    0%{transform:scale(1.35);opacity:0;filter:blur(1px);}
+    60%{transform:scale(0.95);opacity:1;}
+    100%{transform:scale(1);}
+  }
+  .stamp-el.just-placed{animation:stampdown .22s ease-out;}
+
+  .empty-viewer{
+    margin:auto;text-align:center;color:var(--ink-soft);max-width:340px;padding:20px;
+  }
+  .empty-viewer .seal-lg{
+    width:64px;height:64px;border-radius:50%;border:2.5px solid var(--line);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 16px;
+    color:var(--line);
+  }
+  .empty-viewer .seal-lg svg{width:28px;height:28px;}
+  .empty-viewer h3{font-family:'Fraunces',serif;font-weight:600;font-size:17px;color:var(--ink);margin:0 0 8px;}
+  .empty-viewer p{font-size:13px;line-height:1.6;margin:0;}
+
+  .thumb-strip{
+    display:flex;gap:8px;padding:10px 20px;border-top:1px solid var(--line);
+    background:var(--paper);overflow-x:auto;flex-shrink:0;
+  }
+  .thumb{
+    position:relative;flex-shrink:0;width:44px;height:58px;border:1.5px solid var(--line);
+    border-radius:4px;cursor:pointer;overflow:hidden;background:#fff;
+  }
+  .thumb.active{border-color:var(--primary);box-shadow:0 0 0 1.5px var(--primary);}
+  .thumb .tnum{
+    position:absolute;bottom:0;left:0;right:0;font-size:8.5px;text-align:center;
+    background:rgba(255,255,255,.85);font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);
+  }
+  .thumb .tdot{
+    position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:var(--accent);
+  }
+
+  /* ---------- Overlay / processing ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(31,42,36,0.45);display:none;
+    align-items:center;justify-content:center;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .overlay-card{
+    background:#fff;border-radius:12px;padding:28px 34px;text-align:center;box-shadow:var(--shadow);
+    max-width:300px;
+  }
+  .spinner{
+    width:34px;height:34px;border:3px solid var(--line-soft);border-top-color:var(--primary);
+    border-radius:50%;margin:0 auto 14px;animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .overlay-card h4{margin:0 0 4px;font-family:'Fraunces',serif;font-size:15px;font-weight:600;}
+  .overlay-card p{margin:0;font-size:12.5px;color:var(--ink-soft);}
+  .text-input{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    font-size:13px;font-family:inherit;color:var(--ink);background:#fff;
+  }
+  .text-input:focus{outline:none;border-color:var(--primary);}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:var(--ink);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:60;
+    display:flex;align-items:center;gap:9px;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast .dot{width:7px;height:7px;border-radius:50%;background:#6FBF9B;flex-shrink:0;}
+
+  @media (max-width:800px){
+    aside.sidebar{width:230px;}
+    .brand p{display:none;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="seal">SK</div>
+      <div>
+        <h1>Tempel Stempel</h1>
+        <p>Tempelkan tanda "Spesimen Terkendali" ke banyak PDF sekaligus</p>
+      </div>
+    </div>
+    <div class="trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+      Diproses di browser Anda — tidak diunggah ke server
+    </div>
+  </header>
+
+  <nav class="app-tabs">
+    <button class="app-tab active" id="tabStampView" data-view="stamp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      Tempel Stempel
+    </button>
+    <button class="app-tab" id="tabMergeView" data-view="merge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v11a3 3 0 003 3h7M8 3L4 7m4-4l4 4"/><path d="M16 21V10a3 3 0 00-3-3H6"/></svg>
+      Gabung PDF
+    </button>
+  </nav>
+
+  <main class="workspace" id="stampView">
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <h2>1 · Berkas PDF</h2>
+        <div class="drop" id="pdfDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF</p>
+        </div>
+        <input type="file" id="pdfInput" accept="application/pdf" multiple>
+      </div>
+
+      <div class="sidebar-section">
+        <h2>2 · Gambar Stempel</h2>
+        <div class="drop" id="stampDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          <p><b>Klik atau seret</b><br>PNG stempel (mis. spesimen terkendali)</p>
+        </div>
+        <input type="file" id="stampInput" accept="image/png,image/jpeg">
+        <div class="stamp-preview" id="stampPreview" style="display:none;">
+          <img id="stampPreviewImg" alt="stempel">
+          <div class="meta">
+            <div id="stampName">—</div>
+            <div id="stampDim">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>3 · Dokumen (klik untuk buka)</h2>
+      </div>
+      <div class="filelist" id="fileList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="primary-action" id="processBtn" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 12l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          Proses &amp; Unduh Semua
+        </button>
+        <div class="footer-sub" id="processSub">Unggah PDF dan stempel, lalu tempatkan minimal satu stempel.</div>
+      </div>
+    </aside>
+
+    <section class="viewer">
+      <div class="viewer-toolbar" id="viewerToolbar" style="display:none;">
+        <div class="page-nav">
+          <button id="prevPage">‹</button>
+          <div class="page-indicator mono" id="pageIndicator">1 / 1</div>
+          <button id="nextPage">›</button>
+        </div>
+        <div class="mode-toggle" id="modeToggle">
+          <button class="mode-btn active" id="modeStampBtn" data-mode="stamp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+            Stempel Gambar
+          </button>
+          <button class="mode-btn" id="modeCheckBtn" data-mode="check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>
+            Tanda Centang
+          </button>
+        </div>
+        <div class="toolbar-group" id="checkColorGroup" style="display:none;">
+          <label>Warna</label>
+          <select id="checkColor">
+            <option value="#1D8A4C">Hijau</option>
+            <option value="#B33A3A">Merah</option>
+            <option value="#2059A6">Biru</option>
+            <option value="#1F2A24">Hitam</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <label>Ukuran</label>
+          <input type="number" id="sizeXInput" min="0.1" step="0.1" value="18" style="width:58px;">
+          <span style="color:var(--ink-soft);font-size:11px;">×</span>
+          <input type="number" id="sizeYInput" min="0.1" step="0.1" value="18" style="width:58px;">
+          <select id="sizeUnit">
+            <option value="pct">%</option>
+            <option value="px">px</option>
+            <option value="cm">cm</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <label>Transparansi</label>
+          <input type="range" id="opacitySlider" min="20" max="100" value="100">
+          <span class="val" id="opacityVal">100%</span>
+        </div>
+        <button class="tb-btn" id="applyAllPages">Terapkan ke semua halaman dokumen ini</button>
+        <button class="tb-btn danger" id="clearPageBtn">Hapus tanda di halaman ini</button>
+        <div class="tb-spacer"></div>
+        <span style="font-size:11.5px;color:var(--ink-soft);">Klik pada halaman untuk menempel stempel/tanda centang</span>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <div class="empty-viewer" id="emptyViewer">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></div>
+          <h3>Mulai dengan mengunggah berkas</h3>
+          <p>Unggah satu atau lebih PDF dan satu gambar stempel PNG di panel kiri. Setelah itu pilih dokumen untuk mulai menempatkan stempel — klik di mana saja pada halaman.</p>
+        </div>
+      </div>
+
+      <div class="thumb-strip" id="thumbStrip" style="display:none;"></div>
+    </section>
+  </main>
+
+  <main class="workspace" id="mergeView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="mergeDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah 10+ PDF sekaligus</p>
+        </div>
+        <input type="file" id="mergeInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Sumber PDF (<span id="poolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="mergePoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="mergeSub" style="margin-top:0;">Unggah PDF, lalu buat grup di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <button class="tb-btn" id="addGroupBtn">+ Grup gabungan baru</button>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="mergeBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v11a3 3 0 003 3h7M8 3L4 7m4-4l4 4"/><path d="M16 21V10a3 3 0 00-3-3H6"/></svg>
+          Proses &amp; Unduh Semua Grup
+        </button>
+      </div>
+      <div class="canvas-wrap" id="mergeGroupsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="mergeEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v11a3 3 0 003 3h7M8 3L4 7m4-4l4 4"/><path d="M16 21V10a3 3 0 00-3-3H6"/></svg></div>
+          <h3>Pilih sendiri PDF mana digabung ke mana</h3>
+          <p>Unggah PDF di panel kiri, lalu klik "+ Grup gabungan baru" untuk membuat satu berkas hasil. Di tiap grup, pilih PDF mana saja yang masuk (mis. Grup 1 = PDF 1 &amp; 2, Grup 2 = PDF 3 &amp; 4), atur urutannya, dan beri nama filenya sendiri.</p>
+        </div>
+        <div id="mergeGroupsList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="spinner"></div>
+    <h4>Memproses PDF…</h4>
+    <p id="overlayText">Menempelkan stempel pada dokumen</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastText"></span></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ---------- State ----------
+// docs: array of { id, name, file, pdfjsDoc, pageCount, pages: { [pageNum]: [placement,...] } }
+// placement: { id, type:'stamp'|'check', xFrac, yFrac, wFrac, hFrac, opacity, color? }  (xFrac/yFrac = top-left in page-fraction coords)
+let docs = [];
+let activeDocId = null;
+let activePage = 1;
+let stampImage = null;      // {dataUrl, bytes, width, height, mime}
+let selectedStampId = null;
+let placeMode = 'stamp';    // 'stamp' atau 'check' — jenis tanda yang ditempel saat klik halaman
+let checkColor = '#1D8A4C';
+// Ukuran default disimpan terpisah per tipe, supaya mengubah ukuran stempel gambar
+// tidak ikut mengubah ukuran default tanda centang, dan sebaliknya.
+let defaultSize = {
+  stamp: { w: 0.18, h: 0.18 },
+  check: { w: 0.10, h: 0.10 }
+};
+let sizeUnit = 'pct';   // 'pct', 'px', atau 'cm' — px/cm dihitung dari ukuran asli halaman PDF
+let pageBaseW = 0, pageBaseH = 0; // ukuran halaman PDF aktif dalam satuan PDF (pt, 1pt = 1/72 inci)
+const PT_PER_CM = 72 / 2.54;
+let opacityPct = 100;
+let placementCounter = 0;
+
+const $ = (sel) => document.querySelector(sel);
+const fileList = $('#fileList');
+const canvasWrap = $('#canvasWrap');
+const emptyViewer = $('#emptyViewer');
+const viewerToolbar = $('#viewerToolbar');
+const thumbStrip = $('#thumbStrip');
+const processBtn = $('#processBtn');
+const processSub = $('#processSub');
+
+function toast(msg){
+  const t = $('#toast');
+  $('#toastText').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function fmtBytes(n){
+  if(n < 1024) return n + ' B';
+  if(n < 1024*1024) return (n/1024).toFixed(0) + ' KB';
+  return (n/1024/1024).toFixed(1) + ' MB';
+}
+
+// ---------- Upload: PDFs ----------
+const pdfInput = $('#pdfInput');
+$('#pdfDrop').addEventListener('click', ()=> pdfInput.click());
+pdfInput.addEventListener('change', e => handlePdfFiles(e.target.files));
+setupDrop($('#pdfDrop'), handlePdfFiles);
+
+async function handlePdfFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pdfjsDoc;
+    try{
+      pdfjsDoc = await pdfjsLib.getDocument({data: buf.slice(0)}).promise;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    const id = 'd' + Math.random().toString(36).slice(2,9);
+    docs.push({
+      id, name: file.name, bytes: buf, pdfjsDoc,
+      pageCount: pdfjsDoc.numPages, pages: {}
+    });
+  }
+  renderFileList();
+  updateProcessState();
+  if(!activeDocId && docs.length) openDoc(docs[0].id);
+}
+
+// ---------- Tab: Tempel Stempel <-> Gabung PDF ----------
+document.querySelector('#tabStampView').addEventListener('click', () => switchTab('stamp'));
+document.querySelector('#tabMergeView').addEventListener('click', () => switchTab('merge'));
+function switchTab(view){
+  document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
+  document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
+  document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
+  document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
+}
+
+// ---------- Gabung PDF ----------
+let mergePool = [];    // { id, name, bytes, pageCount } — semua PDF yang diunggah
+let mergeGroups = [];  // { id, outName, fileIds: [poolId,...] } — tiap grup jadi 1 file hasil
+let mergeGroupCounter = 0;
+
+const mergeInput = $('#mergeInput');
+$('#mergeDrop').addEventListener('click', () => mergeInput.click());
+mergeInput.addEventListener('change', e => handleMergeFiles(e.target.files));
+setupDrop($('#mergeDrop'), handleMergeFiles);
+
+async function handleMergeFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pageCount = null;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      pageCount = doc.numPages;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    mergePool.push({ id: 'm' + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, pageCount });
+  }
+  renderMergePool();
+  renderMergeGroups(); // refresh dropdown "+ Tambah file" di tiap grup
+}
+
+function renderMergePool(){
+  const wrap = $('#mergePoolList');
+  $('#poolCount').textContent = mergePool.length;
+  if(!mergePool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  mergePool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.pageCount ?? '?'} halaman</div>
+      </div>
+      <button class="fi-remove" title="Hapus dari sumber">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      mergePool = mergePool.filter(x => x.id !== f.id);
+      mergeGroups.forEach(g => { g.fileIds = g.fileIds.filter(id => id !== f.id); });
+      renderMergePool();
+      renderMergeGroups();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+$('#addGroupBtn').addEventListener('click', () => {
+  mergeGroupCounter++;
+  mergeGroups.push({ id: 'g' + Math.random().toString(36).slice(2,9), outName: 'potongan' + mergeGroupCounter + '.pdf', fileIds: [] });
+  renderMergeGroups();
+});
+
+function renderMergeGroups(){
+  const wrap = $('#mergeGroupsList');
+  $('#mergeEmptyHint').style.display = mergeGroups.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  mergeGroups.forEach((g, gIdx) => {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+
+    const head = document.createElement('div');
+    head.className = 'group-card-head';
+    head.innerHTML = `
+      <div class="gc-badge">${gIdx+1}</div>
+      <input type="text" value="${escapeHtml(g.outName)}" placeholder="nama-file-hasil.pdf">
+      <button class="gc-del" title="Hapus grup">×</button>
+    `;
+    head.querySelector('input').addEventListener('input', (e) => { g.outName = e.target.value; });
+    head.querySelector('.gc-del').addEventListener('click', () => {
+      mergeGroups = mergeGroups.filter(x => x.id !== g.id);
+      renderMergeGroups();
+    });
+    card.appendChild(head);
+
+    const listEl = document.createElement('div');
+    if(!g.fileIds.length){
+      listEl.innerHTML = '<div class="group-empty">Belum ada PDF di grup ini — pilih dari daftar di bawah.</div>';
+    } else {
+      g.fileIds.forEach((fid, idx) => {
+        const f = mergePool.find(p => p.id === fid);
+        if(!f) return;
+        const row = document.createElement('div');
+        row.className = 'merge-item';
+        row.innerHTML = `
+          <div class="mi-num">${idx+1}</div>
+          <div class="mi-meta">
+            <div class="mi-name">${escapeHtml(f.name)}</div>
+            <div class="mi-sub">${f.pageCount ?? '?'} halaman</div>
+          </div>
+          <div class="mi-actions">
+            <button class="mi-up" ${idx===0 ? 'disabled' : ''} title="Naikkan urutan">▲</button>
+            <button class="mi-down" ${idx===g.fileIds.length-1 ? 'disabled' : ''} title="Turunkan urutan">▼</button>
+          </div>
+          <button class="mi-remove" title="Keluarkan dari grup">×</button>
+        `;
+        row.querySelector('.mi-up').addEventListener('click', () => {
+          if(idx === 0) return;
+          [g.fileIds[idx-1], g.fileIds[idx]] = [g.fileIds[idx], g.fileIds[idx-1]];
+          renderMergeGroups();
+        });
+        row.querySelector('.mi-down').addEventListener('click', () => {
+          if(idx === g.fileIds.length-1) return;
+          [g.fileIds[idx+1], g.fileIds[idx]] = [g.fileIds[idx], g.fileIds[idx+1]];
+          renderMergeGroups();
+        });
+        row.querySelector('.mi-remove').addEventListener('click', () => {
+          g.fileIds = g.fileIds.filter(id => id !== fid);
+          renderMergeGroups();
+        });
+        listEl.appendChild(row);
+      });
+    }
+    card.appendChild(listEl);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'group-add-row';
+    const notYetInGroup = mergePool.filter(p => !g.fileIds.includes(p.id));
+    addRow.innerHTML = `
+      <select ${notYetInGroup.length ? '' : 'disabled'}>
+        <option value="">${notYetInGroup.length ? '+ Tambah PDF ke grup ini…' : 'Semua sumber sudah dipakai di grup ini'}</option>
+        ${notYetInGroup.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('')}
+      </select>
+    `;
+    addRow.querySelector('select').addEventListener('change', (e) => {
+      if(e.target.value){ g.fileIds.push(e.target.value); renderMergeGroups(); }
+    });
+    card.appendChild(addRow);
+
+    const summary = document.createElement('div');
+    summary.className = 'group-summary';
+    const totalPages = g.fileIds.reduce((a,id) => a + (mergePool.find(p=>p.id===id)?.pageCount || 0), 0);
+    summary.textContent = g.fileIds.length + ' PDF · ' + totalPages + ' halaman → disimpan sebagai "' + (g.outName || 'gabungan.pdf') + '"';
+    card.appendChild(summary);
+
+    wrap.appendChild(card);
+  });
+  updateMergeState();
+}
+
+function updateMergeState(){
+  const validGroups = mergeGroups.filter(g => g.fileIds.length >= 1);
+  $('#mergeBtn').disabled = validGroups.length === 0;
+  if(!mergeGroups.length) $('#mergeSub').textContent = 'Unggah PDF, lalu buat grup di kanan.';
+  else if(!validGroups.length) $('#mergeSub').textContent = 'Tambahkan minimal 1 PDF ke tiap grup.';
+  else $('#mergeSub').textContent = validGroups.length + ' grup siap diproses.';
+}
+
+$('#mergeBtn').addEventListener('click', mergeAndDownload);
+
+async function mergeAndDownload(){
+  const validGroups = mergeGroups.filter(g => g.fileIds.length >= 1);
+  if(!validGroups.length) return;
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { PDFDocument } = PDFLib;
+    const results = [];
+    for(const g of validGroups){
+      $('#overlayText').textContent = 'Menggabungkan grup "' + (g.outName || 'gabungan.pdf') + '"…';
+      const outDoc = await PDFDocument.create();
+      for(const fid of g.fileIds){
+        const f = mergePool.find(p => p.id === fid);
+        if(!f) continue;
+        const srcDoc = await PDFDocument.load(f.bytes.slice(0));
+        const copiedPages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+        copiedPages.forEach(p => outDoc.addPage(p));
+      }
+      const outBytes = await outDoc.save();
+      let outName = (g.outName || 'gabungan.pdf').trim();
+      if(!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+      results.push({ name: outName, bytes: outBytes });
+    }
+
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_gabungan.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' grup berhasil digabung dan diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat menggabungkan PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Upload: stamp image ----------
+const stampInput = $('#stampInput');
+$('#stampDrop').addEventListener('click', ()=> stampInput.click());
+stampInput.addEventListener('change', e => e.target.files[0] && handleStampFile(e.target.files[0]));
+setupDrop($('#stampDrop'), fl => fl[0] && handleStampFile(fl[0]));
+
+function handleStampFile(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      stampImage = { dataUrl: reader.result, width: img.naturalWidth, height: img.naturalHeight, name: file.name, mime: file.type || 'image/png' };
+      $('#stampPreview').style.display = 'flex';
+      $('#stampPreviewImg').src = reader.result;
+      $('#stampName').textContent = file.name;
+      $('#stampDim').textContent = img.naturalWidth + '×' + img.naturalHeight + ' px · ' + fmtBytes(file.size);
+      toast('Stempel "' + file.name + '" siap dipakai');
+      updateProcessState();
+      if(activeDocId) redrawStampsForPage();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function setupDrop(el, cb){
+  ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e=>{e.preventDefault();el.classList.add('dragover');}));
+  ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e=>{e.preventDefault();el.classList.remove('dragover');}));
+  el.addEventListener('drop', e => { if(e.dataTransfer.files.length) cb(e.dataTransfer.files); });
+}
+
+// ---------- File list ----------
+function renderFileList(){
+  if(!docs.length){
+    fileList.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  fileList.innerHTML = '';
+  docs.forEach(d => {
+    const count = Object.values(d.pages).reduce((a,arr)=>a+arr.length,0);
+    const el = document.createElement('div');
+    el.className = 'file-item' + (d.id === activeDocId ? ' active' : '');
+    el.innerHTML = `
+      <div class="fi-icon">PDF</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(d.name)}</div>
+        <div class="fi-sub">${d.pageCount} halaman</div>
+      </div>
+      ${count ? `<div class="fi-count">${count} tanda</div>` : ''}
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.addEventListener('click', (e) => {
+      if(e.target.classList.contains('fi-remove')) return;
+      openDoc(d.id);
+    });
+    el.querySelector('.fi-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      docs = docs.filter(x => x.id !== d.id);
+      if(activeDocId === d.id){
+        activeDocId = null;
+        showEmptyViewer();
+        if(docs.length) openDoc(docs[0].id);
+      }
+      renderFileList();
+      updateProcessState();
+    });
+    fileList.appendChild(el);
+  });
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---------- Viewer ----------
+function showEmptyViewer(){
+  emptyViewer.style.display = 'block';
+  viewerToolbar.style.display = 'none';
+  thumbStrip.style.display = 'none';
+  const stage = $('#pageStage');
+  if(stage) stage.remove();
+}
+
+async function openDoc(id){
+  activeDocId = id;
+  activePage = 1;
+  renderFileList();
+  emptyViewer.style.display = 'none';
+  viewerToolbar.style.display = 'flex';
+  thumbStrip.style.display = 'flex';
+  await renderThumbs();
+  await renderPage();
+}
+
+async function renderThumbs(){
+  const d = getActiveDoc();
+  thumbStrip.innerHTML = '';
+  for(let p = 1; p <= d.pageCount; p++){
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb' + (p === activePage ? ' active' : '');
+    const canvas = document.createElement('canvas');
+    wrap.appendChild(canvas);
+    if(d.pages[p] && d.pages[p].length){
+      const dot = document.createElement('div');
+      dot.className = 'tdot';
+      wrap.appendChild(dot);
+    }
+    const num = document.createElement('div');
+    num.className = 'tnum';
+    num.textContent = p;
+    wrap.appendChild(num);
+    wrap.addEventListener('click', () => { activePage = p; renderPage(); highlightThumb(); });
+    thumbStrip.appendChild(wrap);
+
+    const page = await d.pdfjsDoc.getPage(p);
+    const vp = page.getViewport({scale: 1});
+    const scale = 40 / vp.width;
+    const svp = page.getViewport({scale});
+    canvas.width = svp.width; canvas.height = svp.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport: svp}).promise;
+  }
+}
+
+function highlightThumb(){
+  document.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i+1 === activePage));
+}
+
+function getActiveDoc(){ return docs.find(d => d.id === activeDocId); }
+
+async function renderPage(){
+  const d = getActiveDoc();
+  if(!d) return;
+  $('#pageIndicator').textContent = activePage + ' / ' + d.pageCount;
+  $('#prevPage').disabled = activePage <= 1;
+  $('#nextPage').disabled = activePage >= d.pageCount;
+
+  const old = $('#pageStage');
+  if(old) old.remove();
+
+  const page = await d.pdfjsDoc.getPage(activePage);
+  const containerWidth = canvasWrap.clientWidth - 56;
+  const baseVp = page.getViewport({scale: 1});
+  pageBaseW = baseVp.width;
+  pageBaseH = baseVp.height;
+  const scale = Math.min(1.6, Math.max(0.4, containerWidth / baseVp.width));
+  const viewport = page.getViewport({scale});
+
+  const stage = document.createElement('div');
+  stage.className = 'page-stage';
+  stage.id = 'pageStage';
+  stage.style.width = viewport.width + 'px';
+  stage.style.height = viewport.height + 'px';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  stage.appendChild(canvas);
+  canvasWrap.innerHTML = '';
+  canvasWrap.appendChild(stage);
+
+  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+
+  stage.addEventListener('click', (e) => {
+    if(e.target !== stage && e.target !== canvas) return;
+    if(placeMode === 'stamp' && !stampImage){ toast('Unggah gambar stempel terlebih dulu'); return; }
+    const rect = stage.getBoundingClientRect();
+    const xFrac = (e.clientX - rect.left) / rect.width;
+    const yFrac = (e.clientY - rect.top) / rect.height;
+    placeStamp(xFrac, yFrac);
+  });
+
+  redrawStampsForPage();
+  highlightThumb();
+  refreshSizeInputs();
+}
+
+function placeStamp(centerXFrac, centerYFrac){
+  const d = getActiveDoc();
+  const defs = defaultSize[placeMode];
+  const wFrac = defs.w;
+  const hFrac = defs.h;
+  const p = {
+    id: 'p' + (placementCounter++),
+    type: placeMode,
+    xFrac: clamp(centerXFrac - wFrac/2, 0, 1 - wFrac),
+    yFrac: clamp(centerYFrac - hFrac/2, 0, 1 - hFrac),
+    wFrac, hFrac, opacity: opacityPct
+  };
+  if(placeMode === 'check') p.color = checkColor;
+  if(!d.pages[activePage]) d.pages[activePage] = [];
+  d.pages[activePage].push(p);
+  selectedStampId = p.id;
+  redrawStampsForPage(true);
+  renderFileList();
+  renderThumbDot();
+  updateProcessState();
+  refreshSizeInputs();
+}
+
+function setPlaceMode(mode){
+  placeMode = mode;
+  $('#modeStampBtn').classList.toggle('active', mode === 'stamp');
+  $('#modeCheckBtn').classList.toggle('active', mode === 'check');
+  $('#checkColorGroup').style.display = mode === 'check' ? 'flex' : 'none';
+  refreshSizeInputs();
+}
+$('#modeStampBtn').addEventListener('click', () => setPlaceMode('stamp'));
+$('#modeCheckBtn').addEventListener('click', () => setPlaceMode('check'));
+$('#checkColor').addEventListener('change', (e) => {
+  checkColor = e.target.value;
+  applyToSelected(p => { if(p.type === 'check') p.color = checkColor; });
+});
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+function renderThumbDot(){
+  highlightThumb();
+  const d = getActiveDoc();
+  const thumbs = document.querySelectorAll('.thumb');
+  thumbs.forEach((t,i) => {
+    const has = d.pages[i+1] && d.pages[i+1].length;
+    let dot = t.querySelector('.tdot');
+    if(has && !dot){ dot = document.createElement('div'); dot.className='tdot'; t.appendChild(dot); }
+    if(!has && dot) dot.remove();
+  });
+}
+
+function redrawStampsForPage(justPlacedLast){
+  const stage = $('#pageStage');
+  if(!stage) return;
+  stage.querySelectorAll('.stamp-el').forEach(el => el.remove());
+  const d = getActiveDoc();
+  const list = d.pages[activePage] || [];
+  list.forEach((p, idx) => {
+    const el = document.createElement('div');
+    el.className = 'stamp-el' + (p.id === selectedStampId ? ' selected' : '') + (justPlacedLast && idx === list.length-1 ? ' just-placed' : '');
+    el.style.left = (p.xFrac * 100) + '%';
+    el.style.top = (p.yFrac * 100) + '%';
+    el.style.width = (p.wFrac * 100) + '%';
+    el.style.height = (p.hFrac * 100) + '%';
+    el.style.opacity = (p.opacity ?? 100) / 100;
+    if(p.type === 'check'){
+      const col = p.color || '#1D8A4C';
+      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg><div class="handle"></div><div class="del">×</div>`;
+    } else {
+      el.innerHTML = `<img src="${stampImage.dataUrl}" draggable="false"><div class="handle"></div><div class="del">×</div>`;
+    }
+    stage.appendChild(el);
+
+    el.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      selectedStampId = p.id;
+      redrawStampsForPage();
+      refreshSizeInputs();
+      const isHandle = e.target.classList.contains('handle');
+      const isDel = e.target.classList.contains('del');
+      if(isDel){
+        d.pages[activePage] = d.pages[activePage].filter(x => x.id !== p.id);
+        redrawStampsForPage(); renderFileList(); renderThumbDot(); updateProcessState();
+        return;
+      }
+      const stageRect = stage.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const startP = {...p};
+
+      function onMove(ev){
+        if(isHandle){
+          const dx = (ev.clientX - startX) / stageRect.width;
+          const newW = clamp(startP.wFrac + dx, 0.03, 0.9);
+          const scaleRatio = newW / startP.wFrac;
+          p.wFrac = newW;
+          p.hFrac = clamp(startP.hFrac * scaleRatio, 0.02, 0.9);
+        } else {
+          const dx = (ev.clientX - startX) / stageRect.width;
+          const dy = (ev.clientY - startY) / stageRect.height;
+          p.xFrac = clamp(startP.xFrac + dx, 0, 1 - p.wFrac);
+          p.yFrac = clamp(startP.yFrac + dy, 0, 1 - p.hFrac);
+        }
+        el.style.left = (p.xFrac*100)+'%'; el.style.top=(p.yFrac*100)+'%';
+        el.style.width=(p.wFrac*100)+'%'; el.style.height=(p.hFrac*100)+'%';
+      }
+      function onUp(){
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        refreshSizeInputs();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+// deselect when clicking empty canvas area
+canvasWrap.addEventListener('click', (e) => {
+  if(e.target === canvasWrap){ selectedStampId = null; redrawStampsForPage(); refreshSizeInputs(); }
+});
+
+// ---------- Toolbar ----------
+$('#prevPage').addEventListener('click', () => { if(activePage>1){activePage--; renderPage();} });
+$('#nextPage').addEventListener('click', () => { const d=getActiveDoc(); if(activePage<d.pageCount){activePage++; renderPage();} });
+
+// Update kotak angka Lebar/Tinggi sesuai satuan aktif dan tipe tanda yang relevan
+// (tanda terpilih jika ada, kalau tidak pakai default mode aktif — stempel & centang disimpan terpisah)
+function refreshSizeInputs(){
+  const d = getActiveDoc();
+  let wFrac, hFrac, activeType = placeMode;
+  if(d && selectedStampId){
+    const list = d.pages[activePage] || [];
+    const p = list.find(x => x.id === selectedStampId);
+    if(p){
+      wFrac = p.wFrac; hFrac = p.hFrac; activeType = p.type;
+      if(p.type === 'check') $('#checkColor').value = p.color || checkColor;
+    }
+  }
+  if(wFrac === undefined){ wFrac = defaultSize[activeType].w; hFrac = defaultSize[activeType].h; }
+  const xInput = $('#sizeXInput'), yInput = $('#sizeYInput');
+  if(sizeUnit === 'pct'){
+    xInput.value = (wFrac*100).toFixed(1);
+    yInput.value = (hFrac*100).toFixed(1);
+  } else if(sizeUnit === 'cm'){
+    xInput.value = pageBaseW ? (wFrac*pageBaseW/PT_PER_CM).toFixed(2) : '';
+    yInput.value = pageBaseH ? (hFrac*pageBaseH/PT_PER_CM).toFixed(2) : '';
+  } else {
+    xInput.value = pageBaseW ? Math.round(wFrac*pageBaseW) : '';
+    yInput.value = pageBaseH ? Math.round(hFrac*pageBaseH) : '';
+  }
+}
+
+// Terapkan angka Lebar/Tinggi yang diketik user ke tanda terpilih, dan jadi default
+// untuk tipe tanda tersebut saja (stempel gambar dan tanda centang tidak saling memengaruhi)
+function onSizeInputChange(){
+  const xVal = parseFloat($('#sizeXInput').value);
+  const yVal = parseFloat($('#sizeYInput').value);
+  if(!xVal || !yVal) return;
+  let wFrac, hFrac;
+  if(sizeUnit === 'pct'){
+    wFrac = clamp(xVal/100, 0.005, 1);
+    hFrac = clamp(yVal/100, 0.005, 1);
+  } else if(sizeUnit === 'cm'){
+    if(!pageBaseW || !pageBaseH) return;
+    wFrac = clamp((xVal*PT_PER_CM)/pageBaseW, 0.005, 1);
+    hFrac = clamp((yVal*PT_PER_CM)/pageBaseH, 0.005, 1);
+  } else {
+    if(!pageBaseW || !pageBaseH) return;
+    wFrac = clamp(xVal/pageBaseW, 0.005, 1);
+    hFrac = clamp(yVal/pageBaseH, 0.005, 1);
+  }
+  const d = getActiveDoc();
+  let activeType = placeMode;
+  if(d && selectedStampId){
+    const list = d.pages[activePage] || [];
+    const sel = list.find(x => x.id === selectedStampId);
+    if(sel) activeType = sel.type;
+  }
+  defaultSize[activeType] = { w: wFrac, h: hFrac };
+  applyToSelected(p => {
+    p.wFrac = wFrac;
+    p.hFrac = hFrac;
+    p.xFrac = clamp(p.xFrac, 0, 1 - wFrac);
+    p.yFrac = clamp(p.yFrac, 0, 1 - hFrac);
+  });
+}
+$('#sizeXInput').addEventListener('input', onSizeInputChange);
+$('#sizeYInput').addEventListener('input', onSizeInputChange);
+$('#sizeUnit').addEventListener('change', (e) => { sizeUnit = e.target.value; refreshSizeInputs(); });
+
+$('#opacitySlider').addEventListener('input', (e) => {
+  opacityPct = +e.target.value;
+  $('#opacityVal').textContent = e.target.value + '%';
+  applyToSelected(p => { p.opacity = opacityPct; });
+});
+function applyToSelected(fn){
+  if(!selectedStampId){ return; }
+  const d = getActiveDoc();
+  const list = d.pages[activePage] || [];
+  const p = list.find(x => x.id === selectedStampId);
+  if(p){ fn(p); redrawStampsForPage(); }
+}
+
+$('#clearPageBtn').addEventListener('click', () => {
+  const d = getActiveDoc();
+  d.pages[activePage] = [];
+  selectedStampId = null;
+  redrawStampsForPage(); renderFileList(); renderThumbDot(); updateProcessState();
+});
+
+$('#applyAllPages').addEventListener('click', () => {
+  const d = getActiveDoc();
+  const list = d.pages[activePage];
+  if(!list || !list.length){ toast('Belum ada tanda di halaman ini untuk disalin'); return; }
+  for(let p = 1; p <= d.pageCount; p++){
+    if(p === activePage) continue;
+    d.pages[p] = list.map(s => ({...s, id: 'p'+(placementCounter++)}));
+  }
+  toast('Tanda diterapkan ke semua ' + d.pageCount + ' halaman');
+  renderFileList(); renderThumbDot(); updateProcessState();
+});
+
+// ---------- Process & download ----------
+function hasStampTypePlacements(){
+  return docs.some(d => Object.values(d.pages).some(arr => arr.some(p => p.type === 'stamp')));
+}
+
+function updateProcessState(){
+  const totalPlacements = docs.reduce((sum,d) => sum + Object.values(d.pages).reduce((a,arr)=>a+arr.length,0), 0);
+  const needsImage = hasStampTypePlacements();
+  const ready = docs.length && totalPlacements && (!needsImage || stampImage);
+  processBtn.disabled = !ready;
+  if(!docs.length) processSub.textContent = 'Unggah PDF, lalu tempatkan minimal satu tanda.';
+  else if(!totalPlacements) processSub.textContent = 'Klik pada halaman untuk menempatkan stempel atau tanda centang.';
+  else if(needsImage && !stampImage) processSub.textContent = 'Unggah gambar stempel PNG untuk tanda bertipe stempel.';
+  else processSub.textContent = totalPlacements + ' tanda siap ditempel pada ' + docs.filter(d=>Object.values(d.pages).some(a=>a.length)).length + ' dokumen.';
+}
+
+processBtn.addEventListener('click', processAll);
+
+function hexToRgbFrac(hex){
+  const v = hex.replace('#','');
+  return {
+    r: parseInt(v.substring(0,2),16)/255,
+    g: parseInt(v.substring(2,4),16)/255,
+    b: parseInt(v.substring(4,6),16)/255
+  };
+}
+
+async function processAll(){
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  const results = [];
+  try{
+    const { PDFDocument, rgb, LineCapStyle } = PDFLib;
+    let stampBytes = null, isPng = true;
+    if(stampImage){
+      stampBytes = dataUrlToBytes(stampImage.dataUrl);
+      isPng = stampImage.dataUrl.startsWith('data:image/png');
+    }
+
+    for(const d of docs){
+      const hasAny = Object.values(d.pages).some(a => a.length);
+      if(!hasAny) continue;
+      $('#overlayText').textContent = 'Memproses "' + d.name + '"…';
+      const pdfDoc = await PDFDocument.load(d.bytes.slice(0));
+      const embeddedImg = stampBytes ? (isPng ? await pdfDoc.embedPng(stampBytes) : await pdfDoc.embedJpg(stampBytes)) : null;
+      const pages = pdfDoc.getPages();
+
+      Object.keys(d.pages).forEach(pnumStr => {
+        const pnum = parseInt(pnumStr, 10);
+        const placements = d.pages[pnum];
+        if(!placements || !placements.length) return;
+        const page = pages[pnum - 1];
+        const { width: pw, height: ph } = page.getSize();
+        placements.forEach(p => {
+          const w = p.wFrac * pw;
+          const h = p.hFrac * ph;
+          const x = p.xFrac * pw;
+          const y = ph - (p.yFrac * ph) - h; // flip Y, pdf-lib origin bottom-left
+          const opacity = (p.opacity ?? 100) / 100;
+          if(p.type === 'check'){
+            const { r, g, b } = hexToRgbFrac(p.color || '#1D8A4C');
+            const color = rgb(r, g, b);
+            const thickness = Math.max(1, Math.min(w, h) * (3 / 24));
+            const toPt = (sx, sy) => ({ x: x + (sx/24)*w, y: y + h - (sy/24)*h }); // svg 24x24 viewBox -> pdf coords
+            const A = toPt(4, 12.5), B = toPt(9.5, 18), C = toPt(20, 6);
+            page.drawLine({ start: A, end: B, thickness, color, opacity, lineCap: LineCapStyle.Round });
+            page.drawLine({ start: B, end: C, thickness, color, opacity, lineCap: LineCapStyle.Round });
+          } else if(embeddedImg){
+            page.drawImage(embeddedImg, { x, y, width: w, height: h, opacity });
+          }
+        });
+      });
+
+      const outBytes = await pdfDoc.save();
+      results.push({ name: d.name, bytes: outBytes });
+    }
+
+    if(!results.length){ toast('Tidak ada tanda untuk diproses'); overlay.classList.remove('show'); return; }
+
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pdf_bertanda.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' PDF berhasil diproses dan diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat memproses PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+function dataUrlToBytes(dataUrl){
+  const base64 = dataUrl.split(',')[1];
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function downloadBytes(bytes, filename, mime){
+  const blob = new Blob([bytes], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+
+window.addEventListener('resize', () => { if(activeDocId) renderPage(); });
+</script>
+</body>
+</html>
