@@ -121,6 +121,64 @@
   }
   .group-summary{font-size:11px;color:var(--ink-soft);margin-top:9px;}
 
+  .split-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin:0 0 14px;max-width:600px;
+  }
+  .split-card-head{display:flex;align-items:center;gap:9px;margin-bottom:11px;}
+  .split-card-head .sc-icon{
+    width:28px;height:28px;border-radius:7px;background:var(--primary);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'IBM Plex Mono',monospace;
+  }
+  .split-card-head .sc-meta{flex:1;min-width:0;}
+  .split-card-head .sc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .split-card-head .sc-sub{font-size:11px;color:var(--ink-soft);}
+  .split-card-head .sc-del{
+    flex-shrink:0;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    font-size:16px;width:22px;height:22px;border-radius:50%;
+  }
+  .split-card-head .sc-del:hover{background:var(--accent-soft);color:var(--accent);}
+  .range-row{
+    display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-soft);
+    flex-wrap:wrap;
+  }
+  .range-row:last-of-type{border-bottom:none;}
+  .range-row label{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;}
+  .range-row input[type=number]{
+    width:56px;border:1px solid var(--line);border-radius:6px;padding:5px 7px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);background:#fff;
+  }
+  .range-row input[type=number]:focus{outline:none;border-color:var(--primary);}
+  .range-row input[type=text]{
+    flex:1;min-width:130px;border:1px solid var(--line);border-radius:6px;padding:6px 9px;
+    font-size:12px;font-family:inherit;color:var(--ink);background:#FAF9F5;
+  }
+  .range-row input[type=text]:focus{outline:none;border-color:var(--primary);background:#fff;}
+  .range-row .rr-del{
+    flex-shrink:0;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    font-size:15px;width:20px;height:20px;border-radius:50%;
+  }
+  .range-row .rr-del:hover{background:var(--accent-soft);color:var(--accent);}
+  .range-row .rr-err{font-size:10.5px;color:var(--accent);width:100%;order:99;}
+  .add-range-btn{
+    margin-top:9px;border:1px dashed var(--line);background:transparent;border-radius:7px;
+    padding:6px 11px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
+  }
+  .add-range-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+
+  .comp-card{
+    display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:10px;padding:12px 16px;margin:0 0 10px;max-width:600px;
+  }
+  .comp-card .cc-icon{
+    width:30px;height:30px;border-radius:7px;background:var(--primary);color:#fff;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'IBM Plex Mono',monospace;
+  }
+  .comp-card .cc-meta{flex:1;min-width:0;}
+  .comp-card .cc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .comp-card .cc-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .comp-card .cc-status{font-size:11px;color:var(--primary-dark);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+
   /* ---------- Sidebar ---------- */
   aside.sidebar{
     width:290px;flex-shrink:0;border-right:1px solid var(--line);
@@ -357,6 +415,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v11a3 3 0 003 3h7M8 3L4 7m4-4l4 4"/><path d="M16 21V10a3 3 0 00-3-3H6"/></svg>
       Gabung PDF
     </button>
+    <button class="app-tab" id="tabSplitView" data-view="split">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 7.5L19 17M19 7L13 12M8.5 16.5L11 14.2"/></svg>
+      Split PDF
+    </button>
+    <button class="app-tab" id="tabCompView" data-view="comp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg>
+      Kompres PDF
+    </button>
   </nav>
 
   <main class="workspace" id="stampView">
@@ -502,6 +568,117 @@
       </div>
     </section>
   </main>
+
+  <main class="workspace" id="splitView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="splitDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="splitInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="splitPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="splitPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="splitSub" style="margin-top:0;">Unggah PDF, lalu atur rentang halaman di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="splitBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 7.5L19 17M19 7L13 12M8.5 16.5L11 14.2"/></svg>
+          Proses &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="splitCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="splitEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="3"/><circle cx="9" cy="15" r="3"/><path d="M11 10l7 7M18 7l-6 6"/></svg></div>
+          <h3>Potong PDF jadi beberapa berkas</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Untuk tiap PDF, tentukan rentang halaman yang mau dipotong (mis. halaman 1–3, lalu 4–10) — boleh lebih dari satu rentang per PDF, dan boleh sekaligus untuk beberapa PDF berbeda. Beri nama tiap hasilnya sendiri.</p>
+        </div>
+        <div id="splitCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="compView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="compDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="compInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="compPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="compPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="compSub" style="margin-top:0;">Unggah PDF, atur pengaturan di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="toolbar-group">
+          <label>Kualitas gambar</label>
+          <select id="compQuality">
+            <option value="low">Rendah</option>
+            <option value="medium" selected>Sedang</option>
+            <option value="high">Tinggi</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <label>Resolusi gambar</label>
+          <select id="compDpi">
+            <option value="25">25 DPI</option>
+            <option value="50">50 DPI</option>
+            <option value="72">72 DPI</option>
+            <option value="96">96 DPI</option>
+            <option value="100">100 DPI</option>
+            <option value="150" selected>150 DPI</option>
+            <option value="200">200 DPI</option>
+            <option value="300">300 DPI</option>
+            <option value="400">400 DPI</option>
+            <option value="600">600 DPI</option>
+            <option value="800">800 DPI</option>
+            <option value="1200">1200 DPI</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <label>Warna gambar</label>
+          <select id="compColor">
+            <option value="bw">Hitam Putih (Monokrom)</option>
+            <option value="color" selected>Warna</option>
+            <option value="grayscale">Skala Abu-abu (Grayscale)</option>
+          </select>
+        </div>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="compBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg>
+          Kompres &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="compCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="compEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg></div>
+          <h3>Perkecil ukuran file PDF</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Atur kualitas, resolusi (DPI), dan warna gambar di toolbar atas — pengaturan ini berlaku untuk semua PDF yang diproses sekaligus. Setiap halaman digambar ulang sesuai pengaturan itu, jadi ukuran filenya bisa jauh lebih kecil.</p>
+        </div>
+        <div id="compCardsList"></div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <div class="overlay" id="overlay">
@@ -594,11 +771,17 @@ async function handlePdfFiles(fileListArg){
 // ---------- Tab: Tempel Stempel <-> Gabung PDF ----------
 document.querySelector('#tabStampView').addEventListener('click', () => switchTab('stamp'));
 document.querySelector('#tabMergeView').addEventListener('click', () => switchTab('merge'));
+document.querySelector('#tabSplitView').addEventListener('click', () => switchTab('split'));
+document.querySelector('#tabCompView').addEventListener('click', () => switchTab('comp'));
 function switchTab(view){
   document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
   document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
+  document.querySelector('#tabSplitView').classList.toggle('active', view === 'split');
+  document.querySelector('#tabCompView').classList.toggle('active', view === 'comp');
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
   document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
+  document.querySelector('#splitView').style.display = view === 'split' ? 'flex' : 'none';
+  document.querySelector('#compView').style.display = view === 'comp' ? 'flex' : 'none';
 }
 
 // ---------- Gabung PDF ----------
@@ -803,6 +986,354 @@ async function mergeAndDownload(){
   }catch(err){
     console.error(err);
     toast('Terjadi kesalahan saat menggabungkan PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Split PDF ----------
+let splitPool = [];        // { id, name, bytes, pageCount, ranges: [{id, from, to, outName}] }
+let splitRangeCounter = 0;
+
+const splitInput = $('#splitInput');
+$('#splitDrop').addEventListener('click', () => splitInput.click());
+splitInput.addEventListener('change', e => handleSplitFiles(e.target.files));
+setupDrop($('#splitDrop'), handleSplitFiles);
+
+async function handleSplitFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pageCount = null;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      pageCount = doc.numPages;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    splitRangeCounter++;
+    splitPool.push({
+      id: 's' + Math.random().toString(36).slice(2,9),
+      name: file.name, bytes: buf, pageCount,
+      ranges: [{ id: 'r' + Math.random().toString(36).slice(2,9), from: 1, to: pageCount, outName: baseName + '_hal1-' + pageCount + '.pdf' }]
+    });
+  }
+  renderSplitPool();
+  renderSplitCards();
+}
+
+function renderSplitPool(){
+  const wrap = $('#splitPoolList');
+  $('#splitPoolCount').textContent = splitPool.length;
+  if(!splitPool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  splitPool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.pageCount} halaman · ${f.ranges.length} rentang</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      splitPool = splitPool.filter(x => x.id !== f.id);
+      renderSplitPool();
+      renderSplitCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderSplitCards(){
+  const wrap = $('#splitCardsList');
+  $('#splitEmptyHint').style.display = splitPool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  splitPool.forEach((f) => {
+    const card = document.createElement('div');
+    card.className = 'split-card';
+
+    const head = document.createElement('div');
+    head.className = 'split-card-head';
+    head.innerHTML = `
+      <div class="sc-icon">PDF</div>
+      <div class="sc-meta">
+        <div class="sc-name">${escapeHtml(f.name)}</div>
+        <div class="sc-sub">${f.pageCount} halaman</div>
+      </div>
+      <button class="sc-del" title="Hapus berkas ini">×</button>
+    `;
+    head.querySelector('.sc-del').addEventListener('click', () => {
+      splitPool = splitPool.filter(x => x.id !== f.id);
+      renderSplitPool();
+      renderSplitCards();
+    });
+    card.appendChild(head);
+
+    f.ranges.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'range-row';
+      const invalid = !(r.from >= 1 && r.to >= r.from && r.to <= f.pageCount);
+      row.innerHTML = `
+        <label>Dari halaman</label>
+        <input type="number" class="rr-from" min="1" max="${f.pageCount}" value="${r.from}">
+        <label>sampai</label>
+        <input type="number" class="rr-to" min="1" max="${f.pageCount}" value="${r.to}">
+        <input type="text" class="rr-name" value="${escapeHtml(r.outName)}" placeholder="nama-file-hasil.pdf">
+        <button class="rr-del" title="Hapus rentang ini">×</button>
+        ${invalid ? `<div class="rr-err">Rentang tidak valid — halaman harus antara 1 dan ${f.pageCount}, dan "sampai" ≥ "dari".</div>` : ''}
+      `;
+      row.querySelector('.rr-from').addEventListener('input', (e) => { r.from = parseInt(e.target.value,10) || 0; renderSplitCards(); });
+      row.querySelector('.rr-to').addEventListener('input', (e) => { r.to = parseInt(e.target.value,10) || 0; renderSplitCards(); });
+      row.querySelector('.rr-name').addEventListener('input', (e) => { r.outName = e.target.value; });
+      row.querySelector('.rr-del').addEventListener('click', () => {
+        f.ranges = f.ranges.filter(x => x.id !== r.id);
+        renderSplitPool(); renderSplitCards();
+      });
+      card.appendChild(row);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-range-btn';
+    addBtn.textContent = '+ Tambah rentang halaman';
+    addBtn.addEventListener('click', () => {
+      const baseName = f.name.replace(/\.pdf$/i, '');
+      f.ranges.push({ id: 'r' + Math.random().toString(36).slice(2,9), from: 1, to: f.pageCount, outName: baseName + '_bagian' + (f.ranges.length+1) + '.pdf' });
+      renderSplitPool(); renderSplitCards();
+    });
+    card.appendChild(addBtn);
+
+    wrap.appendChild(card);
+  });
+  updateSplitState();
+}
+
+function updateSplitState(){
+  const allRanges = splitPool.flatMap(f => f.ranges.map(r => ({ f, r })));
+  const validRanges = allRanges.filter(({f,r}) => r.from >= 1 && r.to >= r.from && r.to <= f.pageCount);
+  $('#splitBtn').disabled = validRanges.length === 0;
+  if(!splitPool.length) $('#splitSub').textContent = 'Unggah PDF, lalu atur rentang halaman di kanan.';
+  else if(!validRanges.length) $('#splitSub').textContent = 'Perbaiki rentang halaman yang belum valid.';
+  else $('#splitSub').textContent = validRanges.length + ' rentang siap diproses dari ' + splitPool.length + ' PDF.';
+}
+
+$('#splitBtn').addEventListener('click', splitAndDownload);
+
+async function splitAndDownload(){
+  const allRanges = splitPool.flatMap(f => f.ranges.map(r => ({ f, r })));
+  const validRanges = allRanges.filter(({f,r}) => r.from >= 1 && r.to >= r.from && r.to <= f.pageCount);
+  if(!validRanges.length) return;
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { PDFDocument } = PDFLib;
+    const results = [];
+    for(const { f, r } of validRanges){
+      $('#overlayText').textContent = 'Memotong "' + f.name + '" halaman ' + r.from + '–' + r.to + '…';
+      const srcDoc = await PDFDocument.load(f.bytes.slice(0));
+      const indices = [];
+      for(let p = r.from; p <= r.to; p++) indices.push(p - 1);
+      const outDoc = await PDFDocument.create();
+      const copiedPages = await outDoc.copyPages(srcDoc, indices);
+      copiedPages.forEach(p => outDoc.addPage(p));
+      const outBytes = await outDoc.save();
+      let outName = (r.outName || (f.name.replace(/\.pdf$/i,'') + '_hal' + r.from + '-' + r.to + '.pdf')).trim();
+      if(!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+      results.push({ name: outName, bytes: outBytes });
+    }
+
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_split.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' berkas hasil split berhasil diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat memotong PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Kompres PDF ----------
+let compPool = []; // { id, name, bytes, pageCount }
+
+const compInput = $('#compInput');
+$('#compDrop').addEventListener('click', () => compInput.click());
+compInput.addEventListener('change', e => handleCompFiles(e.target.files));
+setupDrop($('#compDrop'), handleCompFiles);
+
+async function handleCompFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pageCount = null;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      pageCount = doc.numPages;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    compPool.push({ id: 'c' + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, pageCount });
+  }
+  renderCompPool();
+  renderCompCards();
+}
+
+function renderCompPool(){
+  const wrap = $('#compPoolList');
+  $('#compPoolCount').textContent = compPool.length;
+  if(!compPool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  compPool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      compPool = compPool.filter(x => x.id !== f.id);
+      renderCompPool(); renderCompCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderCompCards(){
+  const wrap = $('#compCardsList');
+  $('#compEmptyHint').style.display = compPool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  compPool.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    card.id = 'compCard_' + f.id;
+    card.innerHTML = `
+      <div class="cc-icon">${idx+1}</div>
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(f.name)}</div>
+        <div class="cc-sub">${f.pageCount} halaman · ukuran asli ${fmtBytes(f.bytes.byteLength)}</div>
+      </div>
+      <div class="cc-status">Menunggu</div>
+    `;
+    wrap.appendChild(card);
+  });
+  updateCompState();
+}
+
+function updateCompState(){
+  $('#compBtn').disabled = compPool.length === 0;
+  $('#compSub').textContent = compPool.length === 0
+    ? 'Unggah PDF, atur pengaturan di kanan.'
+    : compPool.length + ' PDF siap dikompres.';
+}
+
+function applyColorMode(ctx, canvas, mode){
+  if(mode === 'color') return;
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imgData.data;
+  for(let i = 0; i < d.length; i += 4){
+    const gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    if(mode === 'grayscale'){
+      d[i] = d[i+1] = d[i+2] = gray;
+    } else if(mode === 'bw'){
+      const v = gray > 150 ? 255 : 0;
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+$('#compBtn').addEventListener('click', compressAndDownload);
+
+async function compressAndDownload(){
+  if(!compPool.length) return;
+  const qualityMap = { low: 0.35, medium: 0.6, high: 0.85 };
+  const jpegQuality = qualityMap[$('#compQuality').value] || 0.6;
+  const dpi = parseInt($('#compDpi').value, 10) || 150;
+  const colorMode = $('#compColor').value;
+
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { PDFDocument } = PDFLib;
+    const results = [];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    for(const f of compPool){
+      const statusEl = document.querySelector('#compCard_' + f.id + ' .cc-status');
+      const srcDoc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
+      const outDoc = await PDFDocument.create();
+
+      for(let p = 1; p <= srcDoc.numPages; p++){
+        if(statusEl) statusEl.textContent = 'Halaman ' + p + '/' + srcDoc.numPages;
+        $('#overlayText').textContent = 'Mengompres "' + f.name + '" — halaman ' + p + ' dari ' + srcDoc.numPages + '…';
+        const page = await srcDoc.getPage(p);
+        const baseVp = page.getViewport({ scale: 1 }); // ukuran halaman asli dalam pt (1pt = 1/72 inci)
+        const scale = dpi / 72;
+        const vp = page.getViewport({ scale });
+        canvas.width = Math.max(1, Math.round(vp.width));
+        canvas.height = Math.max(1, Math.round(vp.height));
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        applyColorMode(ctx, canvas, colorMode);
+        const jpegBytes = dataUrlToBytes(canvas.toDataURL('image/jpeg', jpegQuality));
+        const embeddedImg = await outDoc.embedJpg(jpegBytes);
+        const outPage = outDoc.addPage([baseVp.width, baseVp.height]);
+        outPage.drawImage(embeddedImg, { x: 0, y: 0, width: baseVp.width, height: baseVp.height });
+      }
+
+      const outBytes = await outDoc.save();
+      const outName = f.name.replace(/\.pdf$/i, '') + '_kompres.pdf';
+      results.push({ name: outName, bytes: outBytes, origSize: f.bytes.byteLength });
+      if(statusEl) statusEl.textContent = fmtBytes(f.bytes.byteLength) + ' → ' + fmtBytes(outBytes.byteLength);
+    }
+
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_kompres.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    const totalBefore = results.reduce((a,r)=>a+r.origSize,0);
+    const totalAfter = results.reduce((a,r)=>a+r.bytes.byteLength,0);
+    toast(results.length + ' PDF dikompres: ' + fmtBytes(totalBefore) + ' → ' + fmtBytes(totalAfter));
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat mengompres PDF');
   }finally{
     overlay.classList.remove('show');
   }
