@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tempel Stempel — Penempel Spesimen Terkendali ke PDF</title>
+<title>PDF Onlie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -59,7 +61,7 @@
 
   main.workspace{flex:1;display:flex;min-height:0;}
   nav.app-tabs{
-    display:flex;gap:4px;padding:10px 22px 0;background:var(--paper);
+    display:none !important;gap:4px;padding:10px 22px 0;background:var(--paper);
     border-bottom:1px solid var(--line);flex-shrink:0;
   }
   .app-tab{
@@ -178,6 +180,116 @@
   .comp-card .cc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .comp-card .cc-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .comp-card .cc-status{font-size:11px;color:var(--primary-dark);font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+
+  .excel-preview{
+    display:flex;align-items:center;gap:10px;margin-top:10px;
+    padding:8px;border:1px solid var(--line-soft);border-radius:8px;background:#FAF9F5;
+  }
+  .excel-preview svg{width:22px;height:22px;color:var(--primary);flex-shrink:0;}
+  .excel-preview .meta{min-width:0;}
+  .excel-preview .meta div:first-child{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .excel-preview .meta div:last-child{font-size:11px;color:var(--ink-soft);}
+
+  .lock-controls{display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end;min-width:160px;}
+  .lock-controls select{
+    border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:11.5px;
+    font-family:inherit;color:var(--ink);background:#fff;width:100%;
+  }
+  .lock-controls input[type=text]{
+    border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;
+    font-family:'IBM Plex Mono',monospace;color:var(--ink);background:#fff;width:100%;text-align:right;
+  }
+  .lock-controls select:focus, .lock-controls input[type=text]:focus{outline:none;border-color:var(--primary);}
+  .lock-status.ok{color:var(--primary-dark);}
+  .lock-status.warn{color:var(--accent);}
+
+  /* ---------- Toggle OCR & modal premium ---------- */
+  .ocr-toggle{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .ocr-toggle button{
+    border:none;background:var(--paper);color:var(--ink-soft);font-family:inherit;font-size:12px;
+    padding:7px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  .ocr-toggle button + button{border-left:1px solid var(--line);}
+  .ocr-toggle button.active{background:var(--primary);color:#fff;}
+  .ocr-toggle button .lockicon{width:11px;height:11px;flex-shrink:0;}
+  .ocr-hint{font-size:11px;color:var(--ink-soft);margin-top:6px;max-width:520px;line-height:1.5;}
+  .premium-badge{
+    display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;
+    color:var(--accent);background:var(--accent-soft);border-radius:20px;padding:2px 9px;margin-left:6px;
+  }
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(31,42,36,0.45);display:none;
+    align-items:center;justify-content:center;z-index:100;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal-box{
+    background:var(--paper);border-radius:14px;padding:26px 28px;width:340px;max-width:90vw;
+    box-shadow:var(--shadow);
+  }
+  .modal-box h3{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .modal-box p{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-bottom:14px;}
+  .modal-box input[type=text], .modal-box input[type=password]{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;
+    font-family:inherit;margin-bottom:10px;
+  }
+  .modal-box input:focus{outline:none;border-color:var(--primary);}
+  .modal-actions{display:flex;gap:8px;margin-top:4px;}
+  .modal-actions button{
+    flex:1;border-radius:8px;padding:9px 0;font-size:13px;font-family:inherit;cursor:pointer;border:1px solid var(--line);
+  }
+  .modal-actions .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .modal-actions .btn-ghost{background:var(--paper);color:var(--ink-soft);}
+  .modal-err{font-size:11.5px;color:var(--accent);margin:-4px 0 10px;display:none;}
+
+  /* ---------- Beranda (grid kartu tool) ---------- */
+  .home-grid{
+    flex:1;overflow:auto;padding:34px 40px;display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));gap:18px;
+    align-content:start;
+  }
+  .home-card{
+    background:var(--paper);border:1px solid var(--line-soft);border-radius:14px;
+    padding:22px 20px;text-align:left;cursor:pointer;font-family:inherit;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .home-card:hover{border-color:var(--primary);box-shadow:var(--shadow);transform:translateY(-1px);}
+  .home-card:active{transform:translateY(0);}
+  .hc-icon{
+    width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;
+  }
+  .hc-icon svg{width:22px;height:22px;}
+  .home-card h3{font-size:15.5px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .home-card p{font-size:12.5px;line-height:1.5;color:var(--ink-soft);}
+  .home-hero{padding:30px 40px 4px;}
+  .home-hero h2{font-size:20px;font-weight:700;color:var(--ink);}
+  .home-hero p{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .brand{cursor:pointer;}
+  .home-btn{
+    display:flex;align-items:center;gap:6px;margin-left:14px;padding:7px 13px;
+    border:1px solid var(--line);border-radius:999px;background:var(--paper);
+    color:var(--primary-dark);font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;
+    transition:background .15s, border-color .15s;
+  }
+  .home-btn svg{width:14px;height:14px;flex-shrink:0;}
+  .home-btn:hover{background:var(--accent-soft);border-color:var(--primary);}
+  .user-chip{display:flex;align-items:center;gap:8px;margin-left:8px;}
+  .user-chip #userEmailLabel{font-size:12px;color:var(--ink-soft);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .modal-box textarea{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;
+    font-family:inherit;margin-bottom:10px;resize:vertical;
+  }
+  .modal-box textarea:focus{outline:none;border-color:var(--primary);}
+  .admin-mini-btn{border-radius:7px;padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--paper);}
+  .admin-mini-btn.approve{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .admin-mini-btn.reject{color:var(--accent);}
+  .admin-input{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:12.5px;
+    font-family:inherit;margin-bottom:8px;box-sizing:border-box;
+  }
+  .admin-input:focus{outline:none;border-color:var(--primary);}
+  textarea.admin-input{resize:vertical;}
 
   /* ---------- Sidebar ---------- */
   aside.sidebar{
@@ -393,12 +505,24 @@
 <div id="app">
 
   <header class="topbar">
-    <div class="brand">
-      <div class="seal">SK</div>
+    <div class="brand" title="Kembali ke Beranda">
+      <div class="seal">ART</div>
       <div>
-        <h1>Tempel Stempel</h1>
-        <p>Tempelkan tanda "Spesimen Terkendali" ke banyak PDF sekaligus</p>
-      </div>
+        <h1>PDF Online</h1>
+        </div>
+		</div>
+    <button type="button" id="homeBtn" class="home-btn" style="display:none;" title="Kembali ke Beranda">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+      Beranda
+    </button>
+    <button type="button" id="loginBtn" class="home-btn" style="margin-left:8px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      Masuk
+    </button>
+    <div class="user-chip" id="userChip" style="display:none;">
+      <span id="userEmailLabel"></span>
+      <button type="button" id="adminBtn" class="home-btn" style="display:none;">Admin</button>
+      <button type="button" id="logoutBtn" class="home-btn">Keluar</button>
     </div>
     <div class="trust-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
@@ -423,9 +547,86 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg>
       Kompres PDF
     </button>
+    <button class="app-tab" id="tabLockView" data-view="lock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      Kunci PDF
+    </button>
+    <button class="app-tab" id="tabUnlockView" data-view="unlock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.6-1.8"/></svg>
+      Unlock PDF
+    </button>
+    <button class="app-tab" id="tabJpgView" data-view="jpg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="1.7"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>
+      PDF ke JPG
+    </button>
+    <button class="app-tab" id="tabWordView" data-view="word">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+      PDF ke Word
+    </button>
+    <button class="app-tab" id="tabExcelView" data-view="excel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+      PDF ke Excel
+    </button>
+    <button class="app-tab" id="tabPptView" data-view="ppt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+      PDF ke PowerPoint
+    </button>
   </nav>
 
-  <main class="workspace" id="stampView">
+  <main class="home-grid" id="homeView">
+    <div class="home-card" data-view="stamp">
+      <div class="hc-icon" style="background:#F1DCDA;color:#B33A3A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>
+      <h3>Tempel Stempel</h3>
+      <p>Tempelkan tanda tangan atau stempel digital ke posisi mana pun di halaman PDF Anda.</p>
+    </div>
+    <div class="home-card" data-view="merge">
+      <div class="hc-icon" style="background:#FBE4D0;color:#C0672A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v11a3 3 0 003 3h7M8 3L4 7m4-4l4 4"/><path d="M16 21V10a3 3 0 00-3-3H6"/></svg></div>
+      <h3>Gabung PDF</h3>
+      <p>Gabungkan beberapa PDF dengan urutan yang Anda inginkan menjadi satu berkas.</p>
+    </div>
+    <div class="home-card" data-view="split">
+      <div class="hc-icon" style="background:#DCEEE0;color:#2F7A4C;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 7.5L19 17M19 7L13 12M8.5 16.5L11 14.2"/></svg></div>
+      <h3>Split PDF</h3>
+      <p>Pisahkan satu halaman atau semuanya menjadi beberapa berkas PDF terpisah.</p>
+    </div>
+    <div class="home-card" data-view="comp">
+      <div class="hc-icon" style="background:#DCE7F3;color:#2E6DA4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg></div>
+      <h3>Kompres PDF</h3>
+      <p>Kurangi ukuran berkas PDF sambil menjaga kualitas tampilannya tetap maksimal.</p>
+    </div>
+    <div class="home-card" data-view="lock">
+      <div class="hc-icon" style="background:#DCE7E3;color:#20423A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+      <h3>Kunci PDF</h3>
+      <p>Kunci PDF dengan password — bisa diisi manual atau otomatis dari tanggal lahir di template Excel.</p>
+    </div>
+    <div class="home-card" data-view="unlock">
+      <div class="hc-icon" style="background:#EBE0F3;color:#7A4EA1;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.6-1.8"/></svg></div>
+      <h3>Unlock PDF</h3>
+      <p>Hapus password dari PDF yang terkunci, manual atau otomatis dari template Excel.</p>
+    </div>
+    <div class="home-card" data-view="jpg">
+      <div class="hc-icon" style="background:#FDE8E0;color:#C1532B;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="1.7"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg></div>
+      <h3>PDF ke JPG</h3>
+      <p>Ubah setiap halaman PDF jadi gambar JPG — bisa beberapa PDF sekaligus dalam satu kali proses.</p>
+    </div>
+    <div class="home-card" data-view="word">
+      <div class="hc-icon" style="background:#DCE7F3;color:#2E5FA4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8 13l1.4 6M8 13l1.4-6M11.4 19L12.8 13M11.4 19l1.4-6M14.8 13l1.4 6M14.8 13l1.4-6" stroke-width="1.4"/></svg></div>
+      <h3>PDF ke Word</h3>
+      <p>Ubah PDF jadi dokumen Word (.docx) yang bisa diedit — teks biasa atau PDF hasil pindai (OCR).</p>
+    </div>
+    <div class="home-card" data-view="excel">
+      <div class="hc-icon" style="background:#DDF0DF;color:#2E7A44;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8.5 12l6 7M14.5 12l-6 7"/></svg></div>
+      <h3>PDF ke Excel</h3>
+      <p>Ambil data dari PDF jadi spreadsheet Excel (.xlsx) yang bisa diedit — teks biasa atau PDF hasil pindai (OCR).</p>
+    </div>
+    <div class="home-card" data-view="ppt">
+      <div class="hc-icon" style="background:#FBE2D8;color:#B4552A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 12h3a2 2 0 010 4H9v-4zM9 16v3"/></svg></div>
+      <h3>PDF ke PowerPoint</h3>
+      <p>Ubah PDF jadi presentasi PowerPoint (.pptx) yang bisa diedit — teks biasa atau PDF hasil pindai (OCR).</p>
+    </div>
+  </main>
+
+  <main class="workspace" id="stampView" style="display:none;">
     <aside class="sidebar">
 
       <div class="sidebar-section">
@@ -679,6 +880,400 @@
       </div>
     </section>
   </main>
+
+  <main class="workspace" id="lockView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="lockDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus — nama file = nama pasien</p>
+        </div>
+        <input type="file" id="lockInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section">
+        <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
+        <div class="drop" id="lockExcelDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 15h6M9 12h6M9 18h3"/></svg>
+          <p><b>Klik atau seret</b><br>kolom Nama Pasien &amp; Tanggal Lahir</p>
+        </div>
+        <input type="file" id="lockExcelInput" accept=".xlsx,.xls">
+        <div class="excel-preview" id="lockExcelPreview" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+          <div class="meta">
+            <div id="lockExcelName">—</div>
+            <div id="lockExcelRows">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="lockPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="lockPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="lockSub" style="margin-top:0;">Unggah PDF dan template Excel, lalu cocokkan password di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="toolbar-group">
+          <label>Format password (tgl lahir)</label>
+          <select id="lockPassFormat">
+            <option value="DDMMYYYY" selected>DDMMYYYY (17081995)</option>
+            <option value="DDMMYY">DDMMYY (170895)</option>
+            <option value="YYYYMMDD">YYYYMMDD (19950817)</option>
+            <option value="DDMM">DDMM (1708)</option>
+          </select>
+        </div>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="lockBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+          Kunci &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="lockCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="lockEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+          <h3>Kunci PDF pakai tanggal lahir pasien</h3>
+          <p>Unggah PDF di panel kiri (nama file harus sama dengan nama pasien), lalu unggah template Excel berisi kolom Nama Pasien dan Tanggal Lahir. Password tiap PDF otomatis dicocokkan dari tanggal lahirnya; kalau ada yang tidak ketemu, pilih pasiennya manual atau ketik password sendiri di kanan.</p>
+        </div>
+        <div id="lockCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="unlockView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF Terkunci</h2>
+        <div class="drop" id="unlockDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus — nama file = nama pasien</p>
+        </div>
+        <input type="file" id="unlockInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section">
+        <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
+        <div class="drop" id="unlockExcelDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 15h6M9 12h6M9 18h3"/></svg>
+          <p><b>Klik atau seret</b><br>kolom Nama Pasien &amp; Tanggal Lahir — opsional, atau ketik password manual</p>
+        </div>
+        <input type="file" id="unlockExcelInput" accept=".xlsx,.xls">
+        <div class="excel-preview" id="unlockExcelPreview" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
+          <div class="meta">
+            <div id="unlockExcelName">—</div>
+            <div id="unlockExcelRows">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="unlockPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="unlockPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="unlockSub" style="margin-top:0;">Unggah PDF terkunci, lalu isi password (otomatis dari Excel atau manual).</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="toolbar-group">
+          <label>Format password (tgl lahir)</label>
+          <select id="unlockPassFormat">
+            <option value="DDMMYYYY" selected>DDMMYYYY (17081995)</option>
+            <option value="DDMMYY">DDMMYY (170895)</option>
+            <option value="YYYYMMDD">YYYYMMDD (19950817)</option>
+            <option value="DDMM">DDMM (1708)</option>
+          </select>
+        </div>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="unlockBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.6-1.8"/></svg>
+          Buka Kunci &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="unlockCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="unlockEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.6-1.8"/></svg></div>
+          <h3>Hapus password dari PDF terkunci</h3>
+          <p>Unggah PDF yang terkunci password di panel kiri (nama file harus sama dengan nama pasien), lalu unggah template Excel berisi kolom Nama Pasien dan Tanggal Lahir agar password otomatis dicocokkan. Kalau ada yang tidak ketemu, pilih pasiennya manual atau ketik password sendiri di kanan.</p>
+        </div>
+        <div id="unlockCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="jpgView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="jpgDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="jpgInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="jpgPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="jpgPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="jpgSub" style="margin-top:0;">Unggah satu atau beberapa PDF, lalu klik proses di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="toolbar-group">
+          <label>Kualitas gambar</label>
+          <select id="jpgQuality">
+            <option value="low">Rendah</option>
+            <option value="medium" selected>Sedang</option>
+            <option value="high">Tinggi</option>
+          </select>
+        </div>
+        <div class="toolbar-group">
+          <label>Resolusi gambar</label>
+          <select id="jpgDpi">
+            <option value="72">72 DPI</option>
+            <option value="96">96 DPI</option>
+            <option value="150" selected>150 DPI</option>
+            <option value="200">200 DPI</option>
+            <option value="300">300 DPI</option>
+            <option value="600">600 DPI</option>
+          </select>
+        </div>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="jpgBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="1.7"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg>
+          Ubah ke JPG &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="jpgCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="jpgEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="1.7"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg></div>
+          <h3>Ubah PDF jadi gambar JPG</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Setiap halaman akan diubah jadi satu berkas JPG terpisah. Kalau hasilnya lebih dari satu gambar, semua akan digabung otomatis jadi satu berkas ZIP saat diunduh.</p>
+        </div>
+        <div id="jpgCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="wordView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="wordDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="wordInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;">
+        <h2>2 · Mode Baca Teks</h2>
+        <div class="ocr-toggle" id="wordOcrToggle">
+          <button type="button" class="active" data-mode="noocr">Tanpa OCR</button>
+          <button type="button" data-mode="ocr"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>OCR<span class="premium-badge">Lock</span></button>
+        </div>
+        <p class="ocr-hint" id="wordOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="wordPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="wordPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="wordSub" style="margin-top:0;">Unggah satu atau beberapa PDF, lalu klik proses di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="wordBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8 13l1.4 6M8 13l1.4-6M11.4 19L12.8 13M11.4 19l1.4-6M14.8 13l1.4 6M14.8 13l1.4-6" stroke-width="1.4"</svg>
+          Ubah ke DOCX &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="wordCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="wordEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8 13l1.4 6M8 13l1.4-6M11.4 19L12.8 13M11.4 19l1.4-6M14.8 13l1.4 6M14.8 13l1.4-6" stroke-width="1.4"</svg></div>
+          <h3>Ubah PDF jadi dokumen Word</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Pilih <b>Tanpa OCR</b> untuk PDF dengan teks asli (hasil ketik/export), atau <b>OCR</b> untuk PDF hasil pindai/scan yang teksnya tidak bisa diseleksi. Hasilnya diunduh sebagai .docx — satu per satu atau digabung ZIP kalau lebih dari satu berkas.</p>
+        </div>
+        <div id="wordCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="excelView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="excelDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="excelInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;">
+        <h2>2 · Mode Baca Teks</h2>
+        <div class="ocr-toggle" id="excelOcrToggle">
+          <button type="button" class="active" data-mode="noocr">Tanpa OCR</button>
+          <button type="button" data-mode="ocr"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>OCR<span class="premium-badge">Lock</span></button>
+        </div>
+        <p class="ocr-hint" id="excelOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="excelPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="excelPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="excelSub" style="margin-top:0;">Unggah satu atau beberapa PDF, lalu klik proses di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="excelBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8.5 12l6 7M14.5 12l-6 7"</svg>
+          Ubah ke XLSX &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="excelCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="excelEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M8.5 12l6 7M14.5 12l-6 7"</svg></div>
+          <h3>Ubah PDF jadi spreadsheet Excel</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Pilih <b>Tanpa OCR</b> untuk PDF dengan teks asli (hasil ketik/export), atau <b>OCR</b> untuk PDF hasil pindai/scan yang teksnya tidak bisa diseleksi. Hasilnya diunduh sebagai .xlsx — satu per satu atau digabung ZIP kalau lebih dari satu berkas.</p>
+        </div>
+        <div id="excelCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="pptView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="pptDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="pptInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;">
+        <h2>2 · Mode Baca Teks</h2>
+        <div class="ocr-toggle" id="pptOcrToggle">
+          <button type="button" class="active" data-mode="noocr">Tanpa OCR</button>
+          <button type="button" data-mode="ocr"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>OCR<span class="premium-badge">Lock</span></button>
+        </div>
+        <p class="ocr-hint" id="pptOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="pptPoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="pptPoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="pptSub" style="margin-top:0;">Unggah satu atau beberapa PDF, lalu klik proses di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="pptBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 12h3a2 2 0 010 4H9v-4zM9 16v3"</svg>
+          Ubah ke PPTX &amp; Unduh Semua
+        </button>
+      </div>
+      <div class="canvas-wrap" id="pptCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="pptEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 12h3a2 2 0 010 4H9v-4zM9 16v3"</svg></div>
+          <h3>Ubah PDF jadi presentasi PowerPoint</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Pilih <b>Tanpa OCR</b> untuk PDF dengan teks asli (hasil ketik/export), atau <b>OCR</b> untuk PDF hasil pindai/scan yang teksnya tidak bisa diseleksi. Hasilnya diunduh sebagai .pptx — satu per satu atau digabung ZIP kalau lebih dari satu berkas.</p>
+        </div>
+        <div id="pptCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="adminView" style="display:none;">
+    <aside class="sidebar">
+      <div class="sidebar-section" style="flex:1;">
+        <h2>Harga &amp; Info Pembayaran</h2>
+        <input type="number" id="adminPriceInput" class="admin-input" placeholder="Harga (Rp)">
+        <textarea id="adminInstructionsInput" class="admin-input" rows="6" placeholder="Instruksi pembayaran — nomor rekening / QRIS, dll."></textarea>
+        <button class="primary-action" id="adminSavePricingBtn" style="width:100%;">Simpan Harga &amp; Instruksi</button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" style="margin-top:0;">Perubahan berlaku langsung untuk semua pengguna.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">Pengajuan Pembayaran</h2>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="adminRefreshBtn" style="width:auto;padding:9px 16px;">Muat Ulang</button>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div id="adminPaymentsList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="authModal">
+  <div class="modal-box">
+    <h3 id="authModalTitle">Masuk ke Akun</h3>
+    <p id="authModalDesc">Masuk untuk mengaktifkan fitur OCR (khusus akun premium).</p>
+    <input type="email" id="authEmailInput" placeholder="Email" autocomplete="username">
+    <input type="password" id="authPasswordInput" placeholder="Kata sandi" autocomplete="current-password">
+    <div class="modal-err" id="authErr"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-ghost" id="authCancelBtn">Batal</button>
+      <button type="button" class="btn-primary" id="authSubmitBtn">Masuk</button>
+    </div>
+    <p style="margin-top:14px;font-size:12px;text-align:center;color:var(--ink-soft);">
+      <span id="authSwitchText">Belum punya akun?</span>
+      <a href="#" id="authSwitchLink" style="color:var(--primary-dark);font-weight:600;">Daftar di sini</a>
+    </p>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="upgradeModal">
+  <div class="modal-box" style="width:380px;">
+    <h3>Aktifkan OCR Premium</h3>
+    <p id="upgradePriceText">Harga: —</p>
+    <p id="upgradeInstructionsText" style="white-space:pre-wrap;background:#FAF9F5;border:1px solid var(--line-soft);border-radius:8px;padding:10px;font-size:12px;color:var(--ink);"></p>
+    <div id="upgradeFormArea">
+      <select id="upgradeMethodSelect" class="admin-input">
+        <option value="transfer">Transfer Bank</option>
+        <option value="qris">QRIS</option>
+      </select>
+      <input type="text" id="upgradeNoteInput" placeholder="Nama pengirim / catatan referensi pembayaran">
+      <div class="modal-err" id="upgradeErr"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="upgradeCancelBtn">Tutup</button>
+        <button type="button" class="btn-primary" id="upgradeSubmitBtn">Saya Sudah Bayar</button>
+      </div>
+    </div>
+    <div id="upgradePendingArea" style="display:none;">
+      <p style="font-size:12.5px;color:var(--primary-dark);background:#E9F1EE;border-radius:8px;padding:10px;">Pengajuan pembayaran Anda sedang menunggu konfirmasi admin.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="upgradeCloseBtn2">Tutup</button>
+        <button type="button" class="btn-primary" id="upgradeCheckBtn">Cek Status Lagi</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="overlay" id="overlay">
@@ -773,16 +1368,44 @@ document.querySelector('#tabStampView').addEventListener('click', () => switchTa
 document.querySelector('#tabMergeView').addEventListener('click', () => switchTab('merge'));
 document.querySelector('#tabSplitView').addEventListener('click', () => switchTab('split'));
 document.querySelector('#tabCompView').addEventListener('click', () => switchTab('comp'));
+document.querySelector('#tabLockView').addEventListener('click', () => switchTab('lock'));
+document.querySelector('#tabUnlockView').addEventListener('click', () => switchTab('unlock'));
+document.querySelector('#tabJpgView').addEventListener('click', () => switchTab('jpg'));
+document.querySelector('#tabWordView').addEventListener('click', () => switchTab('word'));
+document.querySelector('#tabExcelView').addEventListener('click', () => switchTab('excel'));
+document.querySelector('#tabPptView').addEventListener('click', () => switchTab('ppt'));
 function switchTab(view){
   document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
   document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
   document.querySelector('#tabSplitView').classList.toggle('active', view === 'split');
   document.querySelector('#tabCompView').classList.toggle('active', view === 'comp');
+  document.querySelector('#tabLockView').classList.toggle('active', view === 'lock');
+  document.querySelector('#tabUnlockView').classList.toggle('active', view === 'unlock');
+  document.querySelector('#tabJpgView').classList.toggle('active', view === 'jpg');
+  document.querySelector('#tabWordView').classList.toggle('active', view === 'word');
+  document.querySelector('#tabExcelView').classList.toggle('active', view === 'excel');
+  document.querySelector('#tabPptView').classList.toggle('active', view === 'ppt');
+  document.querySelector('#homeView').style.display = view === 'home' ? 'grid' : 'none';
+  document.querySelector('#homeBtn').style.display = view === 'home' ? 'none' : 'flex';
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
   document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
   document.querySelector('#splitView').style.display = view === 'split' ? 'flex' : 'none';
   document.querySelector('#compView').style.display = view === 'comp' ? 'flex' : 'none';
+  document.querySelector('#lockView').style.display = view === 'lock' ? 'flex' : 'none';
+  document.querySelector('#unlockView').style.display = view === 'unlock' ? 'flex' : 'none';
+  document.querySelector('#jpgView').style.display = view === 'jpg' ? 'flex' : 'none';
+  document.querySelector('#wordView').style.display = view === 'word' ? 'flex' : 'none';
+  document.querySelector('#excelView').style.display = view === 'excel' ? 'flex' : 'none';
+  document.querySelector('#pptView').style.display = view === 'ppt' ? 'flex' : 'none';
+  document.querySelector('#adminView').style.display = view === 'admin' ? 'flex' : 'none';
+  if(view === 'admin') loadAdminData();
 }
+document.querySelector('.brand').addEventListener('click', () => switchTab('home'));
+document.querySelector('#homeBtn').addEventListener('click', () => switchTab('home'));
+document.querySelectorAll('.home-card').forEach(card => {
+  card.addEventListener('click', () => switchTab(card.dataset.view));
+});
+switchTab('home');
 
 // ---------- Gabung PDF ----------
 let mergePool = [];    // { id, name, bytes, pageCount } — semua PDF yang diunggah
@@ -1338,6 +1961,1246 @@ async function compressAndDownload(){
     overlay.classList.remove('show');
   }
 }
+
+// ---------- Kunci PDF ----------
+// lockPool item: { id, name, bytes, matchRow: null|{name, date}, password, status: 'matched'|'ambiguous'|'unmatched'|'manual', userEdited }
+// excelRows item: { name, norm, date: Date|null }
+let lockPool = [];
+let excelRows = [];
+
+const lockInput = $('#lockInput');
+$('#lockDrop').addEventListener('click', () => lockInput.click());
+lockInput.addEventListener('change', e => handleLockFiles(e.target.files));
+setupDrop($('#lockDrop'), handleLockFiles);
+
+async function handleLockFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    try{
+      await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    lockPool.push({ id: 'k' + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, matchRow: null, password: '', status: 'unmatched', userEdited: false });
+  }
+  rematchLockPool();
+  renderLockPool();
+  renderLockCards();
+}
+
+function renderLockPool(){
+  const wrap = $('#lockPoolList');
+  $('#lockPoolCount').textContent = lockPool.length;
+  if(!lockPool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  lockPool.forEach((f, idx) => {
+    const statusLabel = f.password ? (f.status === 'manual' ? 'Password manual' : 'Password otomatis') : 'Belum ada password';
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${fmtBytes(f.bytes.byteLength)} · ${statusLabel}</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      lockPool = lockPool.filter(x => x.id !== f.id);
+      renderLockPool(); renderLockCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+// ---------- Template Excel ----------
+const lockExcelInput = $('#lockExcelInput');
+$('#lockExcelDrop').addEventListener('click', () => lockExcelInput.click());
+lockExcelInput.addEventListener('change', e => { if(e.target.files[0]) handleLockExcel(e.target.files[0]); });
+setupDrop($('#lockExcelDrop'), files => { if(files[0]) handleLockExcel(files[0]); });
+
+async function handleLockExcel(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+    // Cari baris header di mana pun posisinya (boleh ada baris kosong di atasnya)
+    let nameColIdx = -1, dateColIdx = -1, headerRowIdx = -1;
+    for(let i = 0; i < grid.length; i++){
+      const row = grid[i];
+      const nIdx = row.findIndex(c => /nama/i.test(String(c)));
+      const dIdx = row.findIndex(c => /lahir/i.test(String(c)));
+      if(nIdx !== -1 && dIdx !== -1){
+        headerRowIdx = i; nameColIdx = nIdx; dateColIdx = dIdx; break;
+      }
+    }
+    if(headerRowIdx === -1){
+      toast('Kolom "Nama Pasien" / "Tanggal Lahir" tidak ditemukan di Excel');
+      return;
+    }
+    excelRows = grid.slice(headerRowIdx + 1)
+      .map(row => ({
+        name: String(row[nameColIdx] || '').trim(),
+        norm: normName(row[nameColIdx]),
+        date: parseBirthDateValue(row[dateColIdx])
+      }))
+      .filter(r => r.name);
+    $('#lockExcelPreview').style.display = 'flex';
+    $('#lockExcelName').textContent = file.name;
+    $('#lockExcelRows').textContent = excelRows.length + ' baris data pasien';
+    const noDate = excelRows.filter(r => !r.date).length;
+    if(noDate) toast(noDate + ' baris di Excel punya tanggal lahir yang tidak terbaca');
+    rematchLockPool();
+    renderLockPool();
+    renderLockCards();
+  }catch(err){
+    console.error(err);
+    toast('Gagal membaca template Excel — pastikan formatnya .xlsx/.xls');
+  }
+}
+
+function normName(s){
+  return String(s || '')
+    .toLowerCase()
+    .replace(/\.pdf$/i, '')
+    .normalize('NFKD')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+
+function isValidYMD(y, m, d){
+  if(!y || !m || !d || m < 1 || m > 12) return false;
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return d >= 1 && d <= daysInMonth && y > 1900 && y < 2100;
+}
+
+function parseBirthDateValue(val){
+  if(val instanceof Date && !isNaN(val)) return val;
+  if(typeof val === 'number'){
+    // Serial tanggal asli Excel (biasanya di bawah ~60000)
+    if(val > 0 && val < 60000 && XLSX.SSF && XLSX.SSF.parse_date_code){
+      const p = XLSX.SSF.parse_date_code(val);
+      if(p && isValidYMD(p.y, p.m, p.d)) return new Date(p.y, p.m - 1, p.d);
+    }
+    // Angka polos gaya DDMMYYYY / YYYYMMDD / DDMMYY (bukan serial tanggal Excel)
+    const s = String(Math.round(val));
+    if(s.length === 8){
+      let dd = +s.slice(0,2), mm = +s.slice(2,4), yyyy = +s.slice(4,8);
+      if(isValidYMD(yyyy, mm, dd)) return new Date(yyyy, mm - 1, dd);
+      yyyy = +s.slice(0,4); mm = +s.slice(4,6); dd = +s.slice(6,8);
+      if(isValidYMD(yyyy, mm, dd)) return new Date(yyyy, mm - 1, dd);
+    }
+    if(s.length === 6){
+      const dd = +s.slice(0,2), mm = +s.slice(2,4), yy = +s.slice(4,6);
+      const yyyy = yy < 50 ? 2000 + yy : 1900 + yy;
+      if(isValidYMD(yyyy, mm, dd)) return new Date(yyyy, mm - 1, dd);
+    }
+    return null;
+  }
+  const s = String(val || '').trim();
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  if(m){
+    let [, d, mo, y] = m;
+    if(y.length === 2) y = (+y < 50 ? '20' : '19') + y;
+    if(isValidYMD(+y, +mo, +d)) return new Date(+y, +mo - 1, +d);
+  }
+  m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  if(m){
+    const [, y, mo, d] = m;
+    if(isValidYMD(+y, +mo, +d)) return new Date(+y, +mo - 1, +d);
+  }
+  if(/^\d{6}$/.test(s) || /^\d{8}$/.test(s)) return parseBirthDateValue(+s);
+  return null;
+}
+
+function formatPassword(date, fmt){
+  const dd = pad2(date.getDate()), mm = pad2(date.getMonth() + 1), yyyy = date.getFullYear(), yy = String(yyyy).slice(-2);
+  if(fmt === 'DDMMYY') return dd + mm + yy;
+  if(fmt === 'YYYYMMDD') return '' + yyyy + mm + dd;
+  if(fmt === 'DDMM') return dd + mm;
+  return dd + mm + yyyy;
+}
+
+function rematchLockPool(){
+  const fmt = $('#lockPassFormat').value;
+  lockPool.forEach(f => {
+    if(f.userEdited) return; // jangan timpa password yang sudah diubah manual
+    if(!excelRows.length){ f.matchRow = null; f.status = 'unmatched'; f.password = ''; return; }
+    const normPdf = normName(f.name);
+    let candidates = excelRows.filter(r => r.norm === normPdf);
+    if(!candidates.length) candidates = excelRows.filter(r => r.norm && (normPdf.includes(r.norm) || r.norm.includes(normPdf)));
+    if(candidates.length === 1 && candidates[0].date){
+      f.matchRow = candidates[0];
+      f.status = 'matched';
+      f.password = formatPassword(candidates[0].date, fmt);
+    } else if(candidates.length > 1){
+      f.matchRow = null; f.status = 'ambiguous'; f.password = '';
+    } else {
+      f.matchRow = null; f.status = 'unmatched'; f.password = '';
+    }
+  });
+}
+
+$('#lockPassFormat').addEventListener('change', () => {
+  const fmt = $('#lockPassFormat').value;
+  lockPool.forEach(f => { if(f.matchRow && !f.userEdited) f.password = formatPassword(f.matchRow.date, fmt); });
+  renderLockCards(); renderLockPool();
+});
+
+function renderLockCards(){
+  const wrap = $('#lockCardsList');
+  $('#lockEmptyHint').style.display = lockPool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  lockPool.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    card.id = 'lockCard_' + f.id;
+    let subText, statusClass = 'warn';
+    if(f.status === 'matched'){
+      subText = 'Cocok: ' + escapeHtml(f.matchRow.name) + (f.matchRow.date ? ' · ' + f.matchRow.date.toLocaleDateString('id-ID') : '');
+      statusClass = 'ok';
+    } else if(f.status === 'manual'){
+      subText = 'Password diisi manual';
+      statusClass = 'ok';
+    } else if(f.status === 'ambiguous'){
+      subText = 'Nama cocok lebih dari satu baris — pilih manual';
+    } else {
+      subText = excelRows.length ? 'Tidak ditemukan di Excel — pilih atau ketik manual' : 'Unggah template Excel, atau isi password manual';
+    }
+    let selectHtml = '';
+    if(excelRows.length){
+      const opts = excelRows.map(r => `<option value="${escapeHtml(r.name)}"${f.matchRow && f.matchRow.name === r.name ? ' selected' : ''}>${escapeHtml(r.name)}</option>`).join('');
+      selectHtml = `<select class="lock-select"><option value="">— pilih pasien —</option>${opts}</select>`;
+    }
+    card.innerHTML = `
+      <div class="cc-icon">${idx+1}</div>
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(f.name)}</div>
+        <div class="cc-sub lock-status ${statusClass}">${subText}</div>
+      </div>
+      <div class="lock-controls">
+        ${selectHtml}
+        <input type="text" class="lock-pass-input" placeholder="Password" value="${escapeHtml(f.password)}">
+      </div>
+    `;
+    if(excelRows.length){
+      card.querySelector('.lock-select').addEventListener('change', (e) => {
+        const row = excelRows.find(r => r.name === e.target.value);
+        if(row && row.date){
+          f.matchRow = row; f.status = 'matched'; f.userEdited = false;
+          f.password = formatPassword(row.date, $('#lockPassFormat').value);
+        } else {
+          f.matchRow = null; f.status = 'unmatched'; f.password = ''; f.userEdited = false;
+        }
+        renderLockCards(); renderLockPool();
+      });
+    }
+    card.querySelector('.lock-pass-input').addEventListener('input', (e) => {
+      f.password = e.target.value;
+      f.userEdited = true;
+      f.status = f.password ? 'manual' : (f.matchRow ? 'matched' : 'unmatched');
+      updateLockState(); renderLockPool();
+    });
+    wrap.appendChild(card);
+  });
+  updateLockState();
+}
+
+function updateLockState(){
+  const withPass = lockPool.filter(f => f.password).length;
+  $('#lockBtn').disabled = withPass === 0;
+  $('#lockSub').textContent = !lockPool.length
+    ? 'Unggah PDF dan template Excel, lalu cocokkan password di kanan.'
+    : withPass < lockPool.length
+      ? (lockPool.length - withPass) + ' dari ' + lockPool.length + ' PDF belum ada password'
+      : lockPool.length + ' PDF siap dikunci.';
+}
+
+$('#lockBtn').addEventListener('click', lockAndDownload);
+
+let _pdfEncryptMod = null;
+async function loadPdfEncrypt(){
+  if(!_pdfEncryptMod){
+    _pdfEncryptMod = await import('https://cdn.jsdelivr.net/npm/@pdfsmaller/pdf-encrypt/+esm');
+  }
+  return _pdfEncryptMod;
+}
+
+async function lockAndDownload(){
+  const ready = lockPool.filter(f => f.password);
+  if(!ready.length){ toast('Belum ada PDF dengan password'); return; }
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { encryptPDF } = await loadPdfEncrypt();
+    const results = [];
+    for(const f of ready){
+      $('#overlayText').textContent = 'Mengunci "' + f.name + '"…';
+      const statusEl = document.querySelector('#lockCard_' + f.id + ' .lock-status');
+      try{
+        const encrypted = await encryptPDF(new Uint8Array(f.bytes.slice(0)), f.password);
+        const outName = f.name.replace(/\.pdf$/i, '') + '_terkunci.pdf';
+        results.push({ name: outName, bytes: encrypted });
+        if(statusEl) statusEl.textContent = 'Terkunci — password: ' + f.password;
+      }catch(errFile){
+        console.error(errFile);
+        if(statusEl) statusEl.textContent = 'Gagal dikunci';
+      }
+    }
+    if(!results.length){ toast('Tidak ada PDF berhasil dikunci'); overlay.classList.remove('show'); return; }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pdf_terkunci.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    const skipped = lockPool.length - results.length;
+    toast(results.length + ' PDF berhasil dikunci' + (skipped ? ', ' + skipped + ' dilewati' : ''));
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat mengunci PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Unlock PDF ----------
+// unlockPool item sama strukturnya dengan lockPool: { id, name, bytes, matchRow, password, status, userEdited }
+let unlockPool = [];
+let unlockExcelRows = [];
+
+const unlockInput = $('#unlockInput');
+$('#unlockDrop').addEventListener('click', () => unlockInput.click());
+unlockInput.addEventListener('change', e => handleUnlockFiles(e.target.files));
+setupDrop($('#unlockDrop'), handleUnlockFiles);
+
+async function handleUnlockFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    if(!buf.byteLength){ toast('Gagal membaca "' + file.name + '"'); continue; }
+    unlockPool.push({ id: 'u' + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, matchRow: null, password: '', status: 'unmatched', userEdited: false });
+  }
+  rematchUnlockPool();
+  renderUnlockPool();
+  renderUnlockCards();
+}
+
+function renderUnlockPool(){
+  const wrap = $('#unlockPoolList');
+  $('#unlockPoolCount').textContent = unlockPool.length;
+  if(!unlockPool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  unlockPool.forEach((f, idx) => {
+    const statusLabel = f.password ? (f.status === 'manual' ? 'Password manual' : 'Password otomatis') : 'Belum ada password';
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${fmtBytes(f.bytes.byteLength)} · ${statusLabel}</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      unlockPool = unlockPool.filter(x => x.id !== f.id);
+      renderUnlockPool(); renderUnlockCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+const unlockExcelInput = $('#unlockExcelInput');
+$('#unlockExcelDrop').addEventListener('click', () => unlockExcelInput.click());
+unlockExcelInput.addEventListener('change', e => { if(e.target.files[0]) handleUnlockExcel(e.target.files[0]); });
+setupDrop($('#unlockExcelDrop'), files => { if(files[0]) handleUnlockExcel(files[0]); });
+
+async function handleUnlockExcel(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
+    let nameColIdx = -1, dateColIdx = -1, headerRowIdx = -1;
+    for(let i = 0; i < grid.length; i++){
+      const row = grid[i];
+      const nIdx = row.findIndex(c => /nama/i.test(String(c)));
+      const dIdx = row.findIndex(c => /lahir/i.test(String(c)));
+      if(nIdx !== -1 && dIdx !== -1){ headerRowIdx = i; nameColIdx = nIdx; dateColIdx = dIdx; break; }
+    }
+    if(headerRowIdx === -1){
+      toast('Kolom "Nama Pasien" / "Tanggal Lahir" tidak ditemukan di Excel');
+      return;
+    }
+    unlockExcelRows = grid.slice(headerRowIdx + 1)
+      .map(row => ({ name: String(row[nameColIdx] || '').trim(), norm: normName(row[nameColIdx]), date: parseBirthDateValue(row[dateColIdx]) }))
+      .filter(r => r.name);
+    $('#unlockExcelPreview').style.display = 'flex';
+    $('#unlockExcelName').textContent = file.name;
+    $('#unlockExcelRows').textContent = unlockExcelRows.length + ' baris data pasien';
+    rematchUnlockPool();
+    renderUnlockPool();
+    renderUnlockCards();
+  }catch(err){
+    console.error(err);
+    toast('Gagal membaca template Excel — pastikan formatnya .xlsx/.xls');
+  }
+}
+
+function rematchUnlockPool(){
+  const fmt = $('#unlockPassFormat').value;
+  unlockPool.forEach(f => {
+    if(f.userEdited) return;
+    if(!unlockExcelRows.length){ f.matchRow = null; f.status = 'unmatched'; f.password = ''; return; }
+    const normPdf = normName(f.name);
+    let candidates = unlockExcelRows.filter(r => r.norm === normPdf);
+    if(!candidates.length) candidates = unlockExcelRows.filter(r => r.norm && (normPdf.includes(r.norm) || r.norm.includes(normPdf)));
+    if(candidates.length === 1 && candidates[0].date){
+      f.matchRow = candidates[0]; f.status = 'matched'; f.password = formatPassword(candidates[0].date, fmt);
+    } else if(candidates.length > 1){
+      f.matchRow = null; f.status = 'ambiguous'; f.password = '';
+    } else {
+      f.matchRow = null; f.status = 'unmatched'; f.password = '';
+    }
+  });
+}
+
+$('#unlockPassFormat').addEventListener('change', () => {
+  const fmt = $('#unlockPassFormat').value;
+  unlockPool.forEach(f => { if(f.matchRow && !f.userEdited) f.password = formatPassword(f.matchRow.date, fmt); });
+  renderUnlockCards(); renderUnlockPool();
+});
+
+function renderUnlockCards(){
+  const wrap = $('#unlockCardsList');
+  $('#unlockEmptyHint').style.display = unlockPool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  unlockPool.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    card.id = 'unlockCard_' + f.id;
+    let subText, statusClass = 'warn';
+    if(f.status === 'matched'){
+      subText = 'Cocok: ' + escapeHtml(f.matchRow.name) + (f.matchRow.date ? ' · ' + f.matchRow.date.toLocaleDateString('id-ID') : '');
+      statusClass = 'ok';
+    } else if(f.status === 'manual'){
+      subText = 'Password diisi manual'; statusClass = 'ok';
+    } else if(f.status === 'ambiguous'){
+      subText = 'Nama cocok lebih dari satu baris — pilih manual';
+    } else {
+      subText = unlockExcelRows.length ? 'Tidak ditemukan di Excel — pilih atau ketik manual' : 'Unggah template Excel, atau isi password manual';
+    }
+    let selectHtml = '';
+    if(unlockExcelRows.length){
+      const opts = unlockExcelRows.map(r => `<option value="${escapeHtml(r.name)}"${f.matchRow && f.matchRow.name === r.name ? ' selected' : ''}>${escapeHtml(r.name)}</option>`).join('');
+      selectHtml = `<select class="lock-select"><option value="">— pilih pasien —</option>${opts}</select>`;
+    }
+    card.innerHTML = `
+      <div class="cc-icon">${idx+1}</div>
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(f.name)}</div>
+        <div class="cc-sub lock-status ${statusClass}">${subText}</div>
+      </div>
+      <div class="lock-controls">
+        ${selectHtml}
+        <input type="text" class="lock-pass-input" placeholder="Password" value="${escapeHtml(f.password)}">
+      </div>
+    `;
+    if(unlockExcelRows.length){
+      card.querySelector('.lock-select').addEventListener('change', (e) => {
+        const row = unlockExcelRows.find(r => r.name === e.target.value);
+        if(row && row.date){
+          f.matchRow = row; f.status = 'matched'; f.userEdited = false;
+          f.password = formatPassword(row.date, $('#unlockPassFormat').value);
+        } else {
+          f.matchRow = null; f.status = 'unmatched'; f.password = ''; f.userEdited = false;
+        }
+        renderUnlockCards(); renderUnlockPool();
+      });
+    }
+    card.querySelector('.lock-pass-input').addEventListener('input', (e) => {
+      f.password = e.target.value;
+      f.userEdited = true;
+      f.status = f.password ? 'manual' : (f.matchRow ? 'matched' : 'unmatched');
+      updateUnlockState(); renderUnlockPool();
+    });
+    wrap.appendChild(card);
+  });
+  updateUnlockState();
+}
+
+function updateUnlockState(){
+  const withPass = unlockPool.filter(f => f.password).length;
+  $('#unlockBtn').disabled = withPass === 0;
+  $('#unlockSub').textContent = !unlockPool.length
+    ? 'Unggah PDF terkunci, lalu isi password (otomatis dari Excel atau manual).'
+    : withPass < unlockPool.length
+      ? (unlockPool.length - withPass) + ' dari ' + unlockPool.length + ' PDF belum ada password'
+      : unlockPool.length + ' PDF siap dibuka kuncinya.';
+}
+
+$('#unlockBtn').addEventListener('click', unlockAndDownload);
+
+let _pdfDecryptMod = null;
+async function loadPdfDecrypt(){
+  if(!_pdfDecryptMod){
+    _pdfDecryptMod = await import('https://cdn.jsdelivr.net/npm/@pdfsmaller/pdf-decrypt/+esm');
+  }
+  return _pdfDecryptMod;
+}
+
+async function unlockAndDownload(){
+  const ready = unlockPool.filter(f => f.password);
+  if(!ready.length){ toast('Belum ada PDF dengan password'); return; }
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { decryptPDF } = await loadPdfDecrypt();
+    const results = [];
+    for(const f of ready){
+      $('#overlayText').textContent = 'Membuka kunci "' + f.name + '"…';
+      const statusEl = document.querySelector('#unlockCard_' + f.id + ' .lock-status');
+      try{
+        const decrypted = await decryptPDF(new Uint8Array(f.bytes.slice(0)), f.password);
+        const outName = f.name.replace(/\.pdf$/i, '') + '_terbuka.pdf';
+        results.push({ name: outName, bytes: decrypted });
+        if(statusEl) statusEl.textContent = 'Kunci terbuka';
+      }catch(errFile){
+        console.error(errFile);
+        if(statusEl) statusEl.textContent = 'Gagal — password salah atau PDF tidak terkunci';
+      }
+    }
+    if(!results.length){ toast('Tidak ada PDF berhasil dibuka kuncinya'); overlay.classList.remove('show'); return; }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pdf_terbuka.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    const skipped = unlockPool.length - results.length;
+    toast(results.length + ' PDF berhasil dibuka kuncinya' + (skipped ? ', ' + skipped + ' gagal' : ''));
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat membuka kunci PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- PDF ke JPG ----------
+let jpgPool = []; // { id, name, bytes, pageCount }
+
+const jpgInput = $('#jpgInput');
+$('#jpgDrop').addEventListener('click', () => jpgInput.click());
+jpgInput.addEventListener('change', e => handleJpgFiles(e.target.files));
+setupDrop($('#jpgDrop'), handleJpgFiles);
+
+async function handleJpgFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pageCount = null;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      pageCount = doc.numPages;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    jpgPool.push({ id: 'j' + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, pageCount });
+  }
+  renderJpgPool();
+  renderJpgCards();
+}
+
+function renderJpgPool(){
+  const wrap = $('#jpgPoolList');
+  $('#jpgPoolCount').textContent = jpgPool.length;
+  if(!jpgPool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  jpgPool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      jpgPool = jpgPool.filter(x => x.id !== f.id);
+      renderJpgPool(); renderJpgCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderJpgCards(){
+  const wrap = $('#jpgCardsList');
+  $('#jpgEmptyHint').style.display = jpgPool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  jpgPool.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    card.id = 'jpgCard_' + f.id;
+    card.innerHTML = `
+      <div class="cc-icon">${idx+1}</div>
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(f.name)}</div>
+        <div class="cc-sub">${f.pageCount} halaman</div>
+      </div>
+      <div class="cc-status">Menunggu</div>
+    `;
+    wrap.appendChild(card);
+  });
+  updateJpgState();
+}
+
+function updateJpgState(){
+  $('#jpgBtn').disabled = jpgPool.length === 0;
+  $('#jpgSub').textContent = jpgPool.length === 0
+    ? 'Unggah satu atau beberapa PDF, lalu klik proses di kanan.'
+    : jpgPool.length + ' PDF siap diubah ke JPG.';
+}
+
+$('#jpgBtn').addEventListener('click', jpgAndDownload);
+
+async function jpgAndDownload(){
+  if(!jpgPool.length) return;
+  const qualityMap = { low: 0.5, medium: 0.75, high: 0.92 };
+  const jpegQuality = qualityMap[$('#jpgQuality').value] || 0.75;
+  const dpi = parseInt($('#jpgDpi').value, 10) || 150;
+
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const results = [];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    for(const f of jpgPool){
+      const statusEl = document.querySelector('#jpgCard_' + f.id + ' .cc-status');
+      const srcDoc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
+      const baseName = f.name.replace(/\.pdf$/i, '');
+      const padLen = String(srcDoc.numPages).length;
+
+      for(let p = 1; p <= srcDoc.numPages; p++){
+        if(statusEl) statusEl.textContent = 'Halaman ' + p + '/' + srcDoc.numPages;
+        $('#overlayText').textContent = 'Mengubah "' + f.name + '" — halaman ' + p + ' dari ' + srcDoc.numPages + '…';
+        const page = await srcDoc.getPage(p);
+        const vp = page.getViewport({ scale: dpi / 72 });
+        canvas.width = Math.max(1, Math.round(vp.width));
+        canvas.height = Math.max(1, Math.round(vp.height));
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        const jpegBytes = dataUrlToBytes(canvas.toDataURL('image/jpeg', jpegQuality));
+        const pageLabel = String(p).padStart(padLen, '0');
+        results.push({ name: baseName + '_hal' + pageLabel + '.jpg', bytes: jpegBytes });
+      }
+      if(statusEl) statusEl.textContent = srcDoc.numPages + ' halaman → JPG';
+    }
+
+    if(!results.length){ toast('Tidak ada halaman yang berhasil diproses'); overlay.classList.remove('show'); return; }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'image/jpeg');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_pdf_ke_jpg.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' gambar JPG berhasil diunduh dari ' + jpgPool.length + ' PDF');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat mengubah PDF ke JPG');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Muat pustaka eksternal saat dibutuhkan ----------
+const _scriptCache = {};
+function loadScript(src){
+  if(_scriptCache[src]) return _scriptCache[src];
+  _scriptCache[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Gagal memuat pustaka: ' + src));
+    document.head.appendChild(s);
+  });
+  return _scriptCache[src];
+}
+async function ensureDocxLib(){
+  if(!window.docx) await loadScript('https://cdn.jsdelivr.net/npm/docx@9.7.1/dist/index.umd.cjs');
+  return window.docx;
+}
+async function ensurePptxLib(){
+  if(!window.PptxGenJS) await loadScript('https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.min.js');
+  return window.PptxGenJS;
+}
+async function ensureTesseractLib(){
+  if(!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js');
+  return window.Tesseract;
+}
+
+// ---------- Supabase: akun & OCR premium ----------
+const SUPABASE_URL = 'https://rdyavwofbntoeljejvlw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9TthHKhFDemEWrqG0NrXjA_9kjB_qMK';
+let sbClient = null;
+try{
+  sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}catch(err){
+  console.error('Gagal memuat Supabase (cek koneksi/CDN):', err);
+}
+
+let currentUser = null;    // { id, email, ... } dari Supabase Auth
+let currentProfile = null; // { is_premium, is_admin, ... } dari tabel profiles
+
+async function refreshAuthUI(){
+  if(!sbClient){ currentUser = null; currentProfile = null; renderAuthUI(); return; }
+  const { data: { session } } = await sbClient.auth.getSession();
+  if(session && session.user){
+    currentUser = session.user;
+    const { data: profile } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile || null;
+  } else {
+    currentUser = null; currentProfile = null;
+  }
+  renderAuthUI();
+}
+
+function renderAuthUI(){
+  $('#loginBtn').style.display = currentUser ? 'none' : 'flex';
+  $('#userChip').style.display = currentUser ? 'flex' : 'none';
+  if(currentUser){
+    $('#userEmailLabel').textContent = currentUser.email;
+    $('#adminBtn').style.display = (currentProfile && currentProfile.is_admin) ? 'inline-flex' : 'none';
+  }
+}
+
+if(sbClient) sbClient.auth.onAuthStateChange(() => { refreshAuthUI(); });
+
+// ---------- Modal Masuk / Daftar ----------
+let authMode = 'login';
+let _authResolve = null;
+
+function updateAuthModalMode(){
+  $('#authModalTitle').textContent = authMode === 'login' ? 'Masuk ke Akun' : 'Daftar Akun Baru';
+  $('#authSubmitBtn').textContent = authMode === 'login' ? 'Masuk' : 'Daftar';
+  $('#authSwitchText').textContent = authMode === 'login' ? 'Belum punya akun?' : 'Sudah punya akun?';
+  $('#authSwitchLink').textContent = authMode === 'login' ? 'Daftar di sini' : 'Masuk di sini';
+}
+function openAuthModal(mode){
+  if(!sbClient){
+    toast('Layanan akun sedang tidak bisa dimuat (masalah koneksi/CDN). Coba muat ulang halaman.');
+    return Promise.resolve(false);
+  }
+  authMode = mode;
+  updateAuthModalMode();
+  $('#authErr').style.display = 'none';
+  $('#authEmailInput').value = ''; $('#authPasswordInput').value = '';
+  $('#authModal').classList.add('show');
+  setTimeout(() => $('#authEmailInput').focus(), 50);
+  return new Promise(resolve => { _authResolve = resolve; });
+}
+function closeAuthModal(success){
+  $('#authModal').classList.remove('show');
+  if(_authResolve){ _authResolve(success); _authResolve = null; }
+}
+function showAuthMsg(msg, ok){
+  const el = $('#authErr');
+  el.textContent = msg; el.style.display = 'block';
+  el.style.color = ok ? 'var(--primary-dark)' : 'var(--accent)';
+}
+$('#loginBtn').addEventListener('click', () => openAuthModal('login'));
+$('#authCancelBtn').addEventListener('click', () => closeAuthModal(false));
+$('#authSwitchLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  authMode = authMode === 'login' ? 'register' : 'login';
+  updateAuthModalMode();
+  $('#authErr').style.display = 'none';
+});
+$('#authSubmitBtn').addEventListener('click', async () => {
+  if(!sbClient){ showAuthMsg('Layanan akun sedang tidak bisa dimuat (masalah koneksi/CDN). Coba muat ulang halaman.', false); return; }
+  const email = $('#authEmailInput').value.trim();
+  const password = $('#authPasswordInput').value;
+  if(!email || !password){ showAuthMsg('Isi email dan kata sandi dulu', false); return; }
+  $('#authSubmitBtn').disabled = true;
+  try{
+    if(authMode === 'login'){
+      const { error } = await sbClient.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      await refreshAuthUI();
+      closeAuthModal(true);
+    } else {
+      const { error } = await sbClient.auth.signUp({ email, password });
+      if(error) throw error;
+      showAuthMsg('Pendaftaran berhasil! Cek email untuk verifikasi, lalu masuk.', true);
+      authMode = 'login';
+      updateAuthModalMode();
+    }
+  }catch(err){
+    showAuthMsg(err.message || 'Gagal memproses permintaan', false);
+  }
+  $('#authSubmitBtn').disabled = false;
+});
+$('#logoutBtn').addEventListener('click', async () => {
+  if(sbClient) await sbClient.auth.signOut();
+  await refreshAuthUI();
+});
+
+// ---------- Modal Upgrade OCR Premium (pembayaran manual) ----------
+let _upgradeResolve = null;
+function closeUpgradeModal(granted){
+  $('#upgradeModal').classList.remove('show');
+  if(_upgradeResolve){ _upgradeResolve(granted); _upgradeResolve = null; }
+}
+async function renderUpgradeModal(){
+  const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
+  const price = pricing ? pricing.price : 0;
+  $('#upgradePriceText').textContent = 'Harga: Rp ' + Number(price || 0).toLocaleString('id-ID');
+  $('#upgradeInstructionsText').textContent = pricing ? pricing.payment_instructions : '';
+
+  const { data: pending } = await sbClient.from('payment_requests')
+    .select('id').eq('user_id', currentUser.id).eq('status', 'pending')
+    .order('created_at', { ascending: false }).limit(1);
+  const hasPending = pending && pending.length > 0;
+  $('#upgradeFormArea').style.display = hasPending ? 'none' : 'block';
+  $('#upgradePendingArea').style.display = hasPending ? 'block' : 'none';
+  $('#upgradeErr').style.display = 'none';
+  $('#upgradeNoteInput').value = '';
+}
+async function openUpgradeModal(){
+  await renderUpgradeModal();
+  $('#upgradeModal').classList.add('show');
+  return new Promise(resolve => { _upgradeResolve = resolve; });
+}
+$('#upgradeCancelBtn').addEventListener('click', () => closeUpgradeModal(false));
+$('#upgradeCloseBtn2').addEventListener('click', () => closeUpgradeModal(false));
+$('#upgradeSubmitBtn').addEventListener('click', async () => {
+  const method = $('#upgradeMethodSelect').value;
+  const note = $('#upgradeNoteInput').value.trim();
+  if(!note){
+    $('#upgradeErr').textContent = 'Isi nama pengirim / catatan referensi pembayaran dulu.';
+    $('#upgradeErr').style.display = 'block';
+    return;
+  }
+  $('#upgradeSubmitBtn').disabled = true;
+  try{
+    const { data: pricing } = await sbClient.from('pricing_config').select('price').eq('id', 1).single();
+    const { error } = await sbClient.from('payment_requests').insert({
+      user_id: currentUser.id, email: currentUser.email,
+      amount: pricing ? pricing.price : null, method, note
+    });
+    if(error) throw error;
+    await renderUpgradeModal();
+    toast('Pengajuan terkirim, menunggu konfirmasi admin');
+  }catch(err){
+    $('#upgradeErr').textContent = err.message || 'Gagal mengirim pengajuan';
+    $('#upgradeErr').style.display = 'block';
+  }
+  $('#upgradeSubmitBtn').disabled = false;
+});
+$('#upgradeCheckBtn').addEventListener('click', async () => {
+  await refreshAuthUI();
+  if(currentProfile && currentProfile.is_premium){
+    closeUpgradeModal(true);
+  } else {
+    await renderUpgradeModal();
+    toast('Belum disetujui admin — coba cek lagi nanti');
+  }
+});
+
+// Dipanggil sebelum mengaktifkan mode OCR: pastikan sudah login & premium
+async function ensureOcrAccess(){
+  await refreshAuthUI();
+  if(!currentUser){
+    const loggedIn = await openAuthModal('login');
+    if(!loggedIn) return false;
+  }
+  if(currentProfile && currentProfile.is_premium) return true;
+  return await openUpgradeModal();
+}
+
+// ---------- Dashboard Admin ----------
+async function loadAdminData(){
+  await refreshAuthUI();
+  if(!currentUser || !currentProfile || !currentProfile.is_admin){
+    toast('Halaman ini khusus admin');
+    switchTab('home');
+    return;
+  }
+  const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
+  if(pricing){
+    $('#adminPriceInput').value = pricing.price;
+    $('#adminInstructionsInput').value = pricing.payment_instructions;
+  }
+  const { data: payments } = await sbClient.from('payment_requests')
+    .select('*').order('created_at', { ascending: false }).limit(200);
+  renderAdminPayments(payments || []);
+}
+function renderAdminPayments(rows){
+  const wrap = $('#adminPaymentsList');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada pengajuan pembayaran.</div>'; return; }
+  wrap.innerHTML = '';
+  rows.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    const statusLabel = r.status === 'pending' ? 'Menunggu' : r.status === 'approved' ? 'Disetujui' : 'Ditolak';
+    const statusClass = r.status === 'pending' ? 'warn' : 'ok';
+    const when = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '-';
+    card.innerHTML = `
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(r.email || r.user_id)}</div>
+        <div class="cc-sub lock-status ${statusClass}">Rp ${Number(r.amount || 0).toLocaleString('id-ID')} · ${escapeHtml(r.method || '-')} · ${escapeHtml(r.note || '-')} · ${when} · ${statusLabel}</div>
+      </div>
+      ${r.status === 'pending' ? '<div class="lock-controls" style="flex-direction:row;gap:8px;"><button class="admin-mini-btn approve" data-act="approve">Setujui</button><button class="admin-mini-btn reject" data-act="reject">Tolak</button></div>' : ''}
+    `;
+    if(r.status === 'pending'){
+      card.querySelector('[data-act="approve"]').addEventListener('click', async () => {
+        const { error } = await sbClient.rpc('approve_payment', { request_id: r.id });
+        if(error){ toast('Gagal: ' + error.message); return; }
+        toast('Pembayaran disetujui'); loadAdminData();
+      });
+      card.querySelector('[data-act="reject"]').addEventListener('click', async () => {
+        const { error } = await sbClient.rpc('reject_payment', { request_id: r.id });
+        if(error){ toast('Gagal: ' + error.message); return; }
+        toast('Pembayaran ditolak'); loadAdminData();
+      });
+    }
+    wrap.appendChild(card);
+  });
+}
+$('#adminSavePricingBtn').addEventListener('click', async () => {
+  const price = parseFloat($('#adminPriceInput').value);
+  const instructions = $('#adminInstructionsInput').value;
+  if(!price || price <= 0){ toast('Isi harga yang valid'); return; }
+  const { error } = await sbClient.rpc('update_pricing', { new_price: price, new_instructions: instructions });
+  if(error){ toast('Gagal menyimpan: ' + error.message); return; }
+  toast('Harga & instruksi pembayaran disimpan');
+});
+$('#adminRefreshBtn').addEventListener('click', loadAdminData);
+$('#adminBtn').addEventListener('click', () => switchTab('admin'));
+
+refreshAuthUI();
+
+// ---------- Ekstraksi teks per halaman (tanpa OCR & OCR) ----------
+function clusterTextItemsToRows(items){
+  const filtered = items.filter(it => it.str && it.str.trim().length);
+  const rows = [];
+  filtered.forEach(it => {
+    const y = Math.round(it.transform[5]);
+    let row = rows.find(r => Math.abs(r.y - y) <= 3);
+    if(!row){ row = { y, items: [] }; rows.push(row); }
+    row.items.push({ x: it.transform[4], w: it.width || 0, str: it.str });
+  });
+  rows.sort((a,b) => b.y - a.y);
+  return rows.map(r => {
+    r.items.sort((a,b) => a.x - b.x);
+    const cells = [];
+    let cur = null;
+    r.items.forEach(it => {
+      if(cur && (it.x - cur.endX) < 10){
+        cur.text += it.str;
+        cur.endX = Math.max(cur.endX, it.x + it.w);
+      } else {
+        if(cur) cells.push(cur.text.trim());
+        cur = { text: it.str, endX: it.x + it.w };
+      }
+    });
+    if(cur) cells.push(cur.text.trim());
+    return cells.filter(c => c.length);
+  }).filter(r => r.length);
+}
+
+async function createOcrWorker(onStatus){
+  const T = await ensureTesseractLib();
+  return await T.createWorker(['ind','eng'], 1, {
+    logger: m => { if(onStatus && m.status) onStatus(m.status); }
+  });
+}
+
+async function extractPdfPages(pdfBytes, useOcr, ocrWorker, onProgress){
+  const pdfDoc = await pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise;
+  const pages = [];
+  let canvas, ctx;
+  if(useOcr){ canvas = document.createElement('canvas'); ctx = canvas.getContext('2d'); }
+  for(let p = 1; p <= pdfDoc.numPages; p++){
+    if(onProgress) onProgress(p, pdfDoc.numPages);
+    const page = await pdfDoc.getPage(p);
+    if(useOcr){
+      const vp = page.getViewport({ scale: 200/72 });
+      canvas.width = Math.max(1, Math.round(vp.width));
+      canvas.height = Math.max(1, Math.round(vp.height));
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const { data } = await ocrWorker.recognize(canvas);
+      const lines = (data.text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      pages.push(lines.map(l => [l]));
+    } else {
+      const tc = await page.getTextContent();
+      pages.push(clusterTextItemsToRows(tc.items));
+    }
+  }
+  return pages;
+}
+
+// ---------- Pembuat berkas Word / Excel / PowerPoint ----------
+async function buildDocxBytes(pages){
+  const docxLib = await ensureDocxLib();
+  const { Document, Packer, Paragraph, TextRun } = docxLib;
+  const children = [];
+  pages.forEach((rows, pi) => {
+    if(!rows.length){
+      children.push(new Paragraph({ pageBreakBefore: pi > 0, children: [] }));
+      return;
+    }
+    rows.forEach((row, ri) => {
+      children.push(new Paragraph({
+        pageBreakBefore: (ri === 0 && pi > 0),
+        children: [ new TextRun(row.join('   ')) ]
+      }));
+    });
+  });
+  const doc = new Document({ sections: [{ children }] });
+  const blob = await Packer.toBlob(doc);
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+function buildXlsxBytes(pages){
+  const wb = XLSX.utils.book_new();
+  pages.forEach((rows, pi) => {
+    const ws = XLSX.utils.aoa_to_sheet(rows.length ? rows : [['(halaman kosong)']]);
+    XLSX.utils.book_append_sheet(wb, ws, ('Halaman ' + (pi + 1)).slice(0, 31));
+  });
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Uint8Array(wbout);
+}
+
+async function buildPptxBytes(pages){
+  const PptxCtor = await ensurePptxLib();
+  const pptx = new PptxCtor();
+  pages.forEach(rows => {
+    const slide = pptx.addSlide();
+    const text = rows.map(r => r.join('   ')).join('\n');
+    slide.addText(text || '(halaman kosong)', {
+      x: 0.4, y: 0.3, w: 9.2, h: 6.9, fontSize: 14, align: 'left', valign: 'top',
+      fontFace: 'Arial', color: '1F2A24', wrap: true, shrinkText: true
+    });
+  });
+  return await pptx.write({ outputType: 'uint8array' });
+}
+
+// ---------- PDF ke Word / Excel / PowerPoint (satu alur untuk ketiganya) ----------
+const OFFICE_TOOLS = [
+  { kind: 'word',  ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', build: buildDocxBytes },
+  { kind: 'excel', ext: '.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', build: buildXlsxBytes },
+  { kind: 'ppt',   ext: '.pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', build: buildPptxBytes },
+];
+const officeState = {};
+
+function initOfficeTool(cfg){
+  const k = cfg.kind;
+  officeState[k] = { pool: [], mode: 'noocr' };
+  const input = $('#' + k + 'Input');
+  $('#' + k + 'Drop').addEventListener('click', () => input.click());
+  input.addEventListener('change', e => handleOfficeFiles(cfg, e.target.files));
+  setupDrop($('#' + k + 'Drop'), files => handleOfficeFiles(cfg, files));
+
+  const toggleWrap = $('#' + k + 'OcrToggle');
+  toggleWrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mode = btn.dataset.mode;
+      if(mode === officeState[k].mode) return;
+      if(mode === 'ocr' && !(currentProfile && currentProfile.is_premium)){
+        const granted = await ensureOcrAccess();
+        if(!granted) return;
+      }
+      officeState[k].mode = mode;
+      toggleWrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      $('#' + k + 'OcrHint').textContent = mode === 'ocr'
+        ? 'Mode OCR aktif — proses lebih lambat karena tiap halaman dibaca sebagai gambar (cocok untuk PDF hasil scan/foto).'
+        : 'Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).';
+    });
+  });
+
+  $('#' + k + 'Btn').addEventListener('click', () => processOfficeBatch(cfg));
+}
+
+async function handleOfficeFiles(cfg, fileListArg){
+  const k = cfg.kind;
+  const state = officeState[k];
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pageCount = null;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+      pageCount = doc.numPages;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    state.pool.push({ id: k[0] + Math.random().toString(36).slice(2,9), name: file.name, bytes: buf, pageCount });
+  }
+  renderOfficePool(cfg);
+  renderOfficeCards(cfg);
+}
+
+function renderOfficePool(cfg){
+  const k = cfg.kind;
+  const state = officeState[k];
+  const wrap = $('#' + k + 'PoolList');
+  $('#' + k + 'PoolCount').textContent = state.pool.length;
+  if(!state.pool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  state.pool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', () => {
+      state.pool = state.pool.filter(x => x.id !== f.id);
+      renderOfficePool(cfg); renderOfficeCards(cfg);
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderOfficeCards(cfg){
+  const k = cfg.kind;
+  const state = officeState[k];
+  const wrap = $('#' + k + 'CardsList');
+  $('#' + k + 'EmptyHint').style.display = state.pool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  state.pool.forEach((f, idx) => {
+    const card = document.createElement('div');
+    card.className = 'comp-card';
+    card.id = k + 'Card_' + f.id;
+    card.innerHTML = `
+      <div class="cc-icon">${idx+1}</div>
+      <div class="cc-meta">
+        <div class="cc-name">${escapeHtml(f.name)}</div>
+        <div class="cc-sub">${f.pageCount} halaman</div>
+      </div>
+      <div class="cc-status">Menunggu</div>
+    `;
+    wrap.appendChild(card);
+  });
+  updateOfficeState(cfg);
+}
+
+function updateOfficeState(cfg){
+  const k = cfg.kind;
+  const state = officeState[k];
+  $('#' + k + 'Btn').disabled = state.pool.length === 0;
+  $('#' + k + 'Sub').textContent = state.pool.length === 0
+    ? 'Unggah satu atau beberapa PDF, lalu klik proses di kanan.'
+    : state.pool.length + ' PDF siap diubah ke ' + cfg.ext.toUpperCase().slice(1) + '.';
+}
+
+async function processOfficeBatch(cfg){
+  const k = cfg.kind;
+  const state = officeState[k];
+  if(!state.pool.length) return;
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  let ocrWorker = null;
+  try{
+    if(state.mode === 'ocr'){
+      $('#overlayText').textContent = 'Menyiapkan mesin OCR (bisa makan waktu di awal)…';
+      ocrWorker = await createOcrWorker(status => { $('#overlayText').textContent = 'OCR: ' + status + '…'; });
+    }
+    const results = [];
+    for(const f of state.pool){
+      const statusEl = document.querySelector('#' + k + 'Card_' + f.id + ' .cc-status');
+      const pages = await extractPdfPages(f.bytes, state.mode === 'ocr', ocrWorker, (p, total) => {
+        const label = (state.mode === 'ocr' ? 'OCR halaman ' : 'Membaca halaman ') + p + '/' + total;
+        if(statusEl) statusEl.textContent = label;
+        $('#overlayText').textContent = '"' + f.name + '" — ' + label;
+      });
+      const bytes = await cfg.build(pages);
+      const outName = f.name.replace(/\.pdf$/i, '') + cfg.ext;
+      results.push({ name: outName, bytes });
+      if(statusEl) statusEl.textContent = 'Selesai → ' + cfg.ext;
+    }
+    if(!results.length){ toast('Tidak ada PDF berhasil diproses'); return; }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, cfg.mime);
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_pdf_ke_' + k + '.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' berkas ' + cfg.ext.toUpperCase().slice(1) + ' berhasil diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat memproses PDF ke ' + cfg.ext.toUpperCase().slice(1));
+  }finally{
+    if(ocrWorker){ try{ await ocrWorker.terminate(); }catch(e){} }
+    overlay.classList.remove('show');
+  }
+}
+
+OFFICE_TOOLS.forEach(cfg => initOfficeTool(cfg));
 
 // ---------- Upload: stamp image ----------
 const stampInput = $('#stampInput');
