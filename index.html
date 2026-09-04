@@ -1311,6 +1311,7 @@
       <div class="sidebar-section" style="flex:1;">
         <h2>Harga &amp; Info Pembayaran</h2>
         <input type="number" id="adminPriceInput" class="admin-input" placeholder="Harga (Rp)">
+        <input type="number" id="adminDurationInput" class="admin-input" placeholder="Masa aktif OCR (hari)" min="1">
         <textarea id="adminInstructionsInput" class="admin-input" rows="6" placeholder="Instruksi pembayaran — nomor rekening / QRIS, dll."></textarea>
         <button class="primary-action" id="adminSavePricingBtn" style="width:100%;">Simpan Harga &amp; Instruksi</button>
       </div>
@@ -2790,6 +2791,8 @@ async function refreshAuthUI(){
   const { data: { session } } = await sbClient.auth.getSession();
   if(session && session.user){
     currentUser = session.user;
+    // Sembuhkan status kalau masa aktif OCR premium sudah lewat, baru ambil profil terbaru
+    await sbClient.rpc('expire_own_premium_if_needed');
     const { data: profile } = await sbClient.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile || null;
   } else {
@@ -2936,7 +2939,8 @@ function closeUpgradeModal(granted){
 async function renderUpgradeModal(){
   const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
   const price = pricing ? pricing.price : 0;
-  $('#upgradePriceText').textContent = 'Harga: Rp ' + Number(price || 0).toLocaleString('id-ID');
+  const duration = pricing ? pricing.duration_days : 30;
+  $('#upgradePriceText').textContent = 'Harga: Rp ' + Number(price || 0).toLocaleString('id-ID') + ' — aktif ' + duration + ' hari';
   $('#upgradeInstructionsText').textContent = pricing ? pricing.payment_instructions : '';
 
   const { data: pending } = await sbClient.from('payment_requests')
@@ -3024,9 +3028,12 @@ async function loadAdminData(){
     switchTab('home');
     return;
   }
+  // Sapu semua akun yang masa aktif OCR-nya sudah lewat, supaya daftar/statistik terbaru
+  await sbClient.rpc('expire_all_premium');
   const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
   if(pricing){
     $('#adminPriceInput').value = pricing.price;
+    $('#adminDurationInput').value = pricing.duration_days;
     $('#adminInstructionsInput').value = pricing.payment_instructions;
   }
   const { data: payments } = await sbClient.from('payment_requests')
@@ -3043,10 +3050,14 @@ function renderAdminPayments(rows){
     const statusLabel = r.status === 'pending' ? 'Menunggu' : r.status === 'approved' ? 'Disetujui' : 'Ditolak';
     const statusClass = r.status === 'pending' ? 'warn' : 'ok';
     const when = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '-';
+    const expiryText = r.status === 'approved' && r.premium_expires_at
+      ? (' · OCR aktif s/d ' + new Date(r.premium_expires_at).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })
+         + (new Date(r.premium_expires_at) < new Date() ? ' (sudah habis)' : ''))
+      : '';
     card.innerHTML = `
       <div class="cc-meta">
         <div class="cc-name">${escapeHtml(r.email || r.user_id)}</div>
-        <div class="cc-sub lock-status ${statusClass}">Rp ${Number(r.amount || 0).toLocaleString('id-ID')} · ${escapeHtml(r.method || '-')} · ${escapeHtml(r.note || '-')} · ${when} · ${statusLabel}</div>
+        <div class="cc-sub lock-status ${statusClass}">Rp ${Number(r.amount || 0).toLocaleString('id-ID')} · ${escapeHtml(r.method || '-')} · ${escapeHtml(r.note || '-')} · ${when} · ${statusLabel}${expiryText}</div>
       </div>
       <div class="lock-controls" style="flex-direction:row;gap:8px;">
         ${r.proof_path ? '<button class="admin-mini-btn" data-act="proof">Lihat Bukti</button>' : ''}
@@ -3077,11 +3088,13 @@ function renderAdminPayments(rows){
 }
 $('#adminSavePricingBtn').addEventListener('click', async () => {
   const price = parseFloat($('#adminPriceInput').value);
+  const duration = parseInt($('#adminDurationInput').value, 10);
   const instructions = $('#adminInstructionsInput').value;
   if(!price || price <= 0){ toast('Isi harga yang valid'); return; }
-  const { error } = await sbClient.rpc('update_pricing', { new_price: price, new_instructions: instructions });
+  if(!duration || duration <= 0){ toast('Isi masa aktif OCR (hari) yang valid'); return; }
+  const { error } = await sbClient.rpc('update_pricing', { new_price: price, new_instructions: instructions, new_duration_days: duration });
   if(error){ toast('Gagal menyimpan: ' + error.message); return; }
-  toast('Harga & instruksi pembayaran disimpan');
+  toast('Harga, durasi & instruksi pembayaran disimpan');
 });
 $('#adminRefreshBtn').addEventListener('click', loadAdminData);
 $('#adminBtn').addEventListener('click', () => switchTab('admin'));
