@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.38.0/supabase.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.113.0/dist/umd/supabase.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -241,6 +241,83 @@
   .modal-actions .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);}
   .modal-actions .btn-ghost{background:var(--paper);color:var(--ink-soft);}
   .modal-err{font-size:11.5px;color:var(--accent);margin:-4px 0 10px;display:none;}
+
+  .upload-proof-label{
+    display:flex;align-items:center;gap:8px;border:1px dashed var(--line);border-radius:8px;
+    padding:9px 11px;font-size:12px;color:var(--ink-soft);cursor:pointer;margin-bottom:10px;
+    transition:border-color .15s, color .15s;
+  }
+  .upload-proof-label svg{width:15px;height:15px;flex-shrink:0;}
+  .upload-proof-label:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .upload-proof-label.has-file{border-style:solid;border-color:var(--primary);color:var(--primary-dark);}
+
+  /* ---------- Hover Expanding Login ---------- */
+  .hex-login{
+    position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:90;
+  }
+  .hex-box{
+    position:relative;overflow:hidden;margin:0 auto;
+    width:112px;height:38px;background:var(--paper);border:1px solid var(--line);
+    border-radius:20px;box-shadow:0 2px 8px rgba(31,42,36,0.10);
+    transition:width .4s cubic-bezier(.4,0,.2,1), height .4s cubic-bezier(.4,0,.2,1),
+               border-radius .4s cubic-bezier(.4,0,.2,1), box-shadow .4s;
+  }
+  .hex-login.open .hex-box{
+    width:290px;max-width:calc(100vw - 32px);height:min(452px, calc(100vh - 28px));border-radius:20px;
+    box-shadow:0 12px 40px -8px rgba(31,42,36,0.35), 0 2px 8px rgba(31,42,36,0.15);
+    overflow-y:auto;
+  }
+  .hex-trigger{
+    display:flex;align-items:center;justify-content:center;gap:7px;width:112px;height:38px;padding:0 14px;
+    border:none;background:transparent;color:var(--ink-soft);font-family:inherit;font-size:12.5px;font-weight:600;
+    cursor:pointer;white-space:nowrap;
+  }
+  .hex-trigger svg{width:14px;height:14px;flex-shrink:0;}
+  .hex-login.open .hex-trigger{opacity:0;pointer-events:none;transition:opacity .12s;}
+  .hex-form{
+    display:flex;flex-direction:column;gap:9px;padding:0 20px 20px;
+    opacity:0;transition:opacity .25s ease .15s;height:100%;box-sizing:border-box;
+  }
+  .hex-login.open .hex-form{opacity:1;}
+  .hex-hero{
+    text-align:center;padding:20px 0 4px;margin:0 -20px 2px;
+    background:linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius:20px 20px 50% 50% / 20px 20px 18px 18px;
+  }
+  .hex-hero-icon{
+    width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.16);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:#fff;
+  }
+  .hex-hero-icon svg{width:20px;height:20px;}
+  .hex-form h4{font-size:14.5px;font-weight:700;color:#fff;margin-bottom:3px;}
+  .hex-form #hexSubtitle{font-size:11px;color:rgba(255,255,255,0.8);padding-bottom:16px;}
+  .hex-google-btn{
+    display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+    border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);
+    font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 0;cursor:pointer;
+    transition:background .15s, border-color .15s;margin-top:2px;
+  }
+  .hex-google-btn:hover{background:#FAF9F5;border-color:var(--ink-soft);}
+  .hex-divider{
+    display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--ink-soft);
+    margin:2px 0;
+  }
+  .hex-divider::before, .hex-divider::after{content:'';flex:1;height:1px;background:var(--line-soft);}
+  .hex-form input{
+    width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12.5px;
+    font-family:inherit;box-sizing:border-box;background:#FAF9F5;
+  }
+  .hex-form input:focus{outline:none;border-color:var(--primary);background:#fff;}
+  .hex-err{font-size:11px;color:var(--accent);display:none;margin-top:-3px;}
+  .hex-submit{
+    width:100%;background:var(--primary);color:#fff;border:none;border-radius:9px;
+    padding:9px 0;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:2px;
+    transition:background .15s;
+  }
+  .hex-submit:hover{background:var(--primary-dark);}
+  .hex-submit:disabled{opacity:.6;cursor:default;}
+  .hex-switch{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:2px;}
+  .hex-switch a{color:var(--primary-dark);font-weight:600;text-decoration:none;}
 
   /* ---------- Beranda (grid kartu tool) ---------- */
   .home-grid{
@@ -515,18 +592,41 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
       Beranda
     </button>
-    <button type="button" id="loginBtn" class="home-btn" style="margin-left:8px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
-      Masuk
-    </button>
+    <div class="trust-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
+      Diproses di browser Anda — tidak diunggah ke server
+    </div>
+    <div class="hex-login" id="hexLogin">
+      <div class="hex-box" id="hexBox">
+        <button type="button" class="hex-trigger" id="hexTrigger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          <span>Masuk</span>
+        </button>
+        <div class="hex-form">
+          <div class="hex-hero">
+            <div class="hex-hero-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+            </div>
+            <h4 id="hexTitle">Masuk ke Akun</h4>
+            <p id="hexSubtitle">Aktifkan fitur OCR &amp; kelola akun Anda</p>
+          </div>
+          <button type="button" class="hex-google-btn" id="hexGoogleBtn">
+            <svg viewBox="0 0 48 48" width="16" height="16"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4c-2 1.4-4.6 2.3-7.6 2.3-5.3 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5l6.6 5.4C41.6 36 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+            Lanjutkan dengan Google
+          </button>
+          <div class="hex-divider"><span>atau</span></div>
+          <input type="email" id="hexEmailInput" placeholder="Email" autocomplete="username">
+          <input type="password" id="hexPasswordInput" placeholder="Kata sandi" autocomplete="current-password">
+          <div class="hex-err" id="hexErr"></div>
+          <button type="button" class="hex-submit" id="hexSubmitBtn">Masuk</button>
+          <p class="hex-switch"><span id="hexSwitchText">Belum punya akun?</span> <a href="#" id="hexSwitchLink">Daftar di sini</a></p>
+        </div>
+      </div>
+    </div>
     <div class="user-chip" id="userChip" style="display:none;">
       <span id="userEmailLabel"></span>
       <button type="button" id="adminBtn" class="home-btn" style="display:none;">Admin</button>
       <button type="button" id="logoutBtn" class="home-btn">Keluar</button>
-    </div>
-    <div class="trust-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/></svg>
-      Diproses di browser Anda — tidak diunggah ke server
     </div>
   </header>
 
@@ -1231,24 +1331,6 @@
   </main>
 </div>
 
-<div class="modal-backdrop" id="authModal">
-  <div class="modal-box">
-    <h3 id="authModalTitle">Masuk ke Akun</h3>
-    <p id="authModalDesc">Masuk untuk mengaktifkan fitur OCR (khusus akun premium).</p>
-    <input type="email" id="authEmailInput" placeholder="Email" autocomplete="username">
-    <input type="password" id="authPasswordInput" placeholder="Kata sandi" autocomplete="current-password">
-    <div class="modal-err" id="authErr"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn-ghost" id="authCancelBtn">Batal</button>
-      <button type="button" class="btn-primary" id="authSubmitBtn">Masuk</button>
-    </div>
-    <p style="margin-top:14px;font-size:12px;text-align:center;color:var(--ink-soft);">
-      <span id="authSwitchText">Belum punya akun?</span>
-      <a href="#" id="authSwitchLink" style="color:var(--primary-dark);font-weight:600;">Daftar di sini</a>
-    </p>
-  </div>
-</div>
-
 <div class="modal-backdrop" id="upgradeModal">
   <div class="modal-box" style="width:380px;">
     <h3>Aktifkan OCR Premium</h3>
@@ -1260,6 +1342,11 @@
         <option value="qris">QRIS</option>
       </select>
       <input type="text" id="upgradeNoteInput" placeholder="Nama pengirim / catatan referensi pembayaran">
+      <label class="upload-proof-label" id="uploadProofLabel" for="upgradeProofInput">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <span id="uploadProofLabelText">Unggah bukti transfer/QRIS (opsional, gambar/PDF)</span>
+      </label>
+      <input type="file" id="upgradeProofInput" accept="image/*,application/pdf" style="display:none;">
       <div class="modal-err" id="upgradeErr"></div>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" id="upgradeCancelBtn">Tutup</button>
@@ -2712,7 +2799,7 @@ async function refreshAuthUI(){
 }
 
 function renderAuthUI(){
-  $('#loginBtn').style.display = currentUser ? 'none' : 'flex';
+  $('#hexLogin').style.display = currentUser ? 'none' : 'block';
   $('#userChip').style.display = currentUser ? 'flex' : 'none';
   if(currentUser){
     $('#userEmailLabel').textContent = currentUser.email;
@@ -2725,12 +2812,16 @@ if(sbClient) sbClient.auth.onAuthStateChange(() => { refreshAuthUI(); });
 // ---------- Modal Masuk / Daftar ----------
 let authMode = 'login';
 let _authResolve = null;
+let hexPinned = false;
 
 function updateAuthModalMode(){
-  $('#authModalTitle').textContent = authMode === 'login' ? 'Masuk ke Akun' : 'Daftar Akun Baru';
-  $('#authSubmitBtn').textContent = authMode === 'login' ? 'Masuk' : 'Daftar';
-  $('#authSwitchText').textContent = authMode === 'login' ? 'Belum punya akun?' : 'Sudah punya akun?';
-  $('#authSwitchLink').textContent = authMode === 'login' ? 'Daftar di sini' : 'Masuk di sini';
+  $('#hexTitle').textContent = authMode === 'login' ? 'Masuk ke Akun' : 'Daftar Akun Baru';
+  $('#hexSubmitBtn').textContent = authMode === 'login' ? 'Masuk' : 'Daftar';
+  $('#hexSwitchText').textContent = authMode === 'login' ? 'Belum punya akun?' : 'Sudah punya akun?';
+  $('#hexSwitchLink').textContent = authMode === 'login' ? 'Daftar di sini' : 'Masuk di sini';
+}
+function hexSetOpen(open){
+  $('#hexLogin').classList.toggle('open', open);
 }
 function openAuthModal(mode){
   if(!sbClient){
@@ -2739,35 +2830,74 @@ function openAuthModal(mode){
   }
   authMode = mode;
   updateAuthModalMode();
-  $('#authErr').style.display = 'none';
-  $('#authEmailInput').value = ''; $('#authPasswordInput').value = '';
-  $('#authModal').classList.add('show');
-  setTimeout(() => $('#authEmailInput').focus(), 50);
+  $('#hexErr').style.display = 'none';
+  $('#hexEmailInput').value = ''; $('#hexPasswordInput').value = '';
+  hexPinned = true;
+  hexSetOpen(true);
+  setTimeout(() => $('#hexEmailInput').focus(), 250);
   return new Promise(resolve => { _authResolve = resolve; });
 }
 function closeAuthModal(success){
-  $('#authModal').classList.remove('show');
+  hexPinned = false;
+  hexSetOpen(false);
   if(_authResolve){ _authResolve(success); _authResolve = null; }
 }
 function showAuthMsg(msg, ok){
-  const el = $('#authErr');
+  const el = $('#hexErr');
   el.textContent = msg; el.style.display = 'block';
   el.style.color = ok ? 'var(--primary-dark)' : 'var(--accent)';
 }
-$('#loginBtn').addEventListener('click', () => openAuthModal('login'));
-$('#authCancelBtn').addEventListener('click', () => closeAuthModal(false));
-$('#authSwitchLink').addEventListener('click', (e) => {
+
+// Interaksi hover-expanding: sorot untuk melebar (desktop), klik untuk tetap terbuka (mobile/sentuh)
+$('#hexLogin').addEventListener('mouseenter', () => {
+  if(!currentUser && sbClient) hexSetOpen(true);
+});
+$('#hexLogin').addEventListener('mouseleave', () => {
+  if(!hexPinned) hexSetOpen(false);
+});
+$('#hexTrigger').addEventListener('click', () => {
+  if(currentUser) return;
+  if(!sbClient){ toast('Layanan akun sedang tidak bisa dimuat (masalah koneksi/CDN). Coba muat ulang halaman.'); return; }
+  hexPinned = true;
+  hexSetOpen(true);
+  setTimeout(() => $('#hexEmailInput').focus(), 250);
+});
+document.addEventListener('click', (e) => {
+  if(hexPinned && !$('#hexLogin').contains(e.target)){
+    hexPinned = false;
+    hexSetOpen(false);
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && $('#hexLogin').classList.contains('open')) closeAuthModal(false);
+});
+$('#hexSwitchLink').addEventListener('click', (e) => {
   e.preventDefault();
   authMode = authMode === 'login' ? 'register' : 'login';
   updateAuthModalMode();
-  $('#authErr').style.display = 'none';
+  $('#hexErr').style.display = 'none';
 });
-$('#authSubmitBtn').addEventListener('click', async () => {
+$('#hexGoogleBtn').addEventListener('click', async () => {
   if(!sbClient){ showAuthMsg('Layanan akun sedang tidak bisa dimuat (masalah koneksi/CDN). Coba muat ulang halaman.', false); return; }
-  const email = $('#authEmailInput').value.trim();
-  const password = $('#authPasswordInput').value;
+  $('#hexGoogleBtn').disabled = true;
+  try{
+    const { error } = await sbClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href }
+    });
+    if(error) throw error;
+    // Browser akan dialihkan ke Google, lalu kembali ke halaman ini setelah berhasil
+  }catch(err){
+    showAuthMsg(err.message || 'Gagal memulai masuk dengan Google', false);
+    $('#hexGoogleBtn').disabled = false;
+  }
+});
+$('#hexSubmitBtn').addEventListener('click', async () => {
+  if(!sbClient){ showAuthMsg('Layanan akun sedang tidak bisa dimuat (masalah koneksi/CDN). Coba muat ulang halaman.', false); return; }
+  const email = $('#hexEmailInput').value.trim();
+  const password = $('#hexPasswordInput').value;
   if(!email || !password){ showAuthMsg('Isi email dan kata sandi dulu', false); return; }
-  $('#authSubmitBtn').disabled = true;
+  $('#hexSubmitBtn').disabled = true;
   try{
     if(authMode === 'login'){
       const { error } = await sbClient.auth.signInWithPassword({ email, password });
@@ -2775,16 +2905,22 @@ $('#authSubmitBtn').addEventListener('click', async () => {
       await refreshAuthUI();
       closeAuthModal(true);
     } else {
-      const { error } = await sbClient.auth.signUp({ email, password });
+      const { data, error } = await sbClient.auth.signUp({ email, password });
       if(error) throw error;
-      showAuthMsg('Pendaftaran berhasil! Cek email untuk verifikasi, lalu masuk.', true);
-      authMode = 'login';
-      updateAuthModalMode();
+      if(data && data.session){
+        // "Confirm email" nonaktif -> akun langsung aktif, tidak perlu cek email
+        await refreshAuthUI();
+        closeAuthModal(true);
+      } else {
+        showAuthMsg('Pendaftaran berhasil! Cek email untuk verifikasi, lalu masuk.', true);
+        authMode = 'login';
+        updateAuthModalMode();
+      }
     }
   }catch(err){
     showAuthMsg(err.message || 'Gagal memproses permintaan', false);
   }
-  $('#authSubmitBtn').disabled = false;
+  $('#hexSubmitBtn').disabled = false;
 });
 $('#logoutBtn').addEventListener('click', async () => {
   if(sbClient) await sbClient.auth.signOut();
@@ -2811,6 +2947,9 @@ async function renderUpgradeModal(){
   $('#upgradePendingArea').style.display = hasPending ? 'block' : 'none';
   $('#upgradeErr').style.display = 'none';
   $('#upgradeNoteInput').value = '';
+  $('#upgradeProofInput').value = '';
+  $('#uploadProofLabel').classList.remove('has-file');
+  $('#uploadProofLabelText').textContent = 'Unggah bukti transfer/QRIS (opsional, gambar/PDF)';
 }
 async function openUpgradeModal(){
   await renderUpgradeModal();
@@ -2819,9 +2958,15 @@ async function openUpgradeModal(){
 }
 $('#upgradeCancelBtn').addEventListener('click', () => closeUpgradeModal(false));
 $('#upgradeCloseBtn2').addEventListener('click', () => closeUpgradeModal(false));
+$('#upgradeProofInput').addEventListener('change', () => {
+  const f = $('#upgradeProofInput').files[0];
+  $('#uploadProofLabel').classList.toggle('has-file', !!f);
+  $('#uploadProofLabelText').textContent = f ? ('Terpilih: ' + f.name) : 'Unggah bukti transfer/QRIS (opsional, gambar/PDF)';
+});
 $('#upgradeSubmitBtn').addEventListener('click', async () => {
   const method = $('#upgradeMethodSelect').value;
   const note = $('#upgradeNoteInput').value.trim();
+  const proofFile = $('#upgradeProofInput').files[0] || null;
   if(!note){
     $('#upgradeErr').textContent = 'Isi nama pengirim / catatan referensi pembayaran dulu.';
     $('#upgradeErr').style.display = 'block';
@@ -2829,10 +2974,17 @@ $('#upgradeSubmitBtn').addEventListener('click', async () => {
   }
   $('#upgradeSubmitBtn').disabled = true;
   try{
+    let proofPath = null;
+    if(proofFile){
+      const ext = proofFile.name.split('.').pop();
+      proofPath = currentUser.id + '/' + Date.now() + '.' + ext;
+      const { error: uploadErr } = await sbClient.storage.from('payment-proofs').upload(proofPath, proofFile);
+      if(uploadErr) throw uploadErr;
+    }
     const { data: pricing } = await sbClient.from('pricing_config').select('price').eq('id', 1).single();
     const { error } = await sbClient.from('payment_requests').insert({
       user_id: currentUser.id, email: currentUser.email,
-      amount: pricing ? pricing.price : null, method, note
+      amount: pricing ? pricing.price : null, method, note, proof_path: proofPath
     });
     if(error) throw error;
     await renderUpgradeModal();
@@ -2896,8 +3048,18 @@ function renderAdminPayments(rows){
         <div class="cc-name">${escapeHtml(r.email || r.user_id)}</div>
         <div class="cc-sub lock-status ${statusClass}">Rp ${Number(r.amount || 0).toLocaleString('id-ID')} · ${escapeHtml(r.method || '-')} · ${escapeHtml(r.note || '-')} · ${when} · ${statusLabel}</div>
       </div>
-      ${r.status === 'pending' ? '<div class="lock-controls" style="flex-direction:row;gap:8px;"><button class="admin-mini-btn approve" data-act="approve">Setujui</button><button class="admin-mini-btn reject" data-act="reject">Tolak</button></div>' : ''}
+      <div class="lock-controls" style="flex-direction:row;gap:8px;">
+        ${r.proof_path ? '<button class="admin-mini-btn" data-act="proof">Lihat Bukti</button>' : ''}
+        ${r.status === 'pending' ? '<button class="admin-mini-btn approve" data-act="approve">Setujui</button><button class="admin-mini-btn reject" data-act="reject">Tolak</button>' : ''}
+      </div>
     `;
+    if(r.proof_path){
+      card.querySelector('[data-act="proof"]').addEventListener('click', async () => {
+        const { data, error } = await sbClient.storage.from('payment-proofs').createSignedUrl(r.proof_path, 300);
+        if(error || !data){ toast('Gagal membuka bukti pembayaran'); return; }
+        window.open(data.signedUrl, '_blank');
+      });
+    }
     if(r.status === 'pending'){
       card.querySelector('[data-act="approve"]').addEventListener('click', async () => {
         const { error } = await sbClient.rpc('approve_payment', { request_id: r.id });
