@@ -368,6 +368,66 @@
   .admin-input:focus{outline:none;border-color:var(--primary);}
   textarea.admin-input{resize:vertical;}
 
+  .support-info-box{
+    white-space:pre-wrap;background:#FAF9F5;border:1px solid var(--line-soft);border-radius:9px;
+    padding:12px;font-size:12.5px;color:var(--ink);line-height:1.6;
+  }
+
+  /* ---------- Dukung Aplikasi — tema ungu gradasi ---------- */
+  .support-page{--sp-1:#6D28D9;--sp-2:#9333EA;--sp-3:#C026D3;}
+  .support-hero{
+    position:relative;overflow:hidden;text-align:center;color:#fff;
+    padding:26px 20px 24px;
+    background:linear-gradient(135deg, var(--sp-1) 0%, var(--sp-2) 55%, var(--sp-3) 100%);
+  }
+  .support-hero-blob{
+    position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;
+    background:rgba(255,255,255,0.12);pointer-events:none;
+  }
+  .support-hero-blob::after{
+    content:'';position:absolute;bottom:-70px;left:-50px;width:120px;height:120px;border-radius:50%;
+    background:rgba(255,255,255,0.08);
+  }
+  .support-hero-icon{
+    position:relative;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);
+  }
+  .support-hero-icon svg{width:24px;height:24px;color:#fff;}
+  .support-hero h2{position:relative;font-size:16.5px;font-weight:800;margin-bottom:7px;}
+  .support-hero p{position:relative;font-size:11.5px;color:rgba(255,255,255,0.9);line-height:1.6;}
+
+  .support-page .support-info-box{
+    background:linear-gradient(135deg, rgba(109,40,217,0.06), rgba(192,38,211,0.06));
+    border:1px solid rgba(147,51,234,0.25);
+  }
+  .support-page .admin-input:focus{border-color:var(--sp-2);}
+  .support-submit-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg, var(--sp-1), var(--sp-3));color:#fff;border:none;
+    border-radius:9px;padding:10px 0;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;
+    margin-top:2px;box-shadow:0 4px 14px -4px rgba(147,51,234,0.55);transition:transform .15s, box-shadow .15s;
+  }
+  .support-submit-btn svg{width:14px;height:14px;}
+  .support-submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -4px rgba(147,51,234,0.65);}
+  .support-submit-btn:disabled{opacity:.6;cursor:default;transform:none;}
+
+  .support-viewer .canvas-wrap{background:linear-gradient(180deg, rgba(147,51,234,0.04), transparent 200px);}
+  .support-msg-card{
+    display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line-soft);
+    border-left:4px solid var(--sp-2);border-radius:10px;padding:13px 15px;margin-bottom:10px;
+    box-shadow:0 1px 3px rgba(31,42,36,0.04);
+  }
+  .support-msg-avatar{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, var(--sp-1), var(--sp-3));
+  }
+  .support-msg-body{min-width:0;}
+  .support-msg-name{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .support-msg-date{font-size:10.5px;color:var(--ink-soft);font-weight:400;margin-left:6px;}
+  .support-msg-text{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.55;word-break:break-word;}
+
   /* ---------- Sidebar ---------- */
   aside.sidebar{
     width:290px;flex-shrink:0;border-right:1px solid var(--line);
@@ -723,6 +783,11 @@
       <div class="hc-icon" style="background:#FBE2D8;color:#B4552A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 12h3a2 2 0 010 4H9v-4zM9 16v3"/></svg></div>
       <h3>PDF ke PowerPoint</h3>
       <p>Ubah PDF jadi presentasi PowerPoint (.pptx) yang bisa diedit — teks biasa atau PDF hasil pindai (OCR).</p>
+    </div>
+    <div class="home-card" data-view="support">
+      <div class="hc-icon" style="background:#FDEAD2;color:#B4741A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></div>
+      <h3>Dukung Aplikasi</h3>
+      <p>Suka dengan aplikasi ini? Sumbangan sukarela apa pun sangat membantu kelanjutan pengembangannya.</p>
     </div>
   </main>
 
@@ -1315,6 +1380,11 @@
         <textarea id="adminInstructionsInput" class="admin-input" rows="6" placeholder="Instruksi pembayaran — nomor rekening / QRIS, dll."></textarea>
         <button class="primary-action" id="adminSavePricingBtn" style="width:100%;">Simpan Harga &amp; Instruksi</button>
       </div>
+      <div class="sidebar-section" style="border-bottom:none;">
+        <h2>Info Dukungan / Donasi</h2>
+        <textarea id="adminSupportInstructionsInput" class="admin-input" rows="5" placeholder="Info rekening/QRIS untuk donasi sukarela..."></textarea>
+        <button class="primary-action" id="adminSaveSupportBtn" style="width:100%;">Simpan Info Dukungan</button>
+      </div>
       <div class="sidebar-footer">
         <div class="footer-sub" style="margin-top:0;">Perubahan berlaku langsung untuk semua pengguna.</div>
       </div>
@@ -1327,6 +1397,41 @@
       </div>
       <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
         <div id="adminPaymentsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace support-page" id="supportView" style="display:none;">
+    <aside class="sidebar">
+      <div class="support-hero">
+        <div class="support-hero-blob"></div>
+        <div class="support-hero-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10.2-9.3C.2 8.6 1.6 5 5.1 4.2c2-.5 4 .3 5.2 2 .2.3.6.3.8 0 1.2-1.7 3.2-2.5 5.2-2 3.5.8 4.9 4.4 3.3 7.5C19.5 16.4 12 21 12 21z"/></svg>
+        </div>
+        <h2>Dukung Aplikasi Ini</h2>
+        <p>Sumbangan sukarela apa pun — besar atau kecil — sangat berarti untuk kelanjutan pengembangannya. Semua fitur tetap gratis untuk siapa saja. 💜</p>
+      </div>
+      <div class="sidebar-section" style="flex:1;">
+        <h2>Cara Berdonasi</h2>
+        <div class="support-info-box" id="supportInstructionsBox">Memuat info donasi…</div>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;">
+        <h2>Tinggalkan Pesan <span style="font-weight:400;color:var(--ink-soft);">(opsional)</span></h2>
+        <input type="text" id="supportNameInput" class="admin-input" placeholder="Nama Anda (boleh dikosongkan)" maxlength="60">
+        <textarea id="supportMessageInput" class="admin-input" rows="3" placeholder="Pesan/dukungan singkat..." maxlength="300"></textarea>
+        <button class="support-submit-btn" id="supportSendBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Kirim Pesan
+        </button>
+      </div>
+    </aside>
+    <section class="viewer support-viewer">
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">💌 Ucapan Terima Kasih</h2>
+        <div class="tb-spacer"></div>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div id="supportMessagesList"></div>
       </div>
     </section>
   </main>
@@ -1486,6 +1591,8 @@ function switchTab(view){
   document.querySelector('#excelView').style.display = view === 'excel' ? 'flex' : 'none';
   document.querySelector('#pptView').style.display = view === 'ppt' ? 'flex' : 'none';
   document.querySelector('#adminView').style.display = view === 'admin' ? 'flex' : 'none';
+  document.querySelector('#supportView').style.display = view === 'support' ? 'flex' : 'none';
+  if(view === 'support') loadSupportData();
   if(view === 'admin') loadAdminData();
 }
 document.querySelector('.brand').addEventListener('click', () => switchTab('home'));
@@ -3098,6 +3205,63 @@ $('#adminSavePricingBtn').addEventListener('click', async () => {
 });
 $('#adminRefreshBtn').addEventListener('click', loadAdminData);
 $('#adminBtn').addEventListener('click', () => switchTab('admin'));
+
+// ---------- Dukung Aplikasi (donasi sukarela) ----------
+$('#adminSaveSupportBtn').addEventListener('click', async () => {
+  if(!sbClient) return;
+  const instructions = $('#adminSupportInstructionsInput').value;
+  const { error } = await sbClient.rpc('update_support_instructions', { new_instructions: instructions });
+  if(error){ toast('Gagal menyimpan: ' + error.message); return; }
+  toast('Info dukungan disimpan');
+});
+
+async function loadSupportData(){
+  if(!sbClient){
+    $('#supportInstructionsBox').textContent = 'Layanan sedang tidak bisa dimuat (masalah koneksi/CDN).';
+    return;
+  }
+  const { data: cfg } = await sbClient.from('support_config').select('*').eq('id', 1).single();
+  $('#supportInstructionsBox').textContent = cfg ? cfg.instructions : 'Info donasi belum diisi admin.';
+  if(currentProfile && currentProfile.is_admin){
+    $('#adminSupportInstructionsInput').value = cfg ? cfg.instructions : '';
+  }
+  const { data: msgs } = await sbClient.from('support_messages')
+    .select('*').order('created_at', { ascending: false }).limit(100);
+  renderSupportMessages(msgs || []);
+}
+function renderSupportMessages(rows){
+  const wrap = $('#supportMessagesList');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada pesan dukungan — jadilah yang pertama!</div>'; return; }
+  wrap.innerHTML = '';
+  rows.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'support-msg-card';
+    const displayName = (r.name && r.name.trim()) ? r.name.trim() : 'Hamba Baik';
+    const initial = displayName.charAt(0).toUpperCase();
+    const when = r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }) : '';
+    card.innerHTML = `
+      <div class="support-msg-avatar">${escapeHtml(initial)}</div>
+      <div class="support-msg-body">
+        <span class="support-msg-name">${escapeHtml(displayName)}</span><span class="support-msg-date">${when}</span>
+        <div class="support-msg-text">${escapeHtml(r.message || '')}</div>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+$('#supportSendBtn').addEventListener('click', async () => {
+  if(!sbClient){ toast('Layanan sedang tidak bisa dimuat (masalah koneksi/CDN)'); return; }
+  const name = $('#supportNameInput').value.trim();
+  const message = $('#supportMessageInput').value.trim();
+  if(!message){ toast('Isi pesan dukungannya dulu'); return; }
+  $('#supportSendBtn').disabled = true;
+  const { error } = await sbClient.from('support_messages').insert({ name: name || null, message });
+  $('#supportSendBtn').disabled = false;
+  if(error){ toast('Gagal mengirim: ' + error.message); return; }
+  $('#supportNameInput').value = ''; $('#supportMessageInput').value = '';
+  toast('Terima kasih atas dukungannya!');
+  loadSupportData();
+});
 
 refreshAuthUI();
 
