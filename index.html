@@ -382,6 +382,69 @@
   .support-msg-date{font-size:10.5px;color:var(--ink-soft);font-weight:400;margin-left:6px;}
   .support-msg-text{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.55;word-break:break-word;}
 
+  /* ---------- Masukan — tema biru ---------- */
+  .feedback-page{--fb-1:#2A3F8F;--fb-2:#31479E;--fb-3:#4C6BC7;}
+  .feedback-hero{
+    position:relative;overflow:hidden;text-align:center;color:#fff;
+    padding:26px 20px 24px;
+    background:linear-gradient(135deg, var(--fb-1) 0%, var(--fb-2) 55%, var(--fb-3) 100%);
+  }
+  .feedback-hero-blob{
+    position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;
+    background:rgba(255,255,255,0.12);pointer-events:none;
+  }
+  .feedback-hero-blob::after{
+    content:'';position:absolute;bottom:-70px;left:-50px;width:120px;height:120px;border-radius:50%;
+    background:rgba(255,255,255,0.08);
+  }
+  .feedback-hero-icon{
+    position:relative;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);
+  }
+  .feedback-hero-icon svg{width:24px;height:24px;color:#fff;}
+  .feedback-hero h2{position:relative;font-size:16.5px;font-weight:800;margin-bottom:7px;}
+  .feedback-hero p{position:relative;font-size:11.5px;color:rgba(255,255,255,0.9);line-height:1.6;}
+
+  .feedback-page select.admin-input{cursor:pointer;}
+  .feedback-page .admin-input:focus{border-color:var(--fb-2);}
+  .feedback-submit-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg, var(--fb-1), var(--fb-3));color:#fff;border:none;
+    border-radius:9px;padding:10px 0;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;
+    margin-top:2px;box-shadow:0 4px 14px -4px rgba(49,71,158,0.55);transition:transform .15s, box-shadow .15s;
+  }
+  .feedback-submit-btn svg{width:14px;height:14px;}
+  .feedback-submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -4px rgba(49,71,158,0.65);}
+  .feedback-submit-btn:disabled{opacity:.6;cursor:default;transform:none;}
+  .feedback-info-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .feedback-info-list li{
+    display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--ink);line-height:1.55;
+    background:#FAF9F5;border:1px solid var(--line-soft);border-radius:9px;padding:10px 12px;
+  }
+  .feedback-info-list li b{color:var(--fb-2);}
+
+  .feedback-msg-card{
+    display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line-soft);
+    border-left:4px solid var(--fb-2);border-radius:10px;padding:13px 15px;margin-bottom:10px;
+    box-shadow:0 1px 3px rgba(31,42,36,0.04);
+  }
+  .feedback-msg-avatar{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, var(--fb-1), var(--fb-3));
+  }
+  .feedback-msg-body{min-width:0;flex:1;}
+  .feedback-msg-name{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .feedback-msg-date{font-size:10.5px;color:var(--ink-soft);font-weight:400;margin-left:6px;}
+  .feedback-cat-badge{
+    font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;letter-spacing:.02em;
+    background:rgba(49,71,158,0.12);color:var(--fb-2);vertical-align:middle;
+  }
+  .feedback-cat-badge.kritik{background:rgba(179,58,58,0.12);color:#B33A3A;}
+  .feedback-cat-badge.bug{background:rgba(180,116,26,0.14);color:#B4741A;}
+  .feedback-msg-text{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.55;word-break:break-word;}
+
   /* ---------- Hero header generik untuk semua menu tool ---------- */
   .tool-hero{
     position:relative;overflow:hidden;text-align:center;color:#fff;
@@ -725,6 +788,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
       PDF ke PowerPoint
     </button>
+    <button class="app-tab" id="tabFeedbackView" data-view="feedback">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      Masukan
+    </button>
   </nav>
 
   <main id="homeView" style="display:flex;flex-direction:column;min-height:0;overflow:hidden;">
@@ -788,6 +855,11 @@
       <div class="hc-icon" style="background:#FDEAD2;color:#B4741A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg></div>
       <h3>Dukung Aplikasi</h3>
       <p>Suka dengan aplikasi ini? Sumbangan sukarela apa pun sangat membantu kelanjutan pengembangannya.</p>
+    </div>
+    <div class="home-card" data-view="feedback">
+      <div class="hc-icon" style="background:#DCE4F5;color:#31479E;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
+      <h3>Masukan</h3>
+      <p>Punya saran atau kritik? Ceritakan apa yang perlu diperbaiki atau ditingkatkan dari aplikasi ini.</p>
     </div>
     </div>
   </main>
@@ -1405,6 +1477,13 @@
       <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
         <div id="adminPaymentsList"></div>
       </div>
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">💬 Masukan Pengguna (Saran &amp; Kritik)</h2>
+        <div class="tb-spacer"></div>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div id="adminFeedbackList"></div>
+      </div>
     </section>
   </main>
 
@@ -1439,6 +1518,48 @@
       </div>
       <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
         <div id="supportMessagesList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace feedback-page" id="feedbackView" style="display:none;">
+    <aside class="sidebar">
+      <div class="feedback-hero">
+        <div class="feedback-hero-blob"></div>
+        <div class="feedback-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        </div>
+        <h2>Saran &amp; Kritik</h2>
+        <p>Ada fitur yang aneh, kurang, atau berpotensi lebih baik? Beri tahu kami — masukan Anda langsung sampai ke pengembang.</p>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;flex:1;">
+        <h2>Tulis Masukan</h2>
+        <input type="text" id="feedbackNameInput" class="admin-input" placeholder="Nama Anda (boleh dikosongkan)" maxlength="60">
+        <select id="feedbackCategoryInput" class="admin-input">
+          <option value="saran">💡 Saran</option>
+          <option value="kritik">⚠️ Kritik</option>
+          <option value="bug">🐞 Laporan Bug/Error</option>
+          <option value="lainnya">📝 Lainnya</option>
+        </select>
+        <textarea id="feedbackMessageInput" class="admin-input" rows="5" placeholder="Ceritakan apa yang perlu diperbaiki atau ditingkatkan..." maxlength="500"></textarea>
+        <button class="feedback-submit-btn" id="feedbackSendBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Kirim Masukan
+        </button>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">Kenapa masukan ini penting</h2>
+        <div class="tb-spacer"></div>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;padding:22px;">
+        <ul class="feedback-info-list">
+          <li><span>💡</span><span><b>Saran</b> — ide fitur baru atau perubahan yang menurut Anda bakal bikin aplikasi ini lebih enak dipakai.</span></li>
+          <li><span>⚠️</span><span><b>Kritik</b> — bagian yang terasa membingungkan, kurang rapi, atau kurang sesuai harapan.</span></li>
+          <li><span>🐞</span><span><b>Bug/Error</b> — sesuatu yang tidak berjalan sebagaimana mestinya. Sertakan menu mana dan langkah yang Anda lakukan bila memungkinkan.</span></li>
+          <li><span>🔒</span><span>Masukan yang Anda kirim <b>tidak ditampilkan ke publik</b> — hanya bisa dilihat oleh pengembang aplikasi ini.</span></li>
+        </ul>
       </div>
     </section>
   </main>
@@ -1601,6 +1722,7 @@ document.querySelector('#tabJpgView').addEventListener('click', () => switchTab(
 document.querySelector('#tabWordView').addEventListener('click', () => switchTab('word'));
 document.querySelector('#tabExcelView').addEventListener('click', () => switchTab('excel'));
 document.querySelector('#tabPptView').addEventListener('click', () => switchTab('ppt'));
+document.querySelector('#tabFeedbackView').addEventListener('click', () => switchTab('feedback'));
 function switchTab(view){
   document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
   document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
@@ -1612,6 +1734,7 @@ function switchTab(view){
   document.querySelector('#tabWordView').classList.toggle('active', view === 'word');
   document.querySelector('#tabExcelView').classList.toggle('active', view === 'excel');
   document.querySelector('#tabPptView').classList.toggle('active', view === 'ppt');
+  document.querySelector('#tabFeedbackView').classList.toggle('active', view === 'feedback');
   document.querySelector('#homeView').style.display = view === 'home' ? 'flex' : 'none';
   document.querySelector('#homeBtn').style.display = view === 'home' ? 'none' : 'flex';
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
@@ -1626,6 +1749,7 @@ function switchTab(view){
   document.querySelector('#pptView').style.display = view === 'ppt' ? 'flex' : 'none';
   document.querySelector('#adminView').style.display = view === 'admin' ? 'flex' : 'none';
   document.querySelector('#supportView').style.display = view === 'support' ? 'flex' : 'none';
+  document.querySelector('#feedbackView').style.display = view === 'feedback' ? 'flex' : 'none';
   if(view === 'support') loadSupportData();
   if(view === 'admin') loadAdminData();
 }
@@ -3175,6 +3299,33 @@ async function loadAdminData(){
   const { data: payments } = await sbClient.from('payment_requests')
     .select('*').order('created_at', { ascending: false }).limit(200);
   renderAdminPayments(payments || []);
+  const { data: feedbacks } = await sbClient.from('feedback_messages')
+    .select('*').order('created_at', { ascending: false }).limit(200);
+  renderAdminFeedback(feedbacks || []);
+}
+function renderAdminFeedback(rows){
+  const wrap = $('#adminFeedbackList');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada masukan dari pengguna.</div>'; return; }
+  wrap.innerHTML = '';
+  const catLabel = { saran: '💡 Saran', kritik: '⚠️ Kritik', bug: '🐞 Bug', lainnya: '📝 Lainnya' };
+  const catClass = { kritik: 'kritik', bug: 'bug' };
+  rows.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'feedback-msg-card';
+    const displayName = (r.name && r.name.trim()) ? r.name.trim() : 'Anonim';
+    const initial = displayName.charAt(0).toUpperCase();
+    const when = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '';
+    const label = catLabel[r.category] || '📝 Lainnya';
+    const cls = catClass[r.category] || '';
+    card.innerHTML = `
+      <div class="feedback-msg-avatar">${escapeHtml(initial)}</div>
+      <div class="feedback-msg-body">
+        <span class="feedback-msg-name">${escapeHtml(displayName)}</span><span class="feedback-msg-date">${when}</span><span class="feedback-cat-badge ${cls}">${label}</span>
+        <div class="feedback-msg-text">${escapeHtml(r.message || '')}</div>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
 }
 function renderAdminPayments(rows){
   const wrap = $('#adminPaymentsList');
@@ -3291,6 +3442,21 @@ $('#supportSendBtn').addEventListener('click', async () => {
   $('#supportNameInput').value = ''; $('#supportMessageInput').value = '';
   toast('Terima kasih atas dukungannya!');
   loadSupportData();
+});
+
+// ---------- Masukan (saran & kritik pengguna) ----------
+$('#feedbackSendBtn').addEventListener('click', async () => {
+  if(!sbClient){ toast('Layanan sedang tidak bisa dimuat (masalah koneksi/CDN)'); return; }
+  const name = $('#feedbackNameInput').value.trim();
+  const category = $('#feedbackCategoryInput').value;
+  const message = $('#feedbackMessageInput').value.trim();
+  if(!message){ toast('Isi masukan Anda dulu'); return; }
+  $('#feedbackSendBtn').disabled = true;
+  const { error } = await sbClient.from('feedback_messages').insert({ name: name || null, category, message });
+  $('#feedbackSendBtn').disabled = false;
+  if(error){ toast('Gagal mengirim: ' + error.message); return; }
+  $('#feedbackNameInput').value = ''; $('#feedbackMessageInput').value = ''; $('#feedbackCategoryInput').value = 'saran';
+  toast('Terima kasih atas masukannya!');
 });
 
 refreshAuthUI();
