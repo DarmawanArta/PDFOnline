@@ -1398,10 +1398,14 @@
         <textarea id="adminSupportInstructionsInput" class="admin-input" rows="5" placeholder="Info rekening/QRIS untuk donasi sukarela..."></textarea>
         <button class="primary-action" id="adminSaveSupportBtn" style="width:100%;">Simpan Info Dukungan</button>
       </div>
-      <div class="sidebar-section" style="border-bottom:none;">
+      <div class="sidebar-section" style="border-bottom:none;" id="adminFullVersionSection">
         <h2>Kelola Akun Full Version</h2>
         <input type="email" id="adminGrantEmailInput" class="admin-input" placeholder="Email akun (harus sudah pernah daftar)">
         <input type="number" id="adminGrantDurationInput" class="admin-input" placeholder="Durasi (hari) — kosongkan = pakai default" min="1">
+        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft);margin:-2px 0 10px;cursor:pointer;">
+          <input type="checkbox" id="adminGrantPermanentInput" style="margin:0;">
+          Tanpa batas waktu (permanen)
+        </label>
         <button class="primary-action" id="adminGrantBtn" style="width:100%;">Aktifkan Full Version</button>
       </div>
       <div class="sidebar-footer">
@@ -1415,7 +1419,9 @@
         <button class="primary-action" id="adminRefreshBtn" style="width:auto;padding:9px 16px;">Muat Ulang</button>
       </div>
       <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
-        <div id="adminPremiumAccountsList"></div>
+        <div id="adminPremiumAccountsSection">
+          <div id="adminPremiumAccountsList"></div>
+        </div>
         <h2 style="font-size:13px;font-weight:700;color:var(--ink);margin:18px 4px 8px;">Pengajuan Pembayaran</h2>
         <div id="adminPaymentsList"></div>
       </div>
@@ -2935,6 +2941,7 @@ async function ensureTesseractLib(){
 
 // ---------- Supabase: akun & OCR premium ----------
 const SUPABASE_URL = 'https://rdyavwofbntoeljejvlw.supabase.co';
+const SUPER_ADMIN_EMAIL = 'darmawanarta30@gmail.com'; // hanya email ini yang boleh kelola akun Full Version
 const SUPABASE_KEY = 'sb_publishable_9TthHKhFDemEWrqG0NrXjA_9kjB_qMK';
 let sbClient = null;
 let sbReadyPromise = (async () => {
@@ -3183,6 +3190,9 @@ async function loadAdminData(){
     switchTab('home');
     return;
   }
+  const isSuperAdmin = currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL;
+  $('#adminFullVersionSection').style.display = isSuperAdmin ? 'block' : 'none';
+  $('#adminPremiumAccountsSection').style.display = isSuperAdmin ? 'block' : 'none';
   // Sapu semua akun yang masa aktif OCR-nya sudah lewat, supaya daftar/statistik terbaru
   await sbClient.rpc('expire_all_premium');
   const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
@@ -3194,7 +3204,7 @@ async function loadAdminData(){
   const { data: payments } = await sbClient.from('payment_requests')
     .select('*').order('created_at', { ascending: false }).limit(200);
   renderAdminPayments(payments || []);
-  await loadPremiumAccounts();
+  if(isSuperAdmin) await loadPremiumAccounts();
 }
 async function loadPremiumAccounts(){
   const { data, error } = await sbClient.rpc('admin_list_premium_accounts');
@@ -3226,15 +3236,20 @@ function renderPremiumAccounts(rows){
     wrap.appendChild(card);
   });
 }
+$('#adminGrantPermanentInput').addEventListener('change', (e) => {
+  $('#adminGrantDurationInput').disabled = e.target.checked;
+});
 $('#adminGrantBtn').addEventListener('click', async () => {
   const email = $('#adminGrantEmailInput').value.trim();
+  const permanent = $('#adminGrantPermanentInput').checked;
   const durationRaw = $('#adminGrantDurationInput').value;
   const duration = durationRaw ? parseInt(durationRaw, 10) : null;
   if(!email){ toast('Isi email akunnya dulu'); return; }
-  const { error } = await sbClient.rpc('admin_set_premium', { target_email: email, grant_premium: true, custom_duration_days: duration });
+  const { error } = await sbClient.rpc('admin_set_premium', { target_email: email, grant_premium: true, custom_duration_days: duration, permanent });
   if(error){ toast('Gagal: ' + error.message); return; }
-  toast('Full version diaktifkan untuk ' + email);
+  toast('Full version diaktifkan untuk ' + email + (permanent ? ' (tanpa batas waktu)' : ''));
   $('#adminGrantEmailInput').value = ''; $('#adminGrantDurationInput').value = '';
+  $('#adminGrantPermanentInput').checked = false; $('#adminGrantDurationInput').disabled = false;
   loadPremiumAccounts();
 });
 function renderAdminPayments(rows){
