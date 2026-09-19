@@ -573,6 +573,10 @@
     display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer;line-height:1;
   }
   .stamp-el.selected .del{display:flex;}
+  .edit-text-box{
+    width:100%;height:100%;outline:none;white-space:pre-wrap;word-break:break-word;
+    cursor:text;line-height:1.25;font-family:'Helvetica Neue',Arial,sans-serif;
+  }
   @keyframes stampdown{
     0%{transform:scale(1.35);opacity:0;filter:blur(1px);}
     60%{transform:scale(0.95);opacity:1;}
@@ -727,6 +731,11 @@
       <p>Gabung, pisah, kompres, kunci, konversi, sampai OCR — semua diproses langsung di browser Anda. Cepat, gratis, dan tidak diunggah ke server mana pun.</p>
     </div>
     <div class="home-grid">
+    <div class="home-card" data-view="edit">
+      <div class="hc-icon" style="background:#E1E5FA;color:#3F4FA0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+      <h3>Edit PDF</h3>
+      <p>Tambahkan teks berwarna, tutupi/ganti tulisan lama, langsung di atas halaman PDF Anda.</p>
+    </div>
     <div class="home-card" data-view="stamp">
       <div class="hc-icon" style="background:#F1DCDA;color:#B33A3A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>
       <h3>Tempel Stempel</h3>
@@ -783,6 +792,84 @@
       <p>Suka dengan aplikasi ini? Sumbangan sukarela apa pun sangat membantu kelanjutan pengembangannya.</p>
     </div>
     </div>
+  </main>
+
+  <main class="workspace" id="editView" style="display:none;--th-1:#3F4FA0;--th-2:#242E63;--th-tint:rgba(63,79,160,0.06);">
+    <aside class="sidebar">
+
+      <div class="tool-hero"><div class="tool-hero-blob"></div><div class="tool-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div><h2>Edit PDF</h2><p>Tambah teks berwarna & tutupi tulisan lama.</p></div>
+      <div class="sidebar-section">
+        <h2>1 · Berkas PDF</h2>
+        <div class="drop" id="editPdfDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF</p>
+        </div>
+        <input type="file" id="editPdfInput" accept="application/pdf" multiple>
+      </div>
+
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>2 · Dokumen (klik untuk buka)</h2>
+      </div>
+      <div class="filelist" id="editFileList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="primary-action" id="editProcessBtn" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 12l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          Proses &amp; Unduh Semua
+        </button>
+        <div class="footer-sub" id="editProcessSub">Unggah PDF, lalu tambahkan teks atau tutupi bagian yang mau diganti.</div>
+      </div>
+    </aside>
+
+    <section class="viewer">
+      <div class="viewer-toolbar" id="editViewerToolbar" style="display:none;">
+        <div class="page-nav">
+          <button id="editPrevPage">‹</button>
+          <div class="page-indicator mono" id="editPageIndicator">1 / 1</div>
+          <button id="editNextPage">›</button>
+        </div>
+        <div class="mode-toggle" id="editModeToggle">
+          <button class="mode-btn active" id="editModeTextBtn" data-mode="text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>
+            Tambah Teks
+          </button>
+          <button class="mode-btn" id="editModeCoverBtn" data-mode="whiteout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="10" rx="1"/></svg>
+            Tutupi / Hapus Tulisan
+          </button>
+        </div>
+        <div class="toolbar-group" id="editFontSizeGroup">
+          <label>Ukuran Font</label>
+          <input type="number" id="editFontSizeInput" min="6" max="120" step="1" value="14" style="width:56px;">
+          <span style="color:var(--ink-soft);font-size:11px;">pt</span>
+        </div>
+        <div class="toolbar-group">
+          <label id="editColorLabel">Warna Teks</label>
+          <input type="color" id="editColorInput" value="#1F2A24">
+        </div>
+        <div class="toolbar-group">
+          <label>Transparansi</label>
+          <input type="range" id="editOpacitySlider" min="20" max="100" value="100">
+          <span class="val" id="editOpacityVal">100%</span>
+        </div>
+        <button class="tb-btn" id="editApplyAllPages">Terapkan ke semua halaman dokumen ini</button>
+        <button class="tb-btn danger" id="editClearPageBtn">Hapus semua di halaman ini</button>
+        <div class="tb-spacer"></div>
+        <span style="font-size:11.5px;color:var(--ink-soft);">Klik pada halaman untuk menambah teks / kotak penutup</span>
+      </div>
+
+      <div class="canvas-wrap" id="editCanvasWrap">
+        <div class="empty-viewer" id="editEmptyViewer">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+          <h3>Mulai dengan mengunggah PDF</h3>
+          <p>Unggah satu atau lebih PDF di panel kiri, lalu pilih dokumen untuk mulai. Klik pada halaman untuk menambah teks baru (bisa pilih warna & ukuran), atau tutupi tulisan lama dengan kotak lalu tulis penggantinya di atasnya — ini cara paling andal untuk "mengedit" teks di PDF karena PDF tidak menyimpan teks sebagai dokumen yang bisa diketik ulang langsung.</p>
+        </div>
+      </div>
+
+      <div class="thumb-strip" id="editThumbStrip" style="display:none;"></div>
+    </section>
   </main>
 
   <main class="workspace" id="stampView" style="display:none;--th-1:#B33A3A;--th-2:#7A2020;--th-tint:rgba(179,58,58,0.055);">
@@ -1639,6 +1726,7 @@ function switchTab(view){
   document.querySelector('#tabPptView').classList.toggle('active', view === 'ppt');
   document.querySelector('#homeView').style.display = view === 'home' ? 'flex' : 'none';
   document.querySelector('#homeBtn').style.display = view === 'home' ? 'none' : 'flex';
+  document.querySelector('#editView').style.display = view === 'edit' ? 'flex' : 'none';
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
   document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
   document.querySelector('#splitView').style.display = view === 'split' ? 'flex' : 'none';
@@ -1660,6 +1748,460 @@ document.querySelectorAll('.home-card').forEach(card => {
   card.addEventListener('click', () => switchTab(card.dataset.view));
 });
 switchTab('home');
+
+// ---------- Edit PDF ----------
+let editDocs = [];
+let editActiveDocId = null;
+let editActivePage = 1;
+let editPlaceMode = 'text';   // 'text' atau 'whiteout'
+let editSelectedId = null;
+let editPlacementCounter = 0;
+let editOpacityPct = 100;
+let editTextColor = '#1F2A24';
+let editWhiteoutColor = '#FFFFFF';
+let editFontSizePt = 14;
+let editPageBaseW = 0, editPageBaseH = 0;
+
+const editFileListEl = $('#editFileList');
+const editCanvasWrap = $('#editCanvasWrap');
+const editEmptyViewer = $('#editEmptyViewer');
+const editViewerToolbar = $('#editViewerToolbar');
+const editThumbStrip = $('#editThumbStrip');
+const editProcessBtn = $('#editProcessBtn');
+const editProcessSub = $('#editProcessSub');
+
+const editPdfInput = $('#editPdfInput');
+$('#editPdfDrop').addEventListener('click', () => editPdfInput.click());
+editPdfInput.addEventListener('change', e => handleEditPdfFiles(e.target.files));
+setupDrop($('#editPdfDrop'), handleEditPdfFiles);
+
+async function handleEditPdfFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pdfjsDoc;
+    try{
+      pdfjsDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    const id = 'ed' + Math.random().toString(36).slice(2,9);
+    editDocs.push({ id, name: file.name, bytes: buf, pdfjsDoc, pageCount: pdfjsDoc.numPages, pages: {} });
+  }
+  renderEditFileList();
+  updateEditProcessState();
+  if(!editActiveDocId && editDocs.length) openEditDoc(editDocs[0].id);
+}
+
+function renderEditFileList(){
+  if(!editDocs.length){
+    editFileListEl.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  editFileListEl.innerHTML = '';
+  editDocs.forEach(d => {
+    const count = Object.values(d.pages).reduce((a,arr)=>a+arr.length,0);
+    const el = document.createElement('div');
+    el.className = 'file-item' + (d.id === editActiveDocId ? ' active' : '');
+    el.innerHTML = `
+      <div class="fi-icon">PDF</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(d.name)}</div>
+        <div class="fi-sub">${d.pageCount} halaman</div>
+      </div>
+      ${count ? `<div class="fi-count">${count} edit</div>` : ''}
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.addEventListener('click', (e) => {
+      if(e.target.classList.contains('fi-remove')) return;
+      openEditDoc(d.id);
+    });
+    el.querySelector('.fi-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      editDocs = editDocs.filter(x => x.id !== d.id);
+      if(editActiveDocId === d.id){
+        editActiveDocId = null;
+        showEditEmptyViewer();
+        if(editDocs.length) openEditDoc(editDocs[0].id);
+      }
+      renderEditFileList();
+      updateEditProcessState();
+    });
+    editFileListEl.appendChild(el);
+  });
+}
+
+function showEditEmptyViewer(){
+  editEmptyViewer.style.display = 'block';
+  editViewerToolbar.style.display = 'none';
+  editThumbStrip.style.display = 'none';
+  const stage = $('#editPageStage');
+  if(stage) stage.remove();
+}
+
+function getActiveEditDoc(){ return editDocs.find(d => d.id === editActiveDocId); }
+
+async function openEditDoc(id){
+  editActiveDocId = id;
+  editActivePage = 1;
+  renderEditFileList();
+  editEmptyViewer.style.display = 'none';
+  editViewerToolbar.style.display = 'flex';
+  editThumbStrip.style.display = 'flex';
+  await renderEditThumbs();
+  await renderEditPage();
+}
+
+async function renderEditThumbs(){
+  const d = getActiveEditDoc();
+  editThumbStrip.innerHTML = '';
+  for(let p = 1; p <= d.pageCount; p++){
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb' + (p === editActivePage ? ' active' : '');
+    const canvas = document.createElement('canvas');
+    wrap.appendChild(canvas);
+    if(d.pages[p] && d.pages[p].length){
+      const dot = document.createElement('div');
+      dot.className = 'tdot';
+      wrap.appendChild(dot);
+    }
+    const num = document.createElement('div');
+    num.className = 'tnum';
+    num.textContent = p;
+    wrap.appendChild(num);
+    wrap.addEventListener('click', () => { editActivePage = p; renderEditPage(); highlightEditThumb(); });
+    editThumbStrip.appendChild(wrap);
+
+    const page = await d.pdfjsDoc.getPage(p);
+    const vp = page.getViewport({scale: 1});
+    const scale = 40 / vp.width;
+    const svp = page.getViewport({scale});
+    canvas.width = svp.width; canvas.height = svp.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport: svp}).promise;
+  }
+}
+function highlightEditThumb(){
+  editThumbStrip.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i+1 === editActivePage));
+}
+function renderEditThumbDot(){
+  const d = getActiveEditDoc();
+  editThumbStrip.querySelectorAll('.thumb').forEach((t,i) => {
+    const p = i+1;
+    const has = d.pages[p] && d.pages[p].length;
+    let dot = t.querySelector('.tdot');
+    if(has && !dot){ dot = document.createElement('div'); dot.className = 'tdot'; t.appendChild(dot); }
+    if(!has && dot) dot.remove();
+  });
+}
+
+async function renderEditPage(){
+  const d = getActiveEditDoc();
+  if(!d) return;
+  $('#editPageIndicator').textContent = editActivePage + ' / ' + d.pageCount;
+  $('#editPrevPage').disabled = editActivePage <= 1;
+  $('#editNextPage').disabled = editActivePage >= d.pageCount;
+
+  const old = $('#editPageStage');
+  if(old) old.remove();
+
+  const page = await d.pdfjsDoc.getPage(editActivePage);
+  const containerWidth = editCanvasWrap.clientWidth - 56;
+  const baseVp = page.getViewport({scale: 1});
+  editPageBaseW = baseVp.width;
+  editPageBaseH = baseVp.height;
+  const scale = Math.min(1.6, Math.max(0.4, containerWidth / baseVp.width));
+  const viewport = page.getViewport({scale});
+
+  const stage = document.createElement('div');
+  stage.className = 'page-stage';
+  stage.id = 'editPageStage';
+  stage.style.width = viewport.width + 'px';
+  stage.style.height = viewport.height + 'px';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  stage.appendChild(canvas);
+  editCanvasWrap.innerHTML = '';
+  editCanvasWrap.appendChild(stage);
+
+  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+
+  stage.addEventListener('click', (e) => {
+    if(e.target !== stage && e.target !== canvas) return;
+    const rect = stage.getBoundingClientRect();
+    const xFrac = (e.clientX - rect.left) / rect.width;
+    const yFrac = (e.clientY - rect.top) / rect.height;
+    placeEditElement(xFrac, yFrac);
+  });
+
+  redrawEditElementsForPage();
+  highlightEditThumb();
+}
+
+function placeEditElement(xFrac, yFrac){
+  const d = getActiveEditDoc();
+  const p = { id: 'e' + (editPlacementCounter++), type: editPlaceMode, opacity: editOpacityPct };
+  if(editPlaceMode === 'text'){
+    p.text = 'Teks baru';
+    p.color = editTextColor;
+    p.fontSizeFrac = editFontSizePt / (editPageBaseH || 800);
+    p.xFrac = clamp(xFrac, 0, 0.95);
+    p.yFrac = clamp(yFrac, 0, 0.95);
+    p.wFrac = 0.3; p.hFrac = p.fontSizeFrac * 1.6;
+    p._focusOnRender = true;
+  } else {
+    p.color = editWhiteoutColor;
+    p.wFrac = 0.25; p.hFrac = 0.06;
+    p.xFrac = clamp(xFrac - p.wFrac/2, 0, 1 - p.wFrac);
+    p.yFrac = clamp(yFrac - p.hFrac/2, 0, 1 - p.hFrac);
+  }
+  if(!d.pages[editActivePage]) d.pages[editActivePage] = [];
+  d.pages[editActivePage].push(p);
+  editSelectedId = p.id;
+  redrawEditElementsForPage();
+  renderEditFileList();
+  renderEditThumbDot();
+  updateEditProcessState();
+}
+
+function setEditPlaceMode(mode){
+  editPlaceMode = mode;
+  $('#editModeTextBtn').classList.toggle('active', mode === 'text');
+  $('#editModeCoverBtn').classList.toggle('active', mode === 'whiteout');
+  $('#editFontSizeGroup').style.display = mode === 'text' ? 'flex' : 'none';
+  $('#editColorLabel').textContent = mode === 'text' ? 'Warna Teks' : 'Warna Penutup';
+  $('#editColorInput').value = mode === 'text' ? editTextColor : editWhiteoutColor;
+}
+$('#editModeTextBtn').addEventListener('click', () => setEditPlaceMode('text'));
+$('#editModeCoverBtn').addEventListener('click', () => setEditPlaceMode('whiteout'));
+
+$('#editColorInput').addEventListener('input', (e) => {
+  const val = e.target.value;
+  if(editPlaceMode === 'text') editTextColor = val; else editWhiteoutColor = val;
+  applyToSelectedEdit(p => { p.color = val; });
+});
+$('#editFontSizeInput').addEventListener('input', (e) => {
+  const pt = parseFloat(e.target.value) || 14;
+  editFontSizePt = pt;
+  const fontSizeFrac = pt / (editPageBaseH || 800);
+  applyToSelectedEdit(p => { if(p.type === 'text'){ p.fontSizeFrac = fontSizeFrac; p.hFrac = fontSizeFrac * 1.6; } });
+});
+$('#editOpacitySlider').addEventListener('input', (e) => {
+  editOpacityPct = +e.target.value;
+  $('#editOpacityVal').textContent = e.target.value + '%';
+  applyToSelectedEdit(p => { p.opacity = editOpacityPct; });
+});
+
+function applyToSelectedEdit(fn){
+  if(!editSelectedId) return;
+  const d = getActiveEditDoc();
+  if(!d) return;
+  const list = d.pages[editActivePage] || [];
+  const p = list.find(x => x.id === editSelectedId);
+  if(p){ fn(p); redrawEditElementsForPage(); }
+}
+
+function redrawEditElementsForPage(){
+  const stage = $('#editPageStage');
+  if(!stage) return;
+  stage.querySelectorAll('.stamp-el').forEach(el => el.remove());
+  const d = getActiveEditDoc();
+  const list = d.pages[editActivePage] || [];
+  list.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'stamp-el' + (p.id === editSelectedId ? ' selected' : '');
+    el.style.left = (p.xFrac * 100) + '%';
+    el.style.top = (p.yFrac * 100) + '%';
+    el.style.width = (p.wFrac * 100) + '%';
+    el.style.height = (p.hFrac * 100) + '%';
+    el.style.opacity = (p.opacity ?? 100) / 100;
+
+    if(p.type === 'whiteout'){
+      el.style.background = p.color || '#FFFFFF';
+      el.innerHTML = `<div class="handle"></div><div class="del">×</div>`;
+    } else {
+      el.style.background = 'transparent';
+      const fontPx = (p.fontSizeFrac || 0.02) * stage.clientHeight;
+      el.innerHTML = `<div class="edit-text-box" contenteditable="true" spellcheck="false" style="color:${p.color || '#1F2A24'};font-size:${fontPx}px;">${escapeHtml(p.text || '')}</div><div class="handle"></div><div class="del">×</div>`;
+    }
+    stage.appendChild(el);
+
+    if(p.type === 'text'){
+      const textBox = el.querySelector('.edit-text-box');
+      textBox.addEventListener('mousedown', (e) => e.stopPropagation());
+      textBox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(editSelectedId !== p.id){ editSelectedId = p.id; redrawEditElementsForPage(); }
+      });
+      textBox.addEventListener('input', () => { p.text = textBox.textContent; renderEditFileList(); });
+      if(p._focusOnRender){
+        delete p._focusOnRender;
+        setTimeout(() => {
+          textBox.focus();
+          const range = document.createRange();
+          range.selectNodeContents(textBox);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }, 30);
+      }
+    }
+
+    el.addEventListener('mousedown', (e) => {
+      if(p.type === 'text' && e.target.classList.contains('edit-text-box')) return; // biarkan mengetik
+      e.stopPropagation();
+      editSelectedId = p.id;
+      redrawEditElementsForPage();
+      const isHandle = e.target.classList.contains('handle');
+      const isDel = e.target.classList.contains('del');
+      if(isDel){
+        d.pages[editActivePage] = d.pages[editActivePage].filter(x => x.id !== p.id);
+        redrawEditElementsForPage(); renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
+        return;
+      }
+      const stageRect = stage.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const startP = {...p};
+
+      function onMove(ev){
+        if(isHandle){
+          const dx = (ev.clientX - startX) / stageRect.width;
+          if(p.type === 'whiteout'){
+            const newW = clamp(startP.wFrac + dx, 0.02, 0.95);
+            const scaleRatio = newW / startP.wFrac;
+            p.wFrac = newW;
+            p.hFrac = clamp(startP.hFrac * scaleRatio, 0.01, 0.95);
+          } else {
+            const scaleRatio = clamp(1 + dx / (startP.wFrac || 0.3), 0.3, 4);
+            p.fontSizeFrac = clamp(startP.fontSizeFrac * scaleRatio, 0.006, 0.3);
+            p.hFrac = p.fontSizeFrac * 1.6;
+            const textBox = el.querySelector('.edit-text-box');
+            if(textBox) textBox.style.fontSize = (p.fontSizeFrac * stage.clientHeight) + 'px';
+          }
+        } else {
+          const dx = (ev.clientX - startX) / stageRect.width;
+          const dy = (ev.clientY - startY) / stageRect.height;
+          p.xFrac = clamp(startP.xFrac + dx, 0, 1 - p.wFrac);
+          p.yFrac = clamp(startP.yFrac + dy, 0, 1 - p.hFrac);
+        }
+        el.style.left = (p.xFrac*100)+'%'; el.style.top=(p.yFrac*100)+'%';
+        el.style.width=(p.wFrac*100)+'%'; el.style.height=(p.hFrac*100)+'%';
+      }
+      function onUp(){
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+editCanvasWrap.addEventListener('click', (e) => {
+  if(e.target === editCanvasWrap){ editSelectedId = null; redrawEditElementsForPage(); }
+});
+
+$('#editPrevPage').addEventListener('click', () => { if(editActivePage>1){editActivePage--; renderEditPage();} });
+$('#editNextPage').addEventListener('click', () => { const d=getActiveEditDoc(); if(editActivePage<d.pageCount){editActivePage++; renderEditPage();} });
+
+$('#editClearPageBtn').addEventListener('click', () => {
+  const d = getActiveEditDoc();
+  d.pages[editActivePage] = [];
+  editSelectedId = null;
+  redrawEditElementsForPage(); renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
+});
+
+$('#editApplyAllPages').addEventListener('click', () => {
+  const d = getActiveEditDoc();
+  const list = d.pages[editActivePage];
+  if(!list || !list.length){ toast('Belum ada elemen di halaman ini untuk disalin'); return; }
+  for(let p = 1; p <= d.pageCount; p++){
+    if(p === editActivePage) continue;
+    d.pages[p] = list.map(s => ({...s, id: 'e'+(editPlacementCounter++)}));
+  }
+  toast('Diterapkan ke semua ' + d.pageCount + ' halaman');
+  renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
+});
+
+function updateEditProcessState(){
+  const totalPlacements = editDocs.reduce((sum,d) => sum + Object.values(d.pages).reduce((a,arr)=>a+arr.length,0), 0);
+  editProcessBtn.disabled = !(editDocs.length && totalPlacements);
+  if(!editDocs.length) editProcessSub.textContent = 'Unggah PDF, lalu tambahkan teks atau tutupi bagian yang mau diganti.';
+  else if(!totalPlacements) editProcessSub.textContent = 'Klik pada halaman untuk menambah teks atau kotak penutup.';
+  else editProcessSub.textContent = totalPlacements + ' elemen siap diterapkan pada ' + editDocs.filter(d=>Object.values(d.pages).some(a=>a.length)).length + ' dokumen.';
+}
+
+editProcessBtn.addEventListener('click', processEditAll);
+
+async function processEditAll(){
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  const results = [];
+  try{
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
+    for(const d of editDocs){
+      const hasAny = Object.values(d.pages).some(a => a.length);
+      if(!hasAny) continue;
+      $('#overlayText').textContent = 'Memproses "' + d.name + '"…';
+      const pdfDoc = await PDFDocument.load(d.bytes.slice(0));
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const pages = pdfDoc.getPages();
+
+      for(const pnumStr of Object.keys(d.pages)){
+        const pnum = parseInt(pnumStr, 10);
+        const placements = d.pages[pnum];
+        if(!placements || !placements.length) continue;
+        const page = pages[pnum - 1];
+        const { width: pw, height: ph } = page.getSize();
+        for(const p of placements){
+          const opacity = (p.opacity ?? 100) / 100;
+          const { r, g, b } = hexToRgbFrac(p.color || (p.type === 'text' ? '#1F2A24' : '#FFFFFF'));
+          const color = rgb(r, g, b);
+          if(p.type === 'whiteout'){
+            const w = p.wFrac * pw, h = p.hFrac * ph;
+            const x = p.xFrac * pw;
+            const y = ph - (p.yFrac * ph) - h;
+            page.drawRectangle({ x, y, width: w, height: h, color, opacity });
+          } else {
+            const fontSize = (p.fontSizeFrac || 0.02) * ph;
+            const x = p.xFrac * pw;
+            let yTop = ph - (p.yFrac * ph) - fontSize; // posisi baseline baris pertama
+            const lines = String(p.text || '').split('\n');
+            for(const line of lines){
+              if(line) page.drawText(line, { x, y: yTop, size: fontSize, font, color, opacity });
+              yTop -= fontSize * 1.25;
+            }
+          }
+        }
+      }
+      const outBytes = await pdfDoc.save();
+      results.push({ name: d.name.replace(/\.pdf$/i,'') + '_edit.pdf', bytes: outBytes });
+    }
+    if(!results.length){ toast('Tidak ada dokumen dengan perubahan untuk diproses'); overlay.classList.remove('show'); return; }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pdf_edit.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' PDF berhasil diproses');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat memproses PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
 
 // ---------- Gabung PDF ----------
 let mergePool = [];    // { id, name, bytes, pageCount } — semua PDF yang diunggah
@@ -2940,9 +3482,9 @@ async function ensureTesseractLib(){
 }
 
 // ---------- Supabase: akun & OCR premium ----------
-const SUPABASE_URL = 'https://rdyavwofbntoeljejvlw.supabase.co';
+const SUPABASE_URL = 'https://bldgfnkrhtdbbmqabsid.supabase.co';
 const SUPER_ADMIN_EMAIL = 'darmawanarta30@gmail.com'; // hanya email ini yang boleh kelola akun Full Version
-const SUPABASE_KEY = 'sb_publishable_9TthHKhFDemEWrqG0NrXjA_9kjB_qMK';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZGdmbmtyaHRkYmJtcWFic2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MTU4MDIsImV4cCI6MjEwNTE5MTgwMn0.YetkeYu_kkjwRJyqoNvzw5y5gXIU0iXwI-x6ouQbuso';
 let sbClient = null;
 let sbReadyPromise = (async () => {
   const urls = [
