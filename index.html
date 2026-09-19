@@ -198,6 +198,15 @@
   .excel-preview .meta div:first-child{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .excel-preview .meta div:last-child{font-size:11px;color:var(--ink-soft);}
 
+  .tpl-download-link{
+    display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:8px;
+    padding:7px 0;border:1px dashed var(--line);border-radius:8px;background:transparent;
+    font-size:11.5px;font-weight:600;color:var(--primary-dark);text-decoration:none;cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .tpl-download-link svg{width:13px;height:13px;flex-shrink:0;}
+  .tpl-download-link:hover{border-color:var(--primary);background:var(--th-tint,rgba(0,0,0,0.03));}
+
   .lock-controls{display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end;min-width:160px;}
   .lock-controls select{
     border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:11.5px;
@@ -382,6 +391,69 @@
   .support-msg-date{font-size:10.5px;color:var(--ink-soft);font-weight:400;margin-left:6px;}
   .support-msg-text{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.55;word-break:break-word;}
 
+  /* ---------- Masukan — tema biru ---------- */
+  .feedback-page{--fb-1:#2A3F8F;--fb-2:#31479E;--fb-3:#4C6BC7;}
+  .feedback-hero{
+    position:relative;overflow:hidden;text-align:center;color:#fff;
+    padding:26px 20px 24px;
+    background:linear-gradient(135deg, var(--fb-1) 0%, var(--fb-2) 55%, var(--fb-3) 100%);
+  }
+  .feedback-hero-blob{
+    position:absolute;top:-40px;right:-30px;width:140px;height:140px;border-radius:50%;
+    background:rgba(255,255,255,0.12);pointer-events:none;
+  }
+  .feedback-hero-blob::after{
+    content:'';position:absolute;bottom:-70px;left:-50px;width:120px;height:120px;border-radius:50%;
+    background:rgba(255,255,255,0.08);
+  }
+  .feedback-hero-icon{
+    position:relative;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,0.18);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);
+  }
+  .feedback-hero-icon svg{width:24px;height:24px;color:#fff;}
+  .feedback-hero h2{position:relative;font-size:16.5px;font-weight:800;margin-bottom:7px;}
+  .feedback-hero p{position:relative;font-size:11.5px;color:rgba(255,255,255,0.9);line-height:1.6;}
+
+  .feedback-page select.admin-input{cursor:pointer;}
+  .feedback-page .admin-input:focus{border-color:var(--fb-2);}
+  .feedback-submit-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg, var(--fb-1), var(--fb-3));color:#fff;border:none;
+    border-radius:9px;padding:10px 0;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;
+    margin-top:2px;box-shadow:0 4px 14px -4px rgba(49,71,158,0.55);transition:transform .15s, box-shadow .15s;
+  }
+  .feedback-submit-btn svg{width:14px;height:14px;}
+  .feedback-submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -4px rgba(49,71,158,0.65);}
+  .feedback-submit-btn:disabled{opacity:.6;cursor:default;transform:none;}
+  .feedback-info-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .feedback-info-list li{
+    display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--ink);line-height:1.55;
+    background:#FAF9F5;border:1px solid var(--line-soft);border-radius:9px;padding:10px 12px;
+  }
+  .feedback-info-list li b{color:var(--fb-2);}
+
+  .feedback-msg-card{
+    display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line-soft);
+    border-left:4px solid var(--fb-2);border-radius:10px;padding:13px 15px;margin-bottom:10px;
+    box-shadow:0 1px 3px rgba(31,42,36,0.04);
+  }
+  .feedback-msg-avatar{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;color:#fff;font-weight:700;font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg, var(--fb-1), var(--fb-3));
+  }
+  .feedback-msg-body{min-width:0;flex:1;}
+  .feedback-msg-name{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .feedback-msg-date{font-size:10.5px;color:var(--ink-soft);font-weight:400;margin-left:6px;}
+  .feedback-cat-badge{
+    font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;letter-spacing:.02em;
+    background:rgba(49,71,158,0.12);color:var(--fb-2);vertical-align:middle;
+  }
+  .feedback-cat-badge.kritik{background:rgba(179,58,58,0.12);color:#B33A3A;}
+  .feedback-cat-badge.bug{background:rgba(180,116,26,0.14);color:#B4741A;}
+  .feedback-msg-text{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.55;word-break:break-word;}
+
   /* ---------- Hero header generik untuk semua menu tool ---------- */
   .tool-hero{
     position:relative;overflow:hidden;text-align:center;color:#fff;
@@ -438,28 +510,35 @@
   .drop p b{color:var(--ink);font-weight:600;}
   input[type=file]{display:none;}
 
-  .stamp-gallery{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
-  .stamp-item{
-    display:flex;align-items:center;gap:8px;padding:6px 8px;border:1.5px solid var(--line-soft);
-    border-radius:8px;background:#FAF9F5;cursor:pointer;transition:border-color .15s, background .15s;
+  .stamp-gallery{
+    display:flex;flex-direction:column;gap:5px;margin-top:10px;
   }
-  .stamp-item.active{border-color:var(--primary);background:#EAF1EE;}
-  .stamp-item img{width:32px;height:32px;object-fit:contain;background:#fff;border:1px solid var(--line-soft);border-radius:4px;flex-shrink:0;}
-  .stamp-item .meta{min-width:0;flex:1;}
-  .stamp-item .meta div:first-child{font-size:11.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .stamp-item .meta div:last-child{font-size:10px;color:var(--ink-soft);}
-  .stamp-item .stamp-remove{
-    border:none;background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;
+  .stamp-thumb{
+    position:relative;display:flex;align-items:center;gap:8px;
+    border:1.5px solid var(--line-soft);border-radius:8px;background:#FAF9F5;
+    padding:7px 8px;cursor:pointer;transition:border-color .15s, background .15s;
   }
-  .stamp-item .stamp-remove:hover{color:var(--accent);}
-
-  .symbol-picker{display:flex;gap:4px;}
-  .symbol-btn{
-    width:28px;height:28px;border:1px solid var(--line);border-radius:7px;background:#fff;
-    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);padding:0;
+  .stamp-thumb:hover{border-color:var(--primary);}
+  .stamp-thumb.active{border-color:var(--primary);background:#EAF1EE;}
+  .stamp-thumb .st-icon{
+    flex-shrink:0;width:24px;height:24px;border-radius:6px;background:var(--primary);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;
+    font-family:'IBM Plex Mono',monospace;
   }
-  .symbol-btn svg{width:15px;height:15px;}
-  .symbol-btn.active{border-color:var(--primary);color:var(--primary);background:#EAF1EE;}
+  .stamp-thumb .st-meta{flex:1;min-width:0;}
+  .stamp-thumb .st-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .stamp-thumb .st-sub{font-size:10px;color:var(--ink-soft);}
+  .stamp-thumb .st-badge{
+    flex-shrink:0;background:var(--primary);color:#fff;font-size:9.5px;font-weight:600;
+    padding:2px 7px;border-radius:8px;letter-spacing:.02em;
+  }
+  .stamp-thumb .st-del{
+    flex-shrink:0;width:20px;height:20px;border-radius:50%;border:none;background:transparent;
+    color:var(--ink-soft);cursor:pointer;font-size:15px;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stamp-thumb .st-del:hover{background:var(--accent-soft);color:var(--accent);}
+  .stamp-active-hint{font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.4;}
 
   .filelist{flex:1;overflow-y:auto;padding:8px 10px;min-height:110px;}
   .file-item{
@@ -573,10 +652,6 @@
     display:none;align-items:center;justify-content:center;font-size:12px;cursor:pointer;line-height:1;
   }
   .stamp-el.selected .del{display:flex;}
-  .edit-text-box{
-    width:100%;height:100%;outline:none;white-space:pre-wrap;word-break:break-word;
-    cursor:text;line-height:1.25;font-family:'Helvetica Neue',Arial,sans-serif;
-  }
   @keyframes stampdown{
     0%{transform:scale(1.35);opacity:0;filter:blur(1px);}
     60%{transform:scale(0.95);opacity:1;}
@@ -722,6 +797,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
       PDF ke PowerPoint
     </button>
+    <button class="app-tab" id="tabFeedbackView" data-view="feedback">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      Masukan
+    </button>
   </nav>
 
   <main id="homeView" style="display:flex;flex-direction:column;min-height:0;overflow:hidden;">
@@ -731,11 +810,6 @@
       <p>Gabung, pisah, kompres, kunci, konversi, sampai OCR — semua diproses langsung di browser Anda. Cepat, gratis, dan tidak diunggah ke server mana pun.</p>
     </div>
     <div class="home-grid">
-    <div class="home-card" data-view="edit">
-      <div class="hc-icon" style="background:#E1E5FA;color:#3F4FA0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
-      <h3>Edit PDF</h3>
-      <p>Tambahkan teks berwarna, tutupi/ganti tulisan lama, langsung di atas halaman PDF Anda.</p>
-    </div>
     <div class="home-card" data-view="stamp">
       <div class="hc-icon" style="background:#F1DCDA;color:#B33A3A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>
       <h3>Tempel Stempel</h3>
@@ -791,85 +865,12 @@
       <h3>Dukung Aplikasi</h3>
       <p>Suka dengan aplikasi ini? Sumbangan sukarela apa pun sangat membantu kelanjutan pengembangannya.</p>
     </div>
+    <div class="home-card" data-view="feedback">
+      <div class="hc-icon" style="background:#DCE4F5;color:#31479E;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div>
+      <h3>Masukan</h3>
+      <p>Punya saran atau kritik? Ceritakan apa yang perlu diperbaiki atau ditingkatkan dari aplikasi ini.</p>
     </div>
-  </main>
-
-  <main class="workspace" id="editView" style="display:none;--th-1:#3F4FA0;--th-2:#242E63;--th-tint:rgba(63,79,160,0.06);">
-    <aside class="sidebar">
-
-      <div class="tool-hero"><div class="tool-hero-blob"></div><div class="tool-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div><h2>Edit PDF</h2><p>Tambah teks berwarna & tutupi tulisan lama.</p></div>
-      <div class="sidebar-section">
-        <h2>1 · Berkas PDF</h2>
-        <div class="drop" id="editPdfDrop">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF</p>
-        </div>
-        <input type="file" id="editPdfInput" accept="application/pdf" multiple>
-      </div>
-
-      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
-        <h2>2 · Dokumen (klik untuk buka)</h2>
-      </div>
-      <div class="filelist" id="editFileList">
-        <div class="empty-hint">Belum ada PDF diunggah.</div>
-      </div>
-
-      <div class="sidebar-footer">
-        <button class="primary-action" id="editProcessBtn" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 12l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          Proses &amp; Unduh Semua
-        </button>
-        <div class="footer-sub" id="editProcessSub">Unggah PDF, lalu tambahkan teks atau tutupi bagian yang mau diganti.</div>
-      </div>
-    </aside>
-
-    <section class="viewer">
-      <div class="viewer-toolbar" id="editViewerToolbar" style="display:none;">
-        <div class="page-nav">
-          <button id="editPrevPage">‹</button>
-          <div class="page-indicator mono" id="editPageIndicator">1 / 1</div>
-          <button id="editNextPage">›</button>
-        </div>
-        <div class="mode-toggle" id="editModeToggle">
-          <button class="mode-btn active" id="editModeTextBtn" data-mode="text">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>
-            Tambah Teks
-          </button>
-          <button class="mode-btn" id="editModeCoverBtn" data-mode="whiteout">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="10" rx="1"/></svg>
-            Tutupi / Hapus Tulisan
-          </button>
-        </div>
-        <div class="toolbar-group" id="editFontSizeGroup">
-          <label>Ukuran Font</label>
-          <input type="number" id="editFontSizeInput" min="6" max="120" step="1" value="14" style="width:56px;">
-          <span style="color:var(--ink-soft);font-size:11px;">pt</span>
-        </div>
-        <div class="toolbar-group">
-          <label id="editColorLabel">Warna Teks</label>
-          <input type="color" id="editColorInput" value="#1F2A24">
-        </div>
-        <div class="toolbar-group">
-          <label>Transparansi</label>
-          <input type="range" id="editOpacitySlider" min="20" max="100" value="100">
-          <span class="val" id="editOpacityVal">100%</span>
-        </div>
-        <button class="tb-btn" id="editApplyAllPages">Terapkan ke semua halaman dokumen ini</button>
-        <button class="tb-btn danger" id="editClearPageBtn">Hapus semua di halaman ini</button>
-        <div class="tb-spacer"></div>
-        <span style="font-size:11.5px;color:var(--ink-soft);">Klik pada halaman untuk menambah teks / kotak penutup</span>
-      </div>
-
-      <div class="canvas-wrap" id="editCanvasWrap">
-        <div class="empty-viewer" id="editEmptyViewer">
-          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
-          <h3>Mulai dengan mengunggah PDF</h3>
-          <p>Unggah satu atau lebih PDF di panel kiri, lalu pilih dokumen untuk mulai. Klik pada halaman untuk menambah teks baru (bisa pilih warna & ukuran), atau tutupi tulisan lama dengan kotak lalu tulis penggantinya di atasnya — ini cara paling andal untuk "mengedit" teks di PDF karena PDF tidak menyimpan teks sebagai dokumen yang bisa diketik ulang langsung.</p>
-        </div>
-      </div>
-
-      <div class="thumb-strip" id="editThumbStrip" style="display:none;"></div>
-    </section>
+    </div>
   </main>
 
   <main class="workspace" id="stampView" style="display:none;--th-1:#B33A3A;--th-2:#7A2020;--th-tint:rgba(179,58,58,0.055);">
@@ -886,18 +887,14 @@
       </div>
 
       <div class="sidebar-section">
-        <h2>2 · Gambar Stempel</h2>
-        <div class="ocr-toggle" id="stampModeToggle">
-          <button type="button" class="active" data-mode="single">1 Stempel</button>
-          <button type="button" data-mode="multi"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>Banyak Stempel<span class="premium-badge">Lock</span></button>
-        </div>
-        <p class="ocr-hint" id="stampModeHint">Mode 1 Stempel: unggah satu gambar PNG/JPG, dipakai berulang. Upgrade ke Banyak Stempel untuk unggah beberapa gambar berbeda sekaligus.</p>
+        <h2>2 · Gambar Stempel (<span id="stampCount">0</span>)</h2>
         <div class="drop" id="stampDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-          <p><b>Klik atau seret</b><br>PNG/JPG stempel (mis. spesimen terkendali)</p>
+          <p><b>Klik atau seret</b><br>bisa pilih beberapa PNG stempel</p>
         </div>
-        <input type="file" id="stampInput" accept="image/png,image/jpeg">
-        <div class="stamp-gallery" id="stampGallery"></div>
+        <input type="file" id="stampInput" accept="image/png,image/jpeg" multiple>
+        <div class="stamp-gallery" id="stampGallery" style="display:none;"></div>
+        <div class="stamp-active-hint" id="stampActiveHint" style="display:none;">Klik salah satu gambar untuk menjadikannya stempel aktif saat menempel.</div>
       </div>
 
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
@@ -930,17 +927,8 @@
           </button>
           <button class="mode-btn" id="modeCheckBtn" data-mode="check">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg>
-            Tanda / Simbol
+            Tanda Centang
           </button>
-        </div>
-        <div class="toolbar-group" id="markSymbolGroup" style="display:none;">
-          <label>Simbol</label>
-          <div class="symbol-picker" id="symbolPicker">
-            <button type="button" class="symbol-btn active" data-symbol="check" title="Centang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5L9.5 18L20 6"/></svg></button>
-            <button type="button" class="symbol-btn" data-symbol="cross" title="Silang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6L18 18M18 6L6 18"/></svg></button>
-            <button type="button" class="symbol-btn" data-symbol="star" title="Bintang"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L14.9 8.6L22 9.3L16.5 14.1L18.2 21L12 17.3L5.8 21L7.5 14.1L2 9.3L9.1 8.6Z"/></svg></button>
-            <button type="button" class="symbol-btn" data-symbol="circle" title="Lingkaran"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg></button>
-          </div>
         </div>
         <div class="toolbar-group" id="checkColorGroup" style="display:none;">
           <label>Warna</label>
@@ -977,7 +965,7 @@
         <div class="empty-viewer" id="emptyViewer">
           <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></div>
           <h3>Mulai dengan mengunggah berkas</h3>
-          <p>Unggah satu atau lebih PDF dan satu gambar stempel PNG di panel kiri. Setelah itu pilih dokumen untuk mulai menempatkan stempel — klik di mana saja pada halaman.</p>
+          <p>Unggah satu atau lebih PDF dan satu atau lebih gambar stempel PNG di panel kiri. Setelah itu pilih dokumen untuk mulai menempatkan stempel — klik di mana saja pada halaman.</p>
         </div>
       </div>
 
@@ -1157,6 +1145,10 @@
           <p><b>Klik atau seret</b><br>kolom Nama Pasien &amp; Tanggal Lahir</p>
         </div>
         <input type="file" id="lockExcelInput" accept=".xlsx,.xls">
+        <button type="button" class="tpl-download-link" id="lockTplDownloadBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          Unduh Template Excel Kosong
+        </button>
         <div class="excel-preview" id="lockExcelPreview" style="display:none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
           <div class="meta">
@@ -1221,6 +1213,10 @@
           <p><b>Klik atau seret</b><br>kolom Nama Pasien &amp; Tanggal Lahir — opsional, atau ketik password manual</p>
         </div>
         <input type="file" id="unlockExcelInput" accept=".xlsx,.xls">
+        <button type="button" class="tpl-download-link" id="unlockTplDownloadBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          Unduh Template Excel Kosong
+        </button>
         <div class="excel-preview" id="unlockExcelPreview" style="display:none;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>
           <div class="meta">
@@ -1476,7 +1472,7 @@
       <div class="sidebar-section" style="flex:1;">
         <h2>Harga &amp; Info Pembayaran</h2>
         <input type="number" id="adminPriceInput" class="admin-input" placeholder="Harga (Rp)">
-        <input type="number" id="adminDurationInput" class="admin-input" placeholder="Masa aktif Full Version (hari)" min="1">
+        <input type="number" id="adminDurationInput" class="admin-input" placeholder="Masa aktif OCR (hari)" min="1">
         <textarea id="adminInstructionsInput" class="admin-input" rows="6" placeholder="Instruksi pembayaran — nomor rekening / QRIS, dll."></textarea>
         <button class="primary-action" id="adminSavePricingBtn" style="width:100%;">Simpan Harga &amp; Instruksi</button>
       </div>
@@ -1485,32 +1481,25 @@
         <textarea id="adminSupportInstructionsInput" class="admin-input" rows="5" placeholder="Info rekening/QRIS untuk donasi sukarela..."></textarea>
         <button class="primary-action" id="adminSaveSupportBtn" style="width:100%;">Simpan Info Dukungan</button>
       </div>
-      <div class="sidebar-section" style="border-bottom:none;" id="adminFullVersionSection">
-        <h2>Kelola Akun Full Version</h2>
-        <input type="email" id="adminGrantEmailInput" class="admin-input" placeholder="Email akun (harus sudah pernah daftar)">
-        <input type="number" id="adminGrantDurationInput" class="admin-input" placeholder="Durasi (hari) — kosongkan = pakai default" min="1">
-        <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-soft);margin:-2px 0 10px;cursor:pointer;">
-          <input type="checkbox" id="adminGrantPermanentInput" style="margin:0;">
-          Tanpa batas waktu (permanen)
-        </label>
-        <button class="primary-action" id="adminGrantBtn" style="width:100%;">Aktifkan Full Version</button>
-      </div>
       <div class="sidebar-footer">
         <div class="footer-sub" style="margin-top:0;">Perubahan berlaku langsung untuk semua pengguna.</div>
       </div>
     </aside>
     <section class="viewer">
       <div class="viewer-toolbar">
-        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">Akun Full Version Aktif</h2>
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">Pengajuan Pembayaran</h2>
         <div class="tb-spacer"></div>
         <button class="primary-action" id="adminRefreshBtn" style="width:auto;padding:9px 16px;">Muat Ulang</button>
       </div>
       <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
-        <div id="adminPremiumAccountsSection">
-          <div id="adminPremiumAccountsList"></div>
-        </div>
-        <h2 style="font-size:13px;font-weight:700;color:var(--ink);margin:18px 4px 8px;">Pengajuan Pembayaran</h2>
         <div id="adminPaymentsList"></div>
+      </div>
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">💬 Masukan Pengguna (Saran &amp; Kritik)</h2>
+        <div class="tb-spacer"></div>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div id="adminFeedbackList"></div>
       </div>
     </section>
   </main>
@@ -1549,6 +1538,48 @@
       </div>
     </section>
   </main>
+
+  <main class="workspace feedback-page" id="feedbackView" style="display:none;">
+    <aside class="sidebar">
+      <div class="feedback-hero">
+        <div class="feedback-hero-blob"></div>
+        <div class="feedback-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        </div>
+        <h2>Saran &amp; Kritik</h2>
+        <p>Ada fitur yang aneh, kurang, atau berpotensi lebih baik? Beri tahu kami — masukan Anda langsung sampai ke pengembang.</p>
+      </div>
+      <div class="sidebar-section" style="border-bottom:none;flex:1;">
+        <h2>Tulis Masukan</h2>
+        <input type="text" id="feedbackNameInput" class="admin-input" placeholder="Nama Anda (boleh dikosongkan)" maxlength="60">
+        <select id="feedbackCategoryInput" class="admin-input">
+          <option value="saran">💡 Saran</option>
+          <option value="kritik">⚠️ Kritik</option>
+          <option value="bug">🐞 Laporan Bug/Error</option>
+          <option value="lainnya">📝 Lainnya</option>
+        </select>
+        <textarea id="feedbackMessageInput" class="admin-input" rows="5" placeholder="Ceritakan apa yang perlu diperbaiki atau ditingkatkan..." maxlength="500"></textarea>
+        <button class="feedback-submit-btn" id="feedbackSendBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Kirim Masukan
+        </button>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <h2 style="font-size:14px;font-weight:700;color:var(--ink);">Kenapa masukan ini penting</h2>
+        <div class="tb-spacer"></div>
+      </div>
+      <div class="canvas-wrap" style="align-items:flex-start;justify-content:flex-start;display:block;padding:22px;">
+        <ul class="feedback-info-list">
+          <li><span>💡</span><span><b>Saran</b> — ide fitur baru atau perubahan yang menurut Anda bakal bikin aplikasi ini lebih enak dipakai.</span></li>
+          <li><span>⚠️</span><span><b>Kritik</b> — bagian yang terasa membingungkan, kurang rapi, atau kurang sesuai harapan.</span></li>
+          <li><span>🐞</span><span><b>Bug/Error</b> — sesuatu yang tidak berjalan sebagaimana mestinya. Sertakan menu mana dan langkah yang Anda lakukan bila memungkinkan.</span></li>
+          <li><span>🔒</span><span>Masukan yang Anda kirim <b>tidak ditampilkan ke publik</b> — hanya bisa dilihat oleh pengembang aplikasi ini.</span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
 </div>
 
 <div class="modal-backdrop" id="authModal">
@@ -1576,7 +1607,7 @@
 
 <div class="modal-backdrop" id="upgradeModal">
   <div class="modal-box" style="width:380px;">
-    <h3>Aktifkan Full Version</h3>
+    <h3>Aktifkan OCR Premium</h3>
     <p id="upgradePriceText">Harga: —</p>
     <p id="upgradeInstructionsText" style="white-space:pre-wrap;background:#FAF9F5;border:1px solid var(--line-soft);border-radius:8px;padding:10px;font-size:12px;color:var(--ink);"></p>
     <div id="upgradeFormArea">
@@ -1625,19 +1656,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 let docs = [];
 let activeDocId = null;
 let activePage = 1;
-let stampImages = [];       // [{id, dataUrl, width, height, name, mime}] — bisa 1 atau banyak
-let activeStampImageId = null;
-let stampMode = 'single';   // 'single' (gratis) atau 'multi' (premium)
+let stampImages = [];       // [{id, dataUrl, width, height, name, mime}]
+let activeStampId = null;   // id of the stamp image currently selected for placing
+let stampCounter = 0;
+function getStampById(id){ return stampImages.find(s => s.id === id) || null; }
+function getActiveStamp(){ return getStampById(activeStampId) || stampImages[0] || null; }
 let selectedStampId = null;
 let placeMode = 'stamp';    // 'stamp' atau 'check' — jenis tanda yang ditempel saat klik halaman
 let checkColor = '#1D8A4C';
-let currentMarkSymbol = 'check'; // simbol tanda vektor yang sedang dipilih
-const MARK_SYMBOL_DEFS = {
-  check:  { path: 'M4 12.5 L9.5 18 L20 6', fill: false },
-  cross:  { path: 'M6 6 L18 18 M18 6 L6 18', fill: false },
-  star:   { path: 'M12 2 L14.9 8.6 L22 9.3 L16.5 14.1 L18.2 21 L12 17.3 L5.8 21 L7.5 14.1 L2 9.3 L9.1 8.6 Z', fill: true },
-  circle: { path: 'M3 12 A9 9 0 1 0 21 12 A9 9 0 1 0 3 12 Z', fill: false }
-};
 // Ukuran default disimpan terpisah per tipe, supaya mengubah ukuran stempel gambar
 // tidak ikut mengubah ukuran default tanda centang, dan sebaliknya.
 let defaultSize = {
@@ -1713,6 +1739,7 @@ document.querySelector('#tabJpgView').addEventListener('click', () => switchTab(
 document.querySelector('#tabWordView').addEventListener('click', () => switchTab('word'));
 document.querySelector('#tabExcelView').addEventListener('click', () => switchTab('excel'));
 document.querySelector('#tabPptView').addEventListener('click', () => switchTab('ppt'));
+document.querySelector('#tabFeedbackView').addEventListener('click', () => switchTab('feedback'));
 function switchTab(view){
   document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
   document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
@@ -1724,9 +1751,9 @@ function switchTab(view){
   document.querySelector('#tabWordView').classList.toggle('active', view === 'word');
   document.querySelector('#tabExcelView').classList.toggle('active', view === 'excel');
   document.querySelector('#tabPptView').classList.toggle('active', view === 'ppt');
+  document.querySelector('#tabFeedbackView').classList.toggle('active', view === 'feedback');
   document.querySelector('#homeView').style.display = view === 'home' ? 'flex' : 'none';
   document.querySelector('#homeBtn').style.display = view === 'home' ? 'none' : 'flex';
-  document.querySelector('#editView').style.display = view === 'edit' ? 'flex' : 'none';
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
   document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
   document.querySelector('#splitView').style.display = view === 'split' ? 'flex' : 'none';
@@ -1739,6 +1766,7 @@ function switchTab(view){
   document.querySelector('#pptView').style.display = view === 'ppt' ? 'flex' : 'none';
   document.querySelector('#adminView').style.display = view === 'admin' ? 'flex' : 'none';
   document.querySelector('#supportView').style.display = view === 'support' ? 'flex' : 'none';
+  document.querySelector('#feedbackView').style.display = view === 'feedback' ? 'flex' : 'none';
   if(view === 'support') loadSupportData();
   if(view === 'admin') loadAdminData();
 }
@@ -1748,460 +1776,6 @@ document.querySelectorAll('.home-card').forEach(card => {
   card.addEventListener('click', () => switchTab(card.dataset.view));
 });
 switchTab('home');
-
-// ---------- Edit PDF ----------
-let editDocs = [];
-let editActiveDocId = null;
-let editActivePage = 1;
-let editPlaceMode = 'text';   // 'text' atau 'whiteout'
-let editSelectedId = null;
-let editPlacementCounter = 0;
-let editOpacityPct = 100;
-let editTextColor = '#1F2A24';
-let editWhiteoutColor = '#FFFFFF';
-let editFontSizePt = 14;
-let editPageBaseW = 0, editPageBaseH = 0;
-
-const editFileListEl = $('#editFileList');
-const editCanvasWrap = $('#editCanvasWrap');
-const editEmptyViewer = $('#editEmptyViewer');
-const editViewerToolbar = $('#editViewerToolbar');
-const editThumbStrip = $('#editThumbStrip');
-const editProcessBtn = $('#editProcessBtn');
-const editProcessSub = $('#editProcessSub');
-
-const editPdfInput = $('#editPdfInput');
-$('#editPdfDrop').addEventListener('click', () => editPdfInput.click());
-editPdfInput.addEventListener('change', e => handleEditPdfFiles(e.target.files));
-setupDrop($('#editPdfDrop'), handleEditPdfFiles);
-
-async function handleEditPdfFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-  if(!files.length) return;
-  for(const file of files){
-    const buf = await file.arrayBuffer();
-    let pdfjsDoc;
-    try{
-      pdfjsDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
-    }catch(err){
-      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
-      continue;
-    }
-    const id = 'ed' + Math.random().toString(36).slice(2,9);
-    editDocs.push({ id, name: file.name, bytes: buf, pdfjsDoc, pageCount: pdfjsDoc.numPages, pages: {} });
-  }
-  renderEditFileList();
-  updateEditProcessState();
-  if(!editActiveDocId && editDocs.length) openEditDoc(editDocs[0].id);
-}
-
-function renderEditFileList(){
-  if(!editDocs.length){
-    editFileListEl.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
-    return;
-  }
-  editFileListEl.innerHTML = '';
-  editDocs.forEach(d => {
-    const count = Object.values(d.pages).reduce((a,arr)=>a+arr.length,0);
-    const el = document.createElement('div');
-    el.className = 'file-item' + (d.id === editActiveDocId ? ' active' : '');
-    el.innerHTML = `
-      <div class="fi-icon">PDF</div>
-      <div class="fi-meta">
-        <div class="fi-name">${escapeHtml(d.name)}</div>
-        <div class="fi-sub">${d.pageCount} halaman</div>
-      </div>
-      ${count ? `<div class="fi-count">${count} edit</div>` : ''}
-      <button class="fi-remove" title="Hapus">×</button>
-    `;
-    el.addEventListener('click', (e) => {
-      if(e.target.classList.contains('fi-remove')) return;
-      openEditDoc(d.id);
-    });
-    el.querySelector('.fi-remove').addEventListener('click', (e) => {
-      e.stopPropagation();
-      editDocs = editDocs.filter(x => x.id !== d.id);
-      if(editActiveDocId === d.id){
-        editActiveDocId = null;
-        showEditEmptyViewer();
-        if(editDocs.length) openEditDoc(editDocs[0].id);
-      }
-      renderEditFileList();
-      updateEditProcessState();
-    });
-    editFileListEl.appendChild(el);
-  });
-}
-
-function showEditEmptyViewer(){
-  editEmptyViewer.style.display = 'block';
-  editViewerToolbar.style.display = 'none';
-  editThumbStrip.style.display = 'none';
-  const stage = $('#editPageStage');
-  if(stage) stage.remove();
-}
-
-function getActiveEditDoc(){ return editDocs.find(d => d.id === editActiveDocId); }
-
-async function openEditDoc(id){
-  editActiveDocId = id;
-  editActivePage = 1;
-  renderEditFileList();
-  editEmptyViewer.style.display = 'none';
-  editViewerToolbar.style.display = 'flex';
-  editThumbStrip.style.display = 'flex';
-  await renderEditThumbs();
-  await renderEditPage();
-}
-
-async function renderEditThumbs(){
-  const d = getActiveEditDoc();
-  editThumbStrip.innerHTML = '';
-  for(let p = 1; p <= d.pageCount; p++){
-    const wrap = document.createElement('div');
-    wrap.className = 'thumb' + (p === editActivePage ? ' active' : '');
-    const canvas = document.createElement('canvas');
-    wrap.appendChild(canvas);
-    if(d.pages[p] && d.pages[p].length){
-      const dot = document.createElement('div');
-      dot.className = 'tdot';
-      wrap.appendChild(dot);
-    }
-    const num = document.createElement('div');
-    num.className = 'tnum';
-    num.textContent = p;
-    wrap.appendChild(num);
-    wrap.addEventListener('click', () => { editActivePage = p; renderEditPage(); highlightEditThumb(); });
-    editThumbStrip.appendChild(wrap);
-
-    const page = await d.pdfjsDoc.getPage(p);
-    const vp = page.getViewport({scale: 1});
-    const scale = 40 / vp.width;
-    const svp = page.getViewport({scale});
-    canvas.width = svp.width; canvas.height = svp.height;
-    await page.render({canvasContext: canvas.getContext('2d'), viewport: svp}).promise;
-  }
-}
-function highlightEditThumb(){
-  editThumbStrip.querySelectorAll('.thumb').forEach((t,i) => t.classList.toggle('active', i+1 === editActivePage));
-}
-function renderEditThumbDot(){
-  const d = getActiveEditDoc();
-  editThumbStrip.querySelectorAll('.thumb').forEach((t,i) => {
-    const p = i+1;
-    const has = d.pages[p] && d.pages[p].length;
-    let dot = t.querySelector('.tdot');
-    if(has && !dot){ dot = document.createElement('div'); dot.className = 'tdot'; t.appendChild(dot); }
-    if(!has && dot) dot.remove();
-  });
-}
-
-async function renderEditPage(){
-  const d = getActiveEditDoc();
-  if(!d) return;
-  $('#editPageIndicator').textContent = editActivePage + ' / ' + d.pageCount;
-  $('#editPrevPage').disabled = editActivePage <= 1;
-  $('#editNextPage').disabled = editActivePage >= d.pageCount;
-
-  const old = $('#editPageStage');
-  if(old) old.remove();
-
-  const page = await d.pdfjsDoc.getPage(editActivePage);
-  const containerWidth = editCanvasWrap.clientWidth - 56;
-  const baseVp = page.getViewport({scale: 1});
-  editPageBaseW = baseVp.width;
-  editPageBaseH = baseVp.height;
-  const scale = Math.min(1.6, Math.max(0.4, containerWidth / baseVp.width));
-  const viewport = page.getViewport({scale});
-
-  const stage = document.createElement('div');
-  stage.className = 'page-stage';
-  stage.id = 'editPageStage';
-  stage.style.width = viewport.width + 'px';
-  stage.style.height = viewport.height + 'px';
-
-  const canvas = document.createElement('canvas');
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  stage.appendChild(canvas);
-  editCanvasWrap.innerHTML = '';
-  editCanvasWrap.appendChild(stage);
-
-  await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
-
-  stage.addEventListener('click', (e) => {
-    if(e.target !== stage && e.target !== canvas) return;
-    const rect = stage.getBoundingClientRect();
-    const xFrac = (e.clientX - rect.left) / rect.width;
-    const yFrac = (e.clientY - rect.top) / rect.height;
-    placeEditElement(xFrac, yFrac);
-  });
-
-  redrawEditElementsForPage();
-  highlightEditThumb();
-}
-
-function placeEditElement(xFrac, yFrac){
-  const d = getActiveEditDoc();
-  const p = { id: 'e' + (editPlacementCounter++), type: editPlaceMode, opacity: editOpacityPct };
-  if(editPlaceMode === 'text'){
-    p.text = 'Teks baru';
-    p.color = editTextColor;
-    p.fontSizeFrac = editFontSizePt / (editPageBaseH || 800);
-    p.xFrac = clamp(xFrac, 0, 0.95);
-    p.yFrac = clamp(yFrac, 0, 0.95);
-    p.wFrac = 0.3; p.hFrac = p.fontSizeFrac * 1.6;
-    p._focusOnRender = true;
-  } else {
-    p.color = editWhiteoutColor;
-    p.wFrac = 0.25; p.hFrac = 0.06;
-    p.xFrac = clamp(xFrac - p.wFrac/2, 0, 1 - p.wFrac);
-    p.yFrac = clamp(yFrac - p.hFrac/2, 0, 1 - p.hFrac);
-  }
-  if(!d.pages[editActivePage]) d.pages[editActivePage] = [];
-  d.pages[editActivePage].push(p);
-  editSelectedId = p.id;
-  redrawEditElementsForPage();
-  renderEditFileList();
-  renderEditThumbDot();
-  updateEditProcessState();
-}
-
-function setEditPlaceMode(mode){
-  editPlaceMode = mode;
-  $('#editModeTextBtn').classList.toggle('active', mode === 'text');
-  $('#editModeCoverBtn').classList.toggle('active', mode === 'whiteout');
-  $('#editFontSizeGroup').style.display = mode === 'text' ? 'flex' : 'none';
-  $('#editColorLabel').textContent = mode === 'text' ? 'Warna Teks' : 'Warna Penutup';
-  $('#editColorInput').value = mode === 'text' ? editTextColor : editWhiteoutColor;
-}
-$('#editModeTextBtn').addEventListener('click', () => setEditPlaceMode('text'));
-$('#editModeCoverBtn').addEventListener('click', () => setEditPlaceMode('whiteout'));
-
-$('#editColorInput').addEventListener('input', (e) => {
-  const val = e.target.value;
-  if(editPlaceMode === 'text') editTextColor = val; else editWhiteoutColor = val;
-  applyToSelectedEdit(p => { p.color = val; });
-});
-$('#editFontSizeInput').addEventListener('input', (e) => {
-  const pt = parseFloat(e.target.value) || 14;
-  editFontSizePt = pt;
-  const fontSizeFrac = pt / (editPageBaseH || 800);
-  applyToSelectedEdit(p => { if(p.type === 'text'){ p.fontSizeFrac = fontSizeFrac; p.hFrac = fontSizeFrac * 1.6; } });
-});
-$('#editOpacitySlider').addEventListener('input', (e) => {
-  editOpacityPct = +e.target.value;
-  $('#editOpacityVal').textContent = e.target.value + '%';
-  applyToSelectedEdit(p => { p.opacity = editOpacityPct; });
-});
-
-function applyToSelectedEdit(fn){
-  if(!editSelectedId) return;
-  const d = getActiveEditDoc();
-  if(!d) return;
-  const list = d.pages[editActivePage] || [];
-  const p = list.find(x => x.id === editSelectedId);
-  if(p){ fn(p); redrawEditElementsForPage(); }
-}
-
-function redrawEditElementsForPage(){
-  const stage = $('#editPageStage');
-  if(!stage) return;
-  stage.querySelectorAll('.stamp-el').forEach(el => el.remove());
-  const d = getActiveEditDoc();
-  const list = d.pages[editActivePage] || [];
-  list.forEach(p => {
-    const el = document.createElement('div');
-    el.className = 'stamp-el' + (p.id === editSelectedId ? ' selected' : '');
-    el.style.left = (p.xFrac * 100) + '%';
-    el.style.top = (p.yFrac * 100) + '%';
-    el.style.width = (p.wFrac * 100) + '%';
-    el.style.height = (p.hFrac * 100) + '%';
-    el.style.opacity = (p.opacity ?? 100) / 100;
-
-    if(p.type === 'whiteout'){
-      el.style.background = p.color || '#FFFFFF';
-      el.innerHTML = `<div class="handle"></div><div class="del">×</div>`;
-    } else {
-      el.style.background = 'transparent';
-      const fontPx = (p.fontSizeFrac || 0.02) * stage.clientHeight;
-      el.innerHTML = `<div class="edit-text-box" contenteditable="true" spellcheck="false" style="color:${p.color || '#1F2A24'};font-size:${fontPx}px;">${escapeHtml(p.text || '')}</div><div class="handle"></div><div class="del">×</div>`;
-    }
-    stage.appendChild(el);
-
-    if(p.type === 'text'){
-      const textBox = el.querySelector('.edit-text-box');
-      textBox.addEventListener('mousedown', (e) => e.stopPropagation());
-      textBox.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(editSelectedId !== p.id){ editSelectedId = p.id; redrawEditElementsForPage(); }
-      });
-      textBox.addEventListener('input', () => { p.text = textBox.textContent; renderEditFileList(); });
-      if(p._focusOnRender){
-        delete p._focusOnRender;
-        setTimeout(() => {
-          textBox.focus();
-          const range = document.createRange();
-          range.selectNodeContents(textBox);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }, 30);
-      }
-    }
-
-    el.addEventListener('mousedown', (e) => {
-      if(p.type === 'text' && e.target.classList.contains('edit-text-box')) return; // biarkan mengetik
-      e.stopPropagation();
-      editSelectedId = p.id;
-      redrawEditElementsForPage();
-      const isHandle = e.target.classList.contains('handle');
-      const isDel = e.target.classList.contains('del');
-      if(isDel){
-        d.pages[editActivePage] = d.pages[editActivePage].filter(x => x.id !== p.id);
-        redrawEditElementsForPage(); renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
-        return;
-      }
-      const stageRect = stage.getBoundingClientRect();
-      const startX = e.clientX, startY = e.clientY;
-      const startP = {...p};
-
-      function onMove(ev){
-        if(isHandle){
-          const dx = (ev.clientX - startX) / stageRect.width;
-          if(p.type === 'whiteout'){
-            const newW = clamp(startP.wFrac + dx, 0.02, 0.95);
-            const scaleRatio = newW / startP.wFrac;
-            p.wFrac = newW;
-            p.hFrac = clamp(startP.hFrac * scaleRatio, 0.01, 0.95);
-          } else {
-            const scaleRatio = clamp(1 + dx / (startP.wFrac || 0.3), 0.3, 4);
-            p.fontSizeFrac = clamp(startP.fontSizeFrac * scaleRatio, 0.006, 0.3);
-            p.hFrac = p.fontSizeFrac * 1.6;
-            const textBox = el.querySelector('.edit-text-box');
-            if(textBox) textBox.style.fontSize = (p.fontSizeFrac * stage.clientHeight) + 'px';
-          }
-        } else {
-          const dx = (ev.clientX - startX) / stageRect.width;
-          const dy = (ev.clientY - startY) / stageRect.height;
-          p.xFrac = clamp(startP.xFrac + dx, 0, 1 - p.wFrac);
-          p.yFrac = clamp(startP.yFrac + dy, 0, 1 - p.hFrac);
-        }
-        el.style.left = (p.xFrac*100)+'%'; el.style.top=(p.yFrac*100)+'%';
-        el.style.width=(p.wFrac*100)+'%'; el.style.height=(p.hFrac*100)+'%';
-      }
-      function onUp(){
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  });
-}
-
-editCanvasWrap.addEventListener('click', (e) => {
-  if(e.target === editCanvasWrap){ editSelectedId = null; redrawEditElementsForPage(); }
-});
-
-$('#editPrevPage').addEventListener('click', () => { if(editActivePage>1){editActivePage--; renderEditPage();} });
-$('#editNextPage').addEventListener('click', () => { const d=getActiveEditDoc(); if(editActivePage<d.pageCount){editActivePage++; renderEditPage();} });
-
-$('#editClearPageBtn').addEventListener('click', () => {
-  const d = getActiveEditDoc();
-  d.pages[editActivePage] = [];
-  editSelectedId = null;
-  redrawEditElementsForPage(); renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
-});
-
-$('#editApplyAllPages').addEventListener('click', () => {
-  const d = getActiveEditDoc();
-  const list = d.pages[editActivePage];
-  if(!list || !list.length){ toast('Belum ada elemen di halaman ini untuk disalin'); return; }
-  for(let p = 1; p <= d.pageCount; p++){
-    if(p === editActivePage) continue;
-    d.pages[p] = list.map(s => ({...s, id: 'e'+(editPlacementCounter++)}));
-  }
-  toast('Diterapkan ke semua ' + d.pageCount + ' halaman');
-  renderEditFileList(); renderEditThumbDot(); updateEditProcessState();
-});
-
-function updateEditProcessState(){
-  const totalPlacements = editDocs.reduce((sum,d) => sum + Object.values(d.pages).reduce((a,arr)=>a+arr.length,0), 0);
-  editProcessBtn.disabled = !(editDocs.length && totalPlacements);
-  if(!editDocs.length) editProcessSub.textContent = 'Unggah PDF, lalu tambahkan teks atau tutupi bagian yang mau diganti.';
-  else if(!totalPlacements) editProcessSub.textContent = 'Klik pada halaman untuk menambah teks atau kotak penutup.';
-  else editProcessSub.textContent = totalPlacements + ' elemen siap diterapkan pada ' + editDocs.filter(d=>Object.values(d.pages).some(a=>a.length)).length + ' dokumen.';
-}
-
-editProcessBtn.addEventListener('click', processEditAll);
-
-async function processEditAll(){
-  const overlay = $('#overlay');
-  overlay.classList.add('show');
-  const results = [];
-  try{
-    const { PDFDocument, rgb, StandardFonts } = PDFLib;
-    for(const d of editDocs){
-      const hasAny = Object.values(d.pages).some(a => a.length);
-      if(!hasAny) continue;
-      $('#overlayText').textContent = 'Memproses "' + d.name + '"…';
-      const pdfDoc = await PDFDocument.load(d.bytes.slice(0));
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const pages = pdfDoc.getPages();
-
-      for(const pnumStr of Object.keys(d.pages)){
-        const pnum = parseInt(pnumStr, 10);
-        const placements = d.pages[pnum];
-        if(!placements || !placements.length) continue;
-        const page = pages[pnum - 1];
-        const { width: pw, height: ph } = page.getSize();
-        for(const p of placements){
-          const opacity = (p.opacity ?? 100) / 100;
-          const { r, g, b } = hexToRgbFrac(p.color || (p.type === 'text' ? '#1F2A24' : '#FFFFFF'));
-          const color = rgb(r, g, b);
-          if(p.type === 'whiteout'){
-            const w = p.wFrac * pw, h = p.hFrac * ph;
-            const x = p.xFrac * pw;
-            const y = ph - (p.yFrac * ph) - h;
-            page.drawRectangle({ x, y, width: w, height: h, color, opacity });
-          } else {
-            const fontSize = (p.fontSizeFrac || 0.02) * ph;
-            const x = p.xFrac * pw;
-            let yTop = ph - (p.yFrac * ph) - fontSize; // posisi baseline baris pertama
-            const lines = String(p.text || '').split('\n');
-            for(const line of lines){
-              if(line) page.drawText(line, { x, y: yTop, size: fontSize, font, color, opacity });
-              yTop -= fontSize * 1.25;
-            }
-          }
-        }
-      }
-      const outBytes = await pdfDoc.save();
-      results.push({ name: d.name.replace(/\.pdf$/i,'') + '_edit.pdf', bytes: outBytes });
-    }
-    if(!results.length){ toast('Tidak ada dokumen dengan perubahan untuk diproses'); overlay.classList.remove('show'); return; }
-    if(results.length === 1){
-      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
-    } else {
-      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
-      const zip = new JSZip();
-      results.forEach(r => zip.file(r.name, r.bytes));
-      const zipBlob = await zip.generateAsync({type:'blob'});
-      const url = URL.createObjectURL(zipBlob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'pdf_edit.zip';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url), 4000);
-    }
-    toast(results.length + ' PDF berhasil diproses');
-  }catch(err){
-    console.error(err);
-    toast('Terjadi kesalahan saat memproses PDF');
-  }finally{
-    overlay.classList.remove('show');
-  }
-}
 
 // ---------- Gabung PDF ----------
 let mergePool = [];    // { id, name, bytes, pageCount } — semua PDF yang diunggah
@@ -2816,6 +2390,25 @@ function renderLockPool(){
 }
 
 // ---------- Template Excel ----------
+// Base64 dari template_kunci_pdf.xlsx (kolom: Nama Pasien, Tanggal Lahir)
+const LOCK_TEMPLATE_XLSX_B64 = "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";
+function downloadTemplateXlsx(){
+  const byteChars = atob(LOCK_TEMPLATE_XLSX_B64);
+  const byteNumbers = new Array(byteChars.length);
+  for(let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+  const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "template_kunci_pdf.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+$("#lockTplDownloadBtn").addEventListener("click", downloadTemplateXlsx);
+$("#unlockTplDownloadBtn").addEventListener("click", downloadTemplateXlsx);
+
 const lockExcelInput = $('#lockExcelInput');
 $('#lockExcelDrop').addEventListener('click', () => lockExcelInput.click());
 lockExcelInput.addEventListener('change', e => { if(e.target.files[0]) handleLockExcel(e.target.files[0]); });
@@ -3482,9 +3075,8 @@ async function ensureTesseractLib(){
 }
 
 // ---------- Supabase: akun & OCR premium ----------
-const SUPABASE_URL = 'https://bldgfnkrhtdbbmqabsid.supabase.co';
-const SUPER_ADMIN_EMAIL = 'darmawanarta30@gmail.com'; // hanya email ini yang boleh kelola akun Full Version
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJsZGdmbmtyaHRkYmJtcWFic2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MTU4MDIsImV4cCI6MjEwNTE5MTgwMn0.YetkeYu_kkjwRJyqoNvzw5y5gXIU0iXwI-x6ouQbuso';
+const SUPABASE_URL = 'https://rdyavwofbntoeljejvlw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_9TthHKhFDemEWrqG0NrXjA_9kjB_qMK';
 let sbClient = null;
 let sbReadyPromise = (async () => {
   const urls = [
@@ -3714,7 +3306,7 @@ $('#upgradeCheckBtn').addEventListener('click', async () => {
 });
 
 // Dipanggil sebelum mengaktifkan mode OCR: pastikan sudah login & premium
-async function ensurePremiumAccess(){
+async function ensureOcrAccess(){
   await refreshAuthUI();
   if(!currentUser){
     const loggedIn = await openAuthModal('login');
@@ -3732,9 +3324,6 @@ async function loadAdminData(){
     switchTab('home');
     return;
   }
-  const isSuperAdmin = currentUser.email && currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL;
-  $('#adminFullVersionSection').style.display = isSuperAdmin ? 'block' : 'none';
-  $('#adminPremiumAccountsSection').style.display = isSuperAdmin ? 'block' : 'none';
   // Sapu semua akun yang masa aktif OCR-nya sudah lewat, supaya daftar/statistik terbaru
   await sbClient.rpc('expire_all_premium');
   const { data: pricing } = await sbClient.from('pricing_config').select('*').eq('id', 1).single();
@@ -3746,54 +3335,34 @@ async function loadAdminData(){
   const { data: payments } = await sbClient.from('payment_requests')
     .select('*').order('created_at', { ascending: false }).limit(200);
   renderAdminPayments(payments || []);
-  if(isSuperAdmin) await loadPremiumAccounts();
+  const { data: feedbacks } = await sbClient.from('feedback_messages')
+    .select('*').order('created_at', { ascending: false }).limit(200);
+  renderAdminFeedback(feedbacks || []);
 }
-async function loadPremiumAccounts(){
-  const { data, error } = await sbClient.rpc('admin_list_premium_accounts');
-  if(error){ console.error(error); return; }
-  renderPremiumAccounts(data || []);
-}
-function renderPremiumAccounts(rows){
-  const wrap = $('#adminPremiumAccountsList');
-  if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada akun full version aktif.</div>'; return; }
+function renderAdminFeedback(rows){
+  const wrap = $('#adminFeedbackList');
+  if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada masukan dari pengguna.</div>'; return; }
   wrap.innerHTML = '';
+  const catLabel = { saran: '💡 Saran', kritik: '⚠️ Kritik', bug: '🐞 Bug', lainnya: '📝 Lainnya' };
+  const catClass = { kritik: 'kritik', bug: 'bug' };
   rows.forEach(r => {
     const card = document.createElement('div');
-    card.className = 'comp-card';
-    const expiry = r.premium_expires_at ? new Date(r.premium_expires_at).toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }) : 'tanpa batas';
+    card.className = 'feedback-msg-card';
+    const displayName = (r.name && r.name.trim()) ? r.name.trim() : 'Anonim';
+    const initial = displayName.charAt(0).toUpperCase();
+    const when = r.created_at ? new Date(r.created_at).toLocaleString('id-ID') : '';
+    const label = catLabel[r.category] || '📝 Lainnya';
+    const cls = catClass[r.category] || '';
     card.innerHTML = `
-      <div class="cc-meta">
-        <div class="cc-name">${escapeHtml(r.email || r.id)}</div>
-        <div class="cc-sub lock-status ok">Aktif s/d ${expiry}</div>
-      </div>
-      <div class="lock-controls" style="flex-direction:row;gap:8px;">
-        <button class="admin-mini-btn reject" data-act="revoke">Cabut</button>
+      <div class="feedback-msg-avatar">${escapeHtml(initial)}</div>
+      <div class="feedback-msg-body">
+        <span class="feedback-msg-name">${escapeHtml(displayName)}</span><span class="feedback-msg-date">${when}</span><span class="feedback-cat-badge ${cls}">${label}</span>
+        <div class="feedback-msg-text">${escapeHtml(r.message || '')}</div>
       </div>
     `;
-    card.querySelector('[data-act="revoke"]').addEventListener('click', async () => {
-      const { error } = await sbClient.rpc('admin_set_premium', { target_email: r.email, grant_premium: false, custom_duration_days: null });
-      if(error){ toast('Gagal: ' + error.message); return; }
-      toast('Full version dicabut'); loadPremiumAccounts();
-    });
     wrap.appendChild(card);
   });
 }
-$('#adminGrantPermanentInput').addEventListener('change', (e) => {
-  $('#adminGrantDurationInput').disabled = e.target.checked;
-});
-$('#adminGrantBtn').addEventListener('click', async () => {
-  const email = $('#adminGrantEmailInput').value.trim();
-  const permanent = $('#adminGrantPermanentInput').checked;
-  const durationRaw = $('#adminGrantDurationInput').value;
-  const duration = durationRaw ? parseInt(durationRaw, 10) : null;
-  if(!email){ toast('Isi email akunnya dulu'); return; }
-  const { error } = await sbClient.rpc('admin_set_premium', { target_email: email, grant_premium: true, custom_duration_days: duration, permanent });
-  if(error){ toast('Gagal: ' + error.message); return; }
-  toast('Full version diaktifkan untuk ' + email + (permanent ? ' (tanpa batas waktu)' : ''));
-  $('#adminGrantEmailInput').value = ''; $('#adminGrantDurationInput').value = '';
-  $('#adminGrantPermanentInput').checked = false; $('#adminGrantDurationInput').disabled = false;
-  loadPremiumAccounts();
-});
 function renderAdminPayments(rows){
   const wrap = $('#adminPaymentsList');
   if(!rows.length){ wrap.innerHTML = '<div class="empty-hint">Belum ada pengajuan pembayaran.</div>'; return; }
@@ -3909,6 +3478,21 @@ $('#supportSendBtn').addEventListener('click', async () => {
   $('#supportNameInput').value = ''; $('#supportMessageInput').value = '';
   toast('Terima kasih atas dukungannya!');
   loadSupportData();
+});
+
+// ---------- Masukan (saran & kritik pengguna) ----------
+$('#feedbackSendBtn').addEventListener('click', async () => {
+  if(!sbClient){ toast('Layanan sedang tidak bisa dimuat (masalah koneksi/CDN)'); return; }
+  const name = $('#feedbackNameInput').value.trim();
+  const category = $('#feedbackCategoryInput').value;
+  const message = $('#feedbackMessageInput').value.trim();
+  if(!message){ toast('Isi masukan Anda dulu'); return; }
+  $('#feedbackSendBtn').disabled = true;
+  const { error } = await sbClient.from('feedback_messages').insert({ name: name || null, category, message });
+  $('#feedbackSendBtn').disabled = false;
+  if(error){ toast('Gagal mengirim: ' + error.message); return; }
+  $('#feedbackNameInput').value = ''; $('#feedbackMessageInput').value = ''; $('#feedbackCategoryInput').value = 'saran';
+  toast('Terima kasih atas masukannya!');
 });
 
 refreshAuthUI();
@@ -4042,7 +3626,7 @@ function initOfficeTool(cfg){
       const mode = btn.dataset.mode;
       if(mode === officeState[k].mode) return;
       if(mode === 'ocr' && !(currentProfile && currentProfile.is_premium)){
-        const granted = await ensurePremiumAccess();
+        const granted = await ensureOcrAccess();
         if(!granted) return;
       }
       officeState[k].mode = mode;
@@ -4189,36 +3773,37 @@ async function processOfficeBatch(cfg){
 
 OFFICE_TOOLS.forEach(cfg => initOfficeTool(cfg));
 
-// ---------- Upload: stamp image ----------
+// ---------- Upload: stamp image(s) ----------
 const stampInput = $('#stampInput');
 $('#stampDrop').addEventListener('click', ()=> stampInput.click());
-stampInput.addEventListener('change', e => e.target.files.length && handleStampFiles(e.target.files));
+stampInput.addEventListener('change', e => { if(e.target.files.length) handleStampFiles(e.target.files); e.target.value = ''; });
 setupDrop($('#stampDrop'), fl => fl.length && handleStampFiles(fl));
 
 function handleStampFiles(fileList){
-  let files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
-  if(!files.length) return;
-  if(stampMode === 'single'){
-    files = [files[0]]; // mode gratis: cuma satu gambar, ganti yang lama
-    stampImages = [];
-    activeStampImageId = null;
-  }
+  const files = Array.from(fileList);
+  let loaded = 0;
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
         const entry = {
-          id: 'si' + Math.random().toString(36).slice(2,9),
-          dataUrl: reader.result, width: img.naturalWidth, height: img.naturalHeight,
-          name: file.name, mime: file.type || 'image/png'
+          id: 'st' + (stampCounter++),
+          dataUrl: reader.result,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          name: file.name,
+          mime: file.type || 'image/png'
         };
         stampImages.push(entry);
-        if(!activeStampImageId) activeStampImageId = entry.id;
+        activeStampId = entry.id; // newest upload becomes the active stamp
+        loaded++;
         renderStampGallery();
-        toast('Stempel "' + file.name + '" siap dipakai');
         updateProcessState();
         if(activeDocId) redrawStampsForPage();
+        if(loaded === files.length){
+          toast((files.length > 1 ? files.length + ' gambar stempel' : 'Stempel "' + entry.name + '"') + ' siap dipakai');
+        }
       };
       img.src = reader.result;
     };
@@ -4227,59 +3812,39 @@ function handleStampFiles(fileList){
 }
 
 function renderStampGallery(){
-  const wrap = $('#stampGallery');
-  wrap.innerHTML = '';
-  stampImages.forEach(si => {
+  const gallery = $('#stampGallery');
+  const hint = $('#stampActiveHint');
+  $('#stampCount').textContent = stampImages.length;
+  if(!stampImages.length){
+    gallery.style.display = 'none';
+    gallery.innerHTML = '';
+    hint.style.display = 'none';
+    return;
+  }
+  gallery.style.display = 'flex';
+  hint.style.display = 'block';
+  gallery.innerHTML = '';
+  stampImages.forEach(s => {
     const el = document.createElement('div');
-    el.className = 'stamp-item' + (si.id === activeStampImageId ? ' active' : '');
-    el.innerHTML = `
-      <img src="${si.dataUrl}" alt="stempel">
-      <div class="meta">
-        <div>${escapeHtml(si.name)}</div>
-        <div>${si.width}×${si.height} px</div>
-      </div>
-      <button class="stamp-remove" title="Hapus">×</button>
-    `;
+    el.className = 'stamp-thumb' + (s.id === activeStampId ? ' active' : '');
+    el.title = s.name + ' — ' + s.width + '×' + s.height + ' px';
+    el.innerHTML = `<div class="st-icon">PNG</div><div class="st-meta"><div class="st-name">${escapeHtml(s.name)}</div><div class="st-sub">${s.width}×${s.height} px</div></div>${s.id === activeStampId ? '<span class="st-badge">Aktif</span>' : ''}<button class="st-del" type="button" title="Hapus">×</button>`;
     el.addEventListener('click', (e) => {
-      if(e.target.classList.contains('stamp-remove')) return;
-      activeStampImageId = si.id;
+      if(e.target.classList.contains('st-del')) return;
+      activeStampId = s.id;
       renderStampGallery();
     });
-    el.querySelector('.stamp-remove').addEventListener('click', (e) => {
+    el.querySelector('.st-del').addEventListener('click', (e) => {
       e.stopPropagation();
-      stampImages = stampImages.filter(x => x.id !== si.id);
-      if(activeStampImageId === si.id) activeStampImageId = stampImages.length ? stampImages[0].id : null;
+      stampImages = stampImages.filter(x => x.id !== s.id);
+      if(activeStampId === s.id) activeStampId = stampImages.length ? stampImages[stampImages.length-1].id : null;
       renderStampGallery();
       updateProcessState();
       if(activeDocId) redrawStampsForPage();
     });
-    wrap.appendChild(el);
+    gallery.appendChild(el);
   });
 }
-
-const stampModeToggle = $('#stampModeToggle');
-stampModeToggle.querySelectorAll('button').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const mode = btn.dataset.mode;
-    if(mode === stampMode) return;
-    if(mode === 'multi' && !(currentProfile && currentProfile.is_premium)){
-      const granted = await ensurePremiumAccess();
-      if(!granted) return;
-    }
-    stampMode = mode;
-    stampInput.toggleAttribute('multiple', mode === 'multi');
-    stampModeToggle.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-    $('#stampModeHint').textContent = mode === 'multi'
-      ? 'Mode Banyak Stempel aktif — unggah beberapa PNG/JPG sekaligus, lalu klik salah satu di galeri untuk memilih yang mana yang ditempel.'
-      : 'Mode 1 Stempel: unggah satu gambar PNG/JPG, dipakai berulang. Upgrade ke Banyak Stempel untuk unggah beberapa gambar berbeda sekaligus.';
-    if(mode === 'single' && stampImages.length > 1){
-      stampImages = stampImages.slice(0, 1);
-      activeStampImageId = stampImages[0].id;
-      renderStampGallery();
-      if(activeDocId) redrawStampsForPage();
-    }
-  });
-});
 function setupDrop(el, cb){
   ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e=>{e.preventDefault();el.classList.add('dragover');}));
   ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e=>{e.preventDefault();el.classList.remove('dragover');}));
@@ -4419,7 +3984,7 @@ async function renderPage(){
 
   stage.addEventListener('click', (e) => {
     if(e.target !== stage && e.target !== canvas) return;
-    if(placeMode === 'stamp' && !stampImages.length){ toast('Unggah gambar stempel terlebih dulu'); return; }
+    if(placeMode === 'stamp' && !getActiveStamp()){ toast('Unggah gambar stempel terlebih dulu'); return; }
     const rect = stage.getBoundingClientRect();
     const xFrac = (e.clientX - rect.left) / rect.width;
     const yFrac = (e.clientY - rect.top) / rect.height;
@@ -4443,8 +4008,11 @@ function placeStamp(centerXFrac, centerYFrac){
     yFrac: clamp(centerYFrac - hFrac/2, 0, 1 - hFrac),
     wFrac, hFrac, opacity: opacityPct
   };
-  if(placeMode === 'check'){ p.color = checkColor; p.symbol = currentMarkSymbol; }
-  if(placeMode === 'stamp') p.stampImageId = activeStampImageId;
+  if(placeMode === 'check') p.color = checkColor;
+  if(placeMode === 'stamp'){
+    const active = getActiveStamp();
+    if(active) p.imgId = active.id;
+  }
   if(!d.pages[activePage]) d.pages[activePage] = [];
   d.pages[activePage].push(p);
   selectedStampId = p.id;
@@ -4460,18 +4028,10 @@ function setPlaceMode(mode){
   $('#modeStampBtn').classList.toggle('active', mode === 'stamp');
   $('#modeCheckBtn').classList.toggle('active', mode === 'check');
   $('#checkColorGroup').style.display = mode === 'check' ? 'flex' : 'none';
-  $('#markSymbolGroup').style.display = mode === 'check' ? 'flex' : 'none';
   refreshSizeInputs();
 }
 $('#modeStampBtn').addEventListener('click', () => setPlaceMode('stamp'));
 $('#modeCheckBtn').addEventListener('click', () => setPlaceMode('check'));
-$('#symbolPicker').querySelectorAll('.symbol-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    currentMarkSymbol = btn.dataset.symbol;
-    $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b === btn));
-    applyToSelected(p => { if(p.type === 'check') p.symbol = currentMarkSymbol; });
-  });
-});
 $('#checkColor').addEventListener('change', (e) => {
   checkColor = e.target.value;
   applyToSelected(p => { if(p.type === 'check') p.color = checkColor; });
@@ -4507,12 +4067,11 @@ function redrawStampsForPage(justPlacedLast){
     el.style.opacity = (p.opacity ?? 100) / 100;
     if(p.type === 'check'){
       const col = p.color || '#1D8A4C';
-      const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
-      const pathAttrs = def.fill ? `fill="${col}"` : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
-      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;"><path d="${def.path}" ${pathAttrs}/></svg><div class="handle"></div><div class="del">×</div>`;
+      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 6"/></svg><div class="handle"></div><div class="del">×</div>`;
     } else {
-      const si = stampImages.find(x => x.id === p.stampImageId) || stampImages[0];
-      el.innerHTML = `<img src="${si ? si.dataUrl : ''}" draggable="false"><div class="handle"></div><div class="del">×</div>`;
+      const img = getStampById(p.imgId) || getActiveStamp();
+      const src = img ? img.dataUrl : '';
+      el.innerHTML = `<img src="${src}" draggable="false"><div class="handle"></div><div class="del">×</div>`;
     }
     stage.appendChild(el);
 
@@ -4578,11 +4137,7 @@ function refreshSizeInputs(){
     const p = list.find(x => x.id === selectedStampId);
     if(p){
       wFrac = p.wFrac; hFrac = p.hFrac; activeType = p.type;
-      if(p.type === 'check'){
-        $('#checkColor').value = p.color || checkColor;
-        const sym = p.symbol || 'check';
-        $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b.dataset.symbol === sym));
-      }
+      if(p.type === 'check') $('#checkColor').value = p.color || checkColor;
     }
   }
   if(wFrac === undefined){ wFrac = defaultSize[activeType].w; hFrac = defaultSize[activeType].h; }
@@ -4708,20 +4263,19 @@ async function processAll(){
       if(!hasAny) continue;
       $('#overlayText').textContent = 'Memproses "' + d.name + '"…';
       const pdfDoc = await PDFDocument.load(d.bytes.slice(0));
-      const pages = pdfDoc.getPages();
-
-      // Setiap gambar stempel berbeda cuma di-embed sekali per dokumen, lalu dipakai ulang
-      const embeddedCache = {};
-      async function getEmbeddedStampImage(stampImageId){
-        const si = stampImages.find(x => x.id === stampImageId) || stampImages[0];
-        if(!si) return null;
-        if(embeddedCache[si.id]) return embeddedCache[si.id];
-        const bytes = dataUrlToBytes(si.dataUrl);
-        const isPng = si.dataUrl.startsWith('data:image/png');
+      const embeddedCache = {}; // imgId -> embedded pdf-lib image, cached per document
+      async function getEmbeddedImg(imgId){
+        const stamp = getStampById(imgId) || stampImages[0];
+        if(!stamp) return null;
+        const cacheKey = stamp.id;
+        if(embeddedCache[cacheKey]) return embeddedCache[cacheKey];
+        const bytes = dataUrlToBytes(stamp.dataUrl);
+        const isPng = stamp.dataUrl.startsWith('data:image/png');
         const embedded = isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
-        embeddedCache[si.id] = embedded;
+        embeddedCache[cacheKey] = embedded;
         return embedded;
       }
+      const pages = pdfDoc.getPages();
 
       for(const pnumStr of Object.keys(d.pages)){
         const pnum = parseInt(pnumStr, 10);
@@ -4736,19 +4290,15 @@ async function processAll(){
           const y = ph - (p.yFrac * ph) - h; // flip Y, pdf-lib origin bottom-left
           const opacity = (p.opacity ?? 100) / 100;
           if(p.type === 'check'){
-            const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
             const { r, g, b } = hexToRgbFrac(p.color || '#1D8A4C');
             const color = rgb(r, g, b);
-            const scaleVal = Math.min(w, h) / 24;
-            const yTop = y + h; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
-            if(def.fill){
-              page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color, opacity });
-            } else {
-              const thickness = Math.max(1, scaleVal * 3);
-              page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
-            }
+            const thickness = Math.max(1, Math.min(w, h) * (3 / 24));
+            const toPt = (sx, sy) => ({ x: x + (sx/24)*w, y: y + h - (sy/24)*h }); // svg 24x24 viewBox -> pdf coords
+            const A = toPt(4, 12.5), B = toPt(9.5, 18), C = toPt(20, 6);
+            page.drawLine({ start: A, end: B, thickness, color, opacity, lineCap: LineCapStyle.Round });
+            page.drawLine({ start: B, end: C, thickness, color, opacity, lineCap: LineCapStyle.Round });
           } else {
-            const embeddedImg = await getEmbeddedStampImage(p.stampImageId);
+            const embeddedImg = await getEmbeddedImg(p.imgId);
             if(embeddedImg) page.drawImage(embeddedImg, { x, y, width: w, height: h, opacity });
           }
         }
