@@ -618,6 +618,16 @@
   }
   .toolbar-group{display:flex;align-items:center;gap:8px;}
   .toolbar-group label{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;}
+  .color-swatches{display:flex;gap:4px;}
+  .color-swatch{
+    width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+    box-shadow:0 0 0 1px var(--line) inset;flex-shrink:0;
+  }
+  .color-swatch.active{border-color:var(--primary);box-shadow:0 0 0 1px #fff inset, 0 0 0 1px var(--primary);}
+  #checkColorCustom{
+    width:26px;height:26px;border:1px solid var(--line);border-radius:6px;padding:0;
+    background:none;cursor:pointer;flex-shrink:0;
+  }
   .page-nav{display:flex;align-items:center;gap:6px;}
   .page-nav button{
     width:26px;height:26px;border:1px solid var(--line);background:#fff;border-radius:6px;
@@ -986,13 +996,16 @@
           </div>
         </div>
         <div class="toolbar-group" id="checkColorGroup" style="display:none;">
-          <label>Warna</label>
-          <select id="checkColor">
-            <option value="#1D8A4C">Hijau</option>
-            <option value="#B33A3A">Merah</option>
-            <option value="#2059A6">Biru</option>
-            <option value="#1F2A24">Hitam</option>
-          </select>
+          <label>Warna Bingkai</label>
+          <div class="color-swatches" id="checkColorSwatches">
+            <button type="button" class="color-swatch active" data-color="#1D8A4C" style="background:#1D8A4C;" title="Hijau"></button>
+            <button type="button" class="color-swatch" data-color="#B33A3A" style="background:#B33A3A;" title="Merah"></button>
+            <button type="button" class="color-swatch" data-color="#2059A6" style="background:#2059A6;" title="Biru"></button>
+            <button type="button" class="color-swatch" data-color="#1F2A24" style="background:#1F2A24;" title="Hitam"></button>
+            <button type="button" class="color-swatch" data-color="#B8860B" style="background:#B8860B;" title="Emas"></button>
+            <button type="button" class="color-swatch" data-color="#6B21A8" style="background:#6B21A8;" title="Ungu"></button>
+          </div>
+          <input type="color" id="checkColorCustom" value="#1D8A4C" title="Pilih warna bebas">
         </div>
         <div class="toolbar-group">
           <label>Ukuran</label>
@@ -1755,10 +1768,20 @@ let customSymbolsMap = {};
 let customSymbolCounter = 0;
 // Ukuran default disimpan terpisah per tipe, supaya mengubah ukuran stempel gambar
 // tidak ikut mengubah ukuran default tanda centang, dan sebaliknya.
+// Untuk tipe 'stamp', ukuran defaultnya disimpan per gambar (stampByImg[imgId]) supaya
+// pada mode Banyak Stempel, ukuran tiap gambar stempel independen satu sama lain.
 let defaultSize = {
-  stamp: { w: 0.18, h: 0.18 },
+  stamp: { w: 0.18, h: 0.18 },   // fallback untuk gambar stempel yang belum punya ukuran sendiri
+  stampByImg: {},                // { [imgId]: {w,h} }
   check: { w: 0.10, h: 0.10 }
 };
+function getStampDefaultSize(imgId){
+  return (imgId && defaultSize.stampByImg[imgId]) || defaultSize.stamp;
+}
+function setStampDefaultSize(imgId, wFrac, hFrac){
+  if(imgId) defaultSize.stampByImg[imgId] = { w: wFrac, h: hFrac };
+  else defaultSize.stamp = { w: wFrac, h: hFrac };
+}
 let sizeUnit = 'pct';   // 'pct', 'px', atau 'cm' — px/cm dihitung dari ukuran asli halaman PDF
 let pageBaseW = 0, pageBaseH = 0; // ukuran halaman PDF aktif dalam satuan PDF (pt, 1pt = 1/72 inci)
 const PT_PER_CM = 72 / 2.54;
@@ -4003,6 +4026,7 @@ function renderStampGallery(){
       if(e.target.classList.contains('st-del')) return;
       activeStampId = s.id;
       renderStampGallery();
+      refreshSizeInputs();
     });
     el.querySelector('.st-del').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -4168,7 +4192,8 @@ async function renderPage(){
 
 function placeStamp(centerXFrac, centerYFrac){
   const d = getActiveDoc();
-  const defs = defaultSize[placeMode];
+  const activeStampImg = placeMode === 'stamp' ? getActiveStamp() : null;
+  const defs = placeMode === 'stamp' ? getStampDefaultSize(activeStampImg && activeStampImg.id) : defaultSize.check;
   const wFrac = defs.w;
   const hFrac = defs.h;
   const p = {
@@ -4183,8 +4208,7 @@ function placeStamp(centerXFrac, centerYFrac){
     if(customSymbolsMap[currentMarkSymbol]) p.customText = customSymbolsMap[currentMarkSymbol];
   }
   if(placeMode === 'stamp'){
-    const active = getActiveStamp();
-    if(active) p.imgId = active.id;
+    if(activeStampImg) p.imgId = activeStampImg.id;
   }
   if(!d.pages[activePage]) d.pages[activePage] = [];
   d.pages[activePage].push(p);
@@ -4294,8 +4318,17 @@ async function handleAddCustomSymbol(){
 }
 $('#addCustomSymbolBtn').addEventListener('click', handleAddCustomSymbol);
 $('#customSymbolInput').addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); handleAddCustomSymbol(); } });
-$('#checkColor').addEventListener('change', (e) => {
+$('#checkColorSwatches').addEventListener('click', (e) => {
+  const btn = e.target.closest('.color-swatch');
+  if(!btn) return;
+  checkColor = btn.dataset.color;
+  $('#checkColorCustom').value = checkColor;
+  $('#checkColorSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b === btn));
+  applyToSelected(p => { if(p.type === 'check') p.color = checkColor; });
+});
+$('#checkColorCustom').addEventListener('input', (e) => {
   checkColor = e.target.value;
+  $('#checkColorSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color.toLowerCase() === checkColor.toLowerCase()));
   applyToSelected(p => { if(p.type === 'check') p.color = checkColor; });
 });
 
@@ -4407,13 +4440,22 @@ function refreshSizeInputs(){
     if(p){
       wFrac = p.wFrac; hFrac = p.hFrac; activeType = p.type;
       if(p.type === 'check'){
-        $('#checkColor').value = p.color || checkColor;
+        $('#checkColorCustom').value = p.color || checkColor;
+        $('#checkColorSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color.toLowerCase() === (p.color || checkColor).toLowerCase()));
         const sym = p.symbol || 'check';
         $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b.dataset.symbol === sym));
       }
     }
   }
-  if(wFrac === undefined){ wFrac = defaultSize[activeType].w; hFrac = defaultSize[activeType].h; }
+  if(wFrac === undefined){
+    if(activeType === 'stamp'){
+      const active = getActiveStamp();
+      const defs = getStampDefaultSize(active && active.id);
+      wFrac = defs.w; hFrac = defs.h;
+    } else {
+      wFrac = defaultSize.check.w; hFrac = defaultSize.check.h;
+    }
+  }
   const xInput = $('#sizeXInput'), yInput = $('#sizeYInput');
   if(sizeUnit === 'pct'){
     xInput.value = (wFrac*100).toFixed(1);
@@ -4428,7 +4470,8 @@ function refreshSizeInputs(){
 }
 
 // Terapkan angka Lebar/Tinggi yang diketik user ke tanda terpilih, dan jadi default
-// untuk tipe tanda tersebut saja (stempel gambar dan tanda centang tidak saling memengaruhi)
+// untuk tipe tanda tersebut saja (stempel gambar dan tanda centang tidak saling memengaruhi).
+// Untuk stempel gambar, default ukuran disimpan per-gambar supaya tiap stempel independen.
 function onSizeInputChange(){
   const xVal = parseFloat($('#sizeXInput').value);
   const yVal = parseFloat($('#sizeYInput').value);
@@ -4448,12 +4491,18 @@ function onSizeInputChange(){
   }
   const d = getActiveDoc();
   let activeType = placeMode;
+  let selectedImgId = null;
   if(d && selectedStampId){
     const list = d.pages[activePage] || [];
     const sel = list.find(x => x.id === selectedStampId);
-    if(sel) activeType = sel.type;
+    if(sel){ activeType = sel.type; if(sel.type === 'stamp') selectedImgId = sel.imgId; }
   }
-  defaultSize[activeType] = { w: wFrac, h: hFrac };
+  if(activeType === 'stamp'){
+    const imgId = selectedImgId || (getActiveStamp() && getActiveStamp().id);
+    setStampDefaultSize(imgId, wFrac, hFrac);
+  } else {
+    defaultSize.check = { w: wFrac, h: hFrac };
+  }
   applyToSelected(p => {
     p.wFrac = wFrac;
     p.hFrac = hFrac;
