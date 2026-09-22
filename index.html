@@ -1767,7 +1767,7 @@ let placeMode = 'stamp';    // 'stamp' atau 'check' — jenis tanda yang ditempe
 let checkColor = '#1D8A4C';
 let fillColor = null; // warna isi simbol; null = tanpa isi (transparan) untuk simbol garis luar
 let stampMode = 'single';   // 'single' (gratis) atau 'multi' (premium)
-let currentMarkSymbol = 'check'; // simbol tanda vektor yang sedang dipilih
+let currentMarkSymbols = ['check']; // daftar id simbol yang sedang aktif (bisa lebih dari satu, saling ditumpuk)
 const MARK_SYMBOL_DEFS = {
   check:        { path: 'M4 12.5 L9.5 18 L20 6', fill: false },
   cross:        { path: 'M6 6 L18 18 M18 6 L6 18', fill: false },
@@ -1783,14 +1783,33 @@ const MARK_SYMBOL_DEFS = {
 // Simbol/teks kustom yang ditambahkan pengguna sendiri: { [id]: teksNya }
 let customSymbolsMap = {};
 let customSymbolCounter = 0;
+// Ambil daftar id simbol yang sedang aktif, tersimpan sebagai snapshot di setiap tanda
+// (sehingga tanda yang sudah ditempel tidak berubah walau simbol kustom dihapus/diubah nanti).
+function buildSymbolsSnapshot(ids){
+  return ids.map(id => {
+    if(customSymbolsMap[id] !== undefined) return { id, text: customSymbolsMap[id] };
+    return { id };
+  });
+}
+// Ambil lapisan-lapisan simbol yang harus digambar untuk satu tanda, dengan dukungan
+// mundur (backward-compat) untuk format lama (p.symbol / p.customText tunggal).
+function getSymbolLayers(p){
+  if(p.symbols && p.symbols.length) return p.symbols;
+  if(p.customText) return [{ id: 'custom', text: p.customText }];
+  return [{ id: p.symbol || 'check' }];
+}
 // Ukuran default disimpan terpisah per tipe, supaya mengubah ukuran stempel gambar
 // tidak ikut mengubah ukuran default tanda centang, dan sebaliknya.
 // Untuk tipe 'stamp', ukuran defaultnya disimpan per gambar (stampByImg[imgId]) supaya
 // pada mode Banyak Stempel, ukuran tiap gambar stempel independen satu sama lain.
+// Untuk tipe 'check', ukuran defaultnya disimpan per kombinasi simbol (checkBySymbol[key])
+// supaya tiap simbol/kombinasi simbol (mis. "check" sendiri vs "square+check" ditumpuk)
+// punya ukuran sendiri-sendiri dan tidak saling ikut berubah.
 let defaultSize = {
   stamp: { w: 0.18, h: 0.18 },   // fallback untuk gambar stempel yang belum punya ukuran sendiri
   stampByImg: {},                // { [imgId]: {w,h} }
-  check: { w: 0.10, h: 0.10 }
+  check: { w: 0.10, h: 0.10 },   // fallback untuk kombinasi simbol yang belum punya ukuran sendiri
+  checkBySymbol: {}              // { [comboKey]: {w,h} }
 };
 function getStampDefaultSize(imgId){
   return (imgId && defaultSize.stampByImg[imgId]) || defaultSize.stamp;
@@ -1798,6 +1817,17 @@ function getStampDefaultSize(imgId){
 function setStampDefaultSize(imgId, wFrac, hFrac){
   if(imgId) defaultSize.stampByImg[imgId] = { w: wFrac, h: hFrac };
   else defaultSize.stamp = { w: wFrac, h: hFrac };
+}
+function getSymbolComboKey(ids){
+  return (ids && ids.length) ? ids.slice().sort().join('+') : 'check';
+}
+function getCheckDefaultSize(ids){
+  const key = getSymbolComboKey(ids);
+  return defaultSize.checkBySymbol[key] || defaultSize.check;
+}
+function setCheckDefaultSize(ids, wFrac, hFrac){
+  const key = getSymbolComboKey(ids);
+  defaultSize.checkBySymbol[key] = { w: wFrac, h: hFrac };
 }
 let sizeUnit = 'pct';   // 'pct', 'px', atau 'cm' — px/cm dihitung dari ukuran asli halaman PDF
 let pageBaseW = 0, pageBaseH = 0; // ukuran halaman PDF aktif dalam satuan PDF (pt, 1pt = 1/72 inci)
@@ -4210,7 +4240,7 @@ async function renderPage(){
 function placeStamp(centerXFrac, centerYFrac){
   const d = getActiveDoc();
   const activeStampImg = placeMode === 'stamp' ? getActiveStamp() : null;
-  const defs = placeMode === 'stamp' ? getStampDefaultSize(activeStampImg && activeStampImg.id) : defaultSize.check;
+  const defs = placeMode === 'stamp' ? getStampDefaultSize(activeStampImg && activeStampImg.id) : getCheckDefaultSize(currentMarkSymbols);
   const wFrac = defs.w;
   const hFrac = defs.h;
   const p = {
@@ -4221,9 +4251,9 @@ function placeStamp(centerXFrac, centerYFrac){
     wFrac, hFrac, opacity: opacityPct
   };
   if(placeMode === 'check'){
-    p.color = checkColor; p.symbol = currentMarkSymbol;
+    p.color = checkColor;
+    p.symbols = buildSymbolsSnapshot(currentMarkSymbols);
     if(fillColor) p.fillColor = fillColor;
-    if(customSymbolsMap[currentMarkSymbol]) p.customText = customSymbolsMap[currentMarkSymbol];
   }
   if(placeMode === 'stamp'){
     if(activeStampImg) p.imgId = activeStampImg.id;
@@ -4249,16 +4279,37 @@ function setPlaceMode(mode){
 }
 $('#modeStampBtn').addEventListener('click', () => setPlaceMode('stamp'));
 $('#modeCheckBtn').addEventListener('click', () => setPlaceMode('check'));
-function selectMarkSymbol(id){
-  currentMarkSymbol = id;
-  $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b.dataset.symbol === id));
+function refreshSymbolPickerActiveState(){
+  $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', currentMarkSymbols.includes(b.dataset.symbol)));
+}
+function applySymbolsToSelected(){
   applyToSelected(p => {
     if(p.type === 'check'){
-      p.symbol = currentMarkSymbol;
-      if(customSymbolsMap[currentMarkSymbol]) p.customText = customSymbolsMap[currentMarkSymbol];
-      else delete p.customText;
+      p.symbols = buildSymbolsSnapshot(currentMarkSymbols);
+      delete p.symbol; delete p.customText; // migrasi dari format lama (satu simbol)
     }
   });
+}
+// Memilih HANYA satu simbol (dipakai saat menambah simbol kustom baru, supaya hasilnya jelas)
+function selectMarkSymbol(id){
+  currentMarkSymbols = [id];
+  refreshSymbolPickerActiveState();
+  applySymbolsToSelected();
+  refreshSizeInputs();
+}
+// Klik tombol simbol men-toggle keanggotaannya di seleksi — sehingga beberapa simbol bisa
+// aktif sekaligus dan ditumpuk-tindih saat ditempel (mis. kotak + centang di atasnya).
+function toggleMarkSymbol(id){
+  const idx = currentMarkSymbols.indexOf(id);
+  if(idx >= 0){
+    if(currentMarkSymbols.length > 1) currentMarkSymbols.splice(idx, 1);
+    // kalau cuma tersisa 1 simbol, biarkan tetap aktif (minimal harus ada 1 simbol terpilih)
+  } else {
+    currentMarkSymbols.push(id);
+  }
+  refreshSymbolPickerActiveState();
+  applySymbolsToSelected();
+  refreshSizeInputs();
 }
 // Delegasi klik: berlaku untuk tombol simbol bawaan maupun chip simbol kustom yang ditambahkan nanti
 $('#symbolPicker').addEventListener('click', (e) => {
@@ -4270,11 +4321,17 @@ $('#symbolPicker').addEventListener('click', (e) => {
     delete customSymbolsMap[id];
     chip.remove();
     saveCustomSymbols();
-    if(currentMarkSymbol === id) selectMarkSymbol('check');
+    const idx = currentMarkSymbols.indexOf(id);
+    if(idx >= 0){
+      currentMarkSymbols.splice(idx, 1);
+      if(currentMarkSymbols.length === 0) currentMarkSymbols = ['check'];
+      refreshSymbolPickerActiveState();
+      applySymbolsToSelected();
+    }
     return;
   }
   const btn = e.target.closest('.symbol-btn');
-  if(btn) selectMarkSymbol(btn.dataset.symbol);
+  if(btn) toggleMarkSymbol(btn.dataset.symbol);
 });
 
 // ---------- Simbol / teks kustom ----------
@@ -4394,17 +4451,22 @@ function redrawStampsForPage(justPlacedLast){
     el.style.opacity = (p.opacity ?? 100) / 100;
     if(p.type === 'check'){
       const col = p.color || '#1D8A4C';
-      if(p.customText){
-        const fontPx = Math.max(8, 16 / Math.max(1, p.customText.length * 0.55));
-        el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;"><text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(p.customText)}</text></svg><div class="handle"></div><div class="del">×</div>`;
-      } else {
-        const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
-        const fill = p.fillColor || (def.fill ? col : 'none');
-        const pathAttrs = fill !== 'none'
-          ? `fill="${fill}" stroke="${col}" stroke-width="2" stroke-linejoin="round"`
-          : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
-        el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;"><path d="${def.path}" ${pathAttrs}/></svg><div class="handle"></div><div class="del">×</div>`;
-      }
+      const layers = getSymbolLayers(p);
+      let inner = '';
+      layers.forEach(layer => {
+        if(layer.text){
+          const fontPx = Math.max(8, 16 / Math.max(1, layer.text.length * 0.55));
+          inner += `<text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(layer.text)}</text>`;
+        } else {
+          const def = MARK_SYMBOL_DEFS[layer.id] || MARK_SYMBOL_DEFS.check;
+          const fill = p.fillColor || (def.fill ? col : 'none');
+          const pathAttrs = fill !== 'none'
+            ? `fill="${fill}" stroke="${col}" stroke-width="2" stroke-linejoin="round"`
+            : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+          inner += `<path d="${def.path}" ${pathAttrs}/>`;
+        }
+      });
+      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;">${inner}</svg><div class="handle"></div><div class="del">×</div>`;
     } else {
       const img = getStampById(p.imgId) || getActiveStamp();
       const src = img ? img.dataUrl : '';
@@ -4480,8 +4542,8 @@ function refreshSizeInputs(){
         const fc = p.fillColor || '';
         if(fc) $('#checkFillCustom').value = fc;
         $('#checkFillSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', (b.dataset.color || '').toLowerCase() === fc.toLowerCase()));
-        const sym = p.symbol || 'check';
-        $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b.dataset.symbol === sym));
+        const ids = getSymbolLayers(p).map(l => l.id);
+        $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', ids.includes(b.dataset.symbol)));
       }
     }
   }
@@ -4491,7 +4553,8 @@ function refreshSizeInputs(){
       const defs = getStampDefaultSize(active && active.id);
       wFrac = defs.w; hFrac = defs.h;
     } else {
-      wFrac = defaultSize.check.w; hFrac = defaultSize.check.h;
+      const defs = getCheckDefaultSize(currentMarkSymbols);
+      wFrac = defs.w; hFrac = defs.h;
     }
   }
   const xInput = $('#sizeXInput'), yInput = $('#sizeYInput');
@@ -4509,7 +4572,8 @@ function refreshSizeInputs(){
 
 // Terapkan angka Lebar/Tinggi yang diketik user ke tanda terpilih, dan jadi default
 // untuk tipe tanda tersebut saja (stempel gambar dan tanda centang tidak saling memengaruhi).
-// Untuk stempel gambar, default ukuran disimpan per-gambar supaya tiap stempel independen.
+// Untuk stempel gambar, default ukuran disimpan per-gambar; untuk tanda centang, disimpan
+// per kombinasi simbol — supaya masing-masing berdiri sendiri dan tidak jadi satu.
 function onSizeInputChange(){
   const xVal = parseFloat($('#sizeXInput').value);
   const yVal = parseFloat($('#sizeYInput').value);
@@ -4530,16 +4594,21 @@ function onSizeInputChange(){
   const d = getActiveDoc();
   let activeType = placeMode;
   let selectedImgId = null;
+  let selectedSymbolIds = null;
   if(d && selectedStampId){
     const list = d.pages[activePage] || [];
     const sel = list.find(x => x.id === selectedStampId);
-    if(sel){ activeType = sel.type; if(sel.type === 'stamp') selectedImgId = sel.imgId; }
+    if(sel){
+      activeType = sel.type;
+      if(sel.type === 'stamp') selectedImgId = sel.imgId;
+      else selectedSymbolIds = getSymbolLayers(sel).map(l => l.id);
+    }
   }
   if(activeType === 'stamp'){
     const imgId = selectedImgId || (getActiveStamp() && getActiveStamp().id);
     setStampDefaultSize(imgId, wFrac, hFrac);
   } else {
-    defaultSize.check = { w: wFrac, h: hFrac };
+    setCheckDefaultSize(selectedSymbolIds || currentMarkSymbols, wFrac, hFrac);
   }
   applyToSelected(p => {
     p.wFrac = wFrac;
@@ -4658,33 +4727,36 @@ async function processAll(){
           if(p.type === 'check'){
             const { r, g, b } = hexToRgbFrac(p.color || '#1D8A4C');
             const color = rgb(r, g, b);
-            if(p.customText){
-              try{
-                const font = await getCustomFont();
-                let fontSize = h * 0.72;
-                let textWidth = font.widthOfTextAtSize(p.customText, fontSize);
-                if(textWidth > w * 0.94){
-                  fontSize = fontSize * (w * 0.94 / textWidth);
-                  textWidth = font.widthOfTextAtSize(p.customText, fontSize);
+            const layers = getSymbolLayers(p);
+            for(const layer of layers){
+              if(layer.text){
+                try{
+                  const font = await getCustomFont();
+                  let fontSize = h * 0.72;
+                  let textWidth = font.widthOfTextAtSize(layer.text, fontSize);
+                  if(textWidth > w * 0.94){
+                    fontSize = fontSize * (w * 0.94 / textWidth);
+                    textWidth = font.widthOfTextAtSize(layer.text, fontSize);
+                  }
+                  const tx = x + (w - textWidth) / 2;
+                  const ty = y + (h - fontSize) / 2 + fontSize * 0.14;
+                  page.drawText(layer.text, { x: tx, y: ty, size: fontSize, font, color, opacity });
+                }catch(err){
+                  unsupportedCount++;
                 }
-                const tx = x + (w - textWidth) / 2;
-                const ty = y + (h - fontSize) / 2 + fontSize * 0.14;
-                page.drawText(p.customText, { x: tx, y: ty, size: fontSize, font, color, opacity });
-              }catch(err){
-                unsupportedCount++;
-              }
-            } else {
-              const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
-              const scaleVal = Math.min(w, h) / 24;
-              const yTop = y + h; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
-              const thickness = Math.max(1, scaleVal * 3);
-              const fillHex = p.fillColor || (def.fill ? (p.color || '#1D8A4C') : null);
-              if(fillHex){
-                const fc = hexToRgbFrac(fillHex);
-                const fillColorObj = rgb(fc.r, fc.g, fc.b);
-                page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
               } else {
-                page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
+                const def = MARK_SYMBOL_DEFS[layer.id] || MARK_SYMBOL_DEFS.check;
+                const scaleVal = Math.min(w, h) / 24;
+                const yTop = y + h; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
+                const thickness = Math.max(1, scaleVal * 3);
+                const fillHex = p.fillColor || (def.fill ? (p.color || '#1D8A4C') : null);
+                if(fillHex){
+                  const fc = hexToRgbFrac(fillHex);
+                  const fillColorObj = rgb(fc.r, fc.g, fc.b);
+                  page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
+                } else {
+                  page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
+                }
               }
             }
           } else {
