@@ -567,6 +567,19 @@
   }
   .symbol-custom-add:hover{border-color:var(--primary);color:var(--primary);}
   .symbol-custom-add svg{width:14px;height:14px;}
+  .layer-scale-list{display:flex;flex-direction:column;gap:3px;}
+  .layer-scale-item{display:flex;align-items:center;gap:6px;}
+  .layer-scale-item .ls-icon{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);}
+  .layer-scale-item .ls-icon svg{width:100%;height:100%;}
+  .layer-scale-item input[type=range]{width:90px;accent-color:var(--primary);}
+  .layer-scale-item input[type=range]:disabled{opacity:0.4;}
+  .layer-scale-item .ls-pct{width:32px;font-size:11px;color:var(--ink-soft);text-align:right;flex-shrink:0;}
+  .ls-lock{
+    width:20px;height:20px;flex-shrink:0;border:1px solid var(--line);border-radius:5px;background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);padding:0;
+  }
+  .ls-lock svg{width:11px;height:11px;}
+  .ls-lock.locked{background:var(--accent-soft, #F1DCDA);border-color:var(--accent, #B33A3A);color:var(--accent, #B33A3A);}
 
   .filelist{flex:1;overflow-y:auto;padding:8px 10px;min-height:110px;}
   .file-item{
@@ -1000,6 +1013,10 @@
             </button>
           </div>
         </div>
+        <div class="toolbar-group" id="layerScaleGroup" style="display:none;">
+          <label>Ukuran tiap simbol</label>
+          <div class="layer-scale-list" id="layerScaleList"></div>
+        </div>
         <div class="toolbar-group" id="checkColorGroup" style="display:none;">
           <label>Warna Bingkai</label>
           <div class="color-swatches" id="checkColorSwatches">
@@ -1022,6 +1039,11 @@
             <button type="button" class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF;" title="Putih"></button>
           </div>
           <input type="color" id="checkFillCustom" value="#1D8A4C" title="Pilih warna isi bebas">
+        </div>
+        <div class="toolbar-group" id="strokeWidthGroup" style="display:none;">
+          <label>Ketebalan Garis</label>
+          <input type="range" id="strokeWidthSlider" min="40" max="220" step="5" value="100">
+          <span class="val" id="strokeWidthVal">100%</span>
         </div>
         <div class="toolbar-group">
           <label>Ukuran</label>
@@ -1766,8 +1788,11 @@ let selectedStampId = null;
 let placeMode = 'stamp';    // 'stamp' atau 'check' — jenis tanda yang ditempel saat klik halaman
 let checkColor = '#1D8A4C';
 let fillColor = null; // warna isi simbol; null = tanpa isi (transparan) untuk simbol garis luar
+let strokeScale = 1; // pengali ketebalan garis simbol centang/silang/dll (1 = default, 0.4–2.5)
 let stampMode = 'single';   // 'single' (gratis) atau 'multi' (premium)
 let currentMarkSymbols = ['check']; // daftar id simbol yang sedang aktif (bisa lebih dari satu, saling ditumpuk)
+let currentMarkSymbolScales = {}; // { [id]: skala 0.3–1.5 } ukuran tiap simbol saat ditumpuk, independen satu sama lain
+let currentMarkSymbolLocked = {}; // { [id]: true } — simbol yang ukurannya dikunci (slider tidak bisa digeser)
 const MARK_SYMBOL_DEFS = {
   check:        { path: 'M4 12.5 L9.5 18 L20 6', fill: false },
   cross:        { path: 'M6 6 L18 18 M18 6 L6 18', fill: false },
@@ -1787,8 +1812,12 @@ let customSymbolCounter = 0;
 // (sehingga tanda yang sudah ditempel tidak berubah walau simbol kustom dihapus/diubah nanti).
 function buildSymbolsSnapshot(ids){
   return ids.map(id => {
-    if(customSymbolsMap[id] !== undefined) return { id, text: customSymbolsMap[id] };
-    return { id };
+    const obj = { id };
+    if(customSymbolsMap[id] !== undefined) obj.text = customSymbolsMap[id];
+    const sc = currentMarkSymbolScales[id];
+    if(sc && Math.abs(sc - 1) > 0.001) obj.scale = sc;
+    if(currentMarkSymbolLocked[id]) obj.locked = true;
+    return obj;
   });
 }
 // Ambil lapisan-lapisan simbol yang harus digambar untuk satu tanda, dengan dukungan
@@ -4254,6 +4283,7 @@ function placeStamp(centerXFrac, centerYFrac){
     p.color = checkColor;
     p.symbols = buildSymbolsSnapshot(currentMarkSymbols);
     if(fillColor) p.fillColor = fillColor;
+    p.strokeScale = strokeScale;
   }
   if(placeMode === 'stamp'){
     if(activeStampImg) p.imgId = activeStampImg.id;
@@ -4275,6 +4305,7 @@ function setPlaceMode(mode){
   $('#checkColorGroup').style.display = mode === 'check' ? 'flex' : 'none';
   $('#checkFillGroup').style.display = mode === 'check' ? 'flex' : 'none';
   $('#markSymbolGroup').style.display = mode === 'check' ? 'flex' : 'none';
+  $('#strokeWidthGroup').style.display = mode === 'check' ? 'flex' : 'none';
   refreshSizeInputs();
 }
 $('#modeStampBtn').addEventListener('click', () => setPlaceMode('stamp'));
@@ -4454,16 +4485,19 @@ function redrawStampsForPage(justPlacedLast){
       const layers = getSymbolLayers(p);
       let inner = '';
       layers.forEach(layer => {
+        const scale = layer.scale || 1;
+        const gOpen = scale !== 1 ? `<g transform="translate(12 12) scale(${scale}) translate(-12 -12)">` : '<g>';
         if(layer.text){
           const fontPx = Math.max(8, 16 / Math.max(1, layer.text.length * 0.55));
-          inner += `<text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(layer.text)}</text>`;
+          inner += `${gOpen}<text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(layer.text)}</text></g>`;
         } else {
           const def = MARK_SYMBOL_DEFS[layer.id] || MARK_SYMBOL_DEFS.check;
           const fill = p.fillColor || (def.fill ? col : 'none');
+          const sw = (p.strokeScale || 1);
           const pathAttrs = fill !== 'none'
-            ? `fill="${fill}" stroke="${col}" stroke-width="2" stroke-linejoin="round"`
-            : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
-          inner += `<path d="${def.path}" ${pathAttrs}/>`;
+            ? `fill="${fill}" stroke="${col}" stroke-width="${(2*sw).toFixed(2)}" stroke-linejoin="round"`
+            : `fill="none" stroke="${col}" stroke-width="${(3*sw).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"`;
+          inner += `${gOpen}<path d="${def.path}" ${pathAttrs}/></g>`;
         }
       });
       el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;">${inner}</svg><div class="handle"></div><div class="del">×</div>`;
@@ -4544,8 +4578,15 @@ function refreshSizeInputs(){
         $('#checkFillSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', (b.dataset.color || '').toLowerCase() === fc.toLowerCase()));
         const ids = getSymbolLayers(p).map(l => l.id);
         $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', ids.includes(b.dataset.symbol)));
+        const sw = p.strokeScale || 1;
+        $('#strokeWidthSlider').value = Math.round(sw * 100);
+        $('#strokeWidthVal').textContent = Math.round(sw * 100) + '%';
       }
     }
+  }
+  if(activeType === 'check' && !(d && selectedStampId)){
+    $('#strokeWidthSlider').value = Math.round(strokeScale * 100);
+    $('#strokeWidthVal').textContent = Math.round(strokeScale * 100) + '%';
   }
   if(wFrac === undefined){
     if(activeType === 'stamp'){
@@ -4568,6 +4609,80 @@ function refreshSizeInputs(){
     xInput.value = pageBaseW ? Math.round(wFrac*pageBaseW) : '';
     yInput.value = pageBaseH ? Math.round(hFrac*pageBaseH) : '';
   }
+  renderLayerScaleUI();
+}
+
+// Ikon mini untuk baris "Ukuran tiap simbol" (mewakili tiap simbol yang sedang ditumpuk)
+function getLayerIconSvg(id){
+  if(customSymbolsMap[id] !== undefined){
+    return escapeHtml(customSymbolsMap[id]).slice(0, 3);
+  }
+  const def = MARK_SYMBOL_DEFS[id] || MARK_SYMBOL_DEFS.check;
+  const attrs = def.fill ? 'fill="currentColor"' : 'fill="none" stroke="currentColor" stroke-width="2.5"';
+  return `<svg viewBox="0 0 24 24" ${attrs}><path d="${def.path}"/></svg>`;
+}
+// Saat 2 simbol atau lebih ditumpuk dalam satu tanda, tampilkan slider ukuran per simbol
+// supaya tiap simbol bisa punya ukurannya sendiri-sendiri (mis. kotak besar, centang kecil
+// di tengahnya) dan tidak saling tumpang tindih 1:1.
+function renderLayerScaleUI(){
+  const group = $('#layerScaleGroup');
+  const listEl = $('#layerScaleList');
+  const d = getActiveDoc();
+  let layers = null, onChange = null, onToggleLock = null;
+  if(d && selectedStampId){
+    const arr = d.pages[activePage] || [];
+    const p = arr.find(x => x.id === selectedStampId);
+    if(p && p.type === 'check'){
+      layers = getSymbolLayers(p);
+      onChange = (idx, val) => {
+        if(!p.symbols) p.symbols = getSymbolLayers(p);
+        p.symbols[idx].scale = val;
+        currentMarkSymbolScales[p.symbols[idx].id] = val; // jadi default juga untuk tanda baru berikutnya
+        redrawStampsForPage();
+      };
+      onToggleLock = (idx) => {
+        if(!p.symbols) p.symbols = getSymbolLayers(p);
+        p.symbols[idx].locked = !p.symbols[idx].locked;
+        currentMarkSymbolLocked[p.symbols[idx].id] = p.symbols[idx].locked; // ikut jadi default
+        renderLayerScaleUI();
+      };
+    }
+  }
+  if(!layers && placeMode === 'check' && currentMarkSymbols.length > 1){
+    layers = currentMarkSymbols.map(id => ({ id, scale: currentMarkSymbolScales[id] || 1, locked: !!currentMarkSymbolLocked[id] }));
+    onChange = (idx, val) => { currentMarkSymbolScales[layers[idx].id] = val; };
+    onToggleLock = (idx) => {
+      const id = layers[idx].id;
+      currentMarkSymbolLocked[id] = !currentMarkSymbolLocked[id];
+      renderLayerScaleUI();
+    };
+  }
+  if(!layers || layers.length < 2){
+    group.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
+  group.style.display = 'flex';
+  listEl.innerHTML = '';
+  layers.forEach((layer, idx) => {
+    const scale = layer.scale || 1;
+    const locked = !!layer.locked;
+    const row = document.createElement('div');
+    row.className = 'layer-scale-item';
+    const lockIconOpen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 017.6-1.8"/></svg>';
+    const lockIconClosed = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+    row.innerHTML = `<span class="ls-icon">${getLayerIconSvg(layer.id)}</span><input type="range" min="30" max="150" step="5" value="${Math.round(scale*100)}" ${locked ? 'disabled' : ''}><span class="ls-pct">${Math.round(scale*100)}%</span><button type="button" class="ls-lock${locked ? ' locked' : ''}" title="${locked ? 'Buka kunci ukuran simbol ini' : 'Kunci ukuran simbol ini'}">${locked ? lockIconClosed : lockIconOpen}</button>`;
+    const range = row.querySelector('input[type=range]');
+    const pct = row.querySelector('.ls-pct');
+    const lockBtn = row.querySelector('.ls-lock');
+    range.addEventListener('input', () => {
+      const val = parseInt(range.value, 10) / 100;
+      pct.textContent = Math.round(val*100) + '%';
+      onChange(idx, val);
+    });
+    lockBtn.addEventListener('click', () => onToggleLock(idx));
+    listEl.appendChild(row);
+  });
 }
 
 // Terapkan angka Lebar/Tinggi yang diketik user ke tanda terpilih, dan jadi default
@@ -4621,6 +4736,12 @@ $('#sizeXInput').addEventListener('input', onSizeInputChange);
 $('#sizeYInput').addEventListener('input', onSizeInputChange);
 $('#sizeUnit').addEventListener('change', (e) => { sizeUnit = e.target.value; refreshSizeInputs(); });
 
+$('#strokeWidthSlider').addEventListener('input', (e) => {
+  strokeScale = (+e.target.value) / 100;
+  $('#strokeWidthVal').textContent = e.target.value + '%';
+  applyToSelected(p => { if(p.type === 'check') p.strokeScale = strokeScale; });
+  redrawStampsForPage();
+});
 $('#opacitySlider').addEventListener('input', (e) => {
   opacityPct = +e.target.value;
   $('#opacityVal').textContent = e.target.value + '%';
@@ -4729,33 +4850,36 @@ async function processAll(){
             const color = rgb(r, g, b);
             const layers = getSymbolLayers(p);
             for(const layer of layers){
+              const layerScale = layer.scale || 1;
+              const lw = w * layerScale, lh = h * layerScale;
+              const lx = x + (w - lw) / 2, ly = y + (h - lh) / 2;
               if(layer.text){
                 try{
                   const font = await getCustomFont();
-                  let fontSize = h * 0.72;
+                  let fontSize = lh * 0.72;
                   let textWidth = font.widthOfTextAtSize(layer.text, fontSize);
-                  if(textWidth > w * 0.94){
-                    fontSize = fontSize * (w * 0.94 / textWidth);
+                  if(textWidth > lw * 0.94){
+                    fontSize = fontSize * (lw * 0.94 / textWidth);
                     textWidth = font.widthOfTextAtSize(layer.text, fontSize);
                   }
-                  const tx = x + (w - textWidth) / 2;
-                  const ty = y + (h - fontSize) / 2 + fontSize * 0.14;
+                  const tx = lx + (lw - textWidth) / 2;
+                  const ty = ly + (lh - fontSize) / 2 + fontSize * 0.14;
                   page.drawText(layer.text, { x: tx, y: ty, size: fontSize, font, color, opacity });
                 }catch(err){
                   unsupportedCount++;
                 }
               } else {
                 const def = MARK_SYMBOL_DEFS[layer.id] || MARK_SYMBOL_DEFS.check;
-                const scaleVal = Math.min(w, h) / 24;
-                const yTop = y + h; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
-                const thickness = Math.max(1, scaleVal * 3);
+                const scaleVal = Math.min(lw, lh) / 24;
+                const yTop = ly + lh; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
+                const thickness = Math.max(1, scaleVal * 3 * (p.strokeScale || 1));
                 const fillHex = p.fillColor || (def.fill ? (p.color || '#1D8A4C') : null);
                 if(fillHex){
                   const fc = hexToRgbFrac(fillHex);
                   const fillColorObj = rgb(fc.r, fc.g, fc.b);
-                  page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
+                  page.drawSvgPath(def.path, { x: lx, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
                 } else {
-                  page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
+                  page.drawSvgPath(def.path, { x: lx, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
                 }
               }
             }
