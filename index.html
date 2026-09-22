@@ -624,6 +624,11 @@
     box-shadow:0 0 0 1px var(--line) inset;flex-shrink:0;
   }
   .color-swatch.active{border-color:var(--primary);box-shadow:0 0 0 1px #fff inset, 0 0 0 1px var(--primary);}
+  .color-swatch.none-swatch{
+    background:
+      linear-gradient(45deg, transparent 46%, var(--accent) 48%, var(--accent) 52%, transparent 54%),
+      #fff;
+  }
   #checkColorCustom{
     width:26px;height:26px;border:1px solid var(--line);border-radius:6px;padding:0;
     background:none;cursor:pointer;flex-shrink:0;
@@ -1006,6 +1011,17 @@
             <button type="button" class="color-swatch" data-color="#6B21A8" style="background:#6B21A8;" title="Ungu"></button>
           </div>
           <input type="color" id="checkColorCustom" value="#1D8A4C" title="Pilih warna bebas">
+        </div>
+        <div class="toolbar-group" id="checkFillGroup" style="display:none;">
+          <label>Warna Isi</label>
+          <div class="color-swatches" id="checkFillSwatches">
+            <button type="button" class="color-swatch none-swatch active" data-color="" title="Tanpa isi (transparan)"></button>
+            <button type="button" class="color-swatch" data-color="#1D8A4C" style="background:#1D8A4C;" title="Hijau"></button>
+            <button type="button" class="color-swatch" data-color="#B33A3A" style="background:#B33A3A;" title="Merah"></button>
+            <button type="button" class="color-swatch" data-color="#F5D34C" style="background:#F5D34C;" title="Kuning"></button>
+            <button type="button" class="color-swatch" data-color="#FFFFFF" style="background:#FFFFFF;" title="Putih"></button>
+          </div>
+          <input type="color" id="checkFillCustom" value="#1D8A4C" title="Pilih warna isi bebas">
         </div>
         <div class="toolbar-group">
           <label>Ukuran</label>
@@ -1749,6 +1765,7 @@ function getActiveStamp(){ return getStampById(activeStampId) || stampImages[0] 
 let selectedStampId = null;
 let placeMode = 'stamp';    // 'stamp' atau 'check' — jenis tanda yang ditempel saat klik halaman
 let checkColor = '#1D8A4C';
+let fillColor = null; // warna isi simbol; null = tanpa isi (transparan) untuk simbol garis luar
 let stampMode = 'single';   // 'single' (gratis) atau 'multi' (premium)
 let currentMarkSymbol = 'check'; // simbol tanda vektor yang sedang dipilih
 const MARK_SYMBOL_DEFS = {
@@ -4205,6 +4222,7 @@ function placeStamp(centerXFrac, centerYFrac){
   };
   if(placeMode === 'check'){
     p.color = checkColor; p.symbol = currentMarkSymbol;
+    if(fillColor) p.fillColor = fillColor;
     if(customSymbolsMap[currentMarkSymbol]) p.customText = customSymbolsMap[currentMarkSymbol];
   }
   if(placeMode === 'stamp'){
@@ -4225,6 +4243,7 @@ function setPlaceMode(mode){
   $('#modeStampBtn').classList.toggle('active', mode === 'stamp');
   $('#modeCheckBtn').classList.toggle('active', mode === 'check');
   $('#checkColorGroup').style.display = mode === 'check' ? 'flex' : 'none';
+  $('#checkFillGroup').style.display = mode === 'check' ? 'flex' : 'none';
   $('#markSymbolGroup').style.display = mode === 'check' ? 'flex' : 'none';
   refreshSizeInputs();
 }
@@ -4331,6 +4350,19 @@ $('#checkColorCustom').addEventListener('input', (e) => {
   $('#checkColorSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color.toLowerCase() === checkColor.toLowerCase()));
   applyToSelected(p => { if(p.type === 'check') p.color = checkColor; });
 });
+$('#checkFillSwatches').addEventListener('click', (e) => {
+  const btn = e.target.closest('.color-swatch');
+  if(!btn) return;
+  fillColor = btn.dataset.color || null;
+  if(fillColor) $('#checkFillCustom').value = fillColor;
+  $('#checkFillSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b === btn));
+  applyToSelected(p => { if(p.type === 'check'){ if(fillColor) p.fillColor = fillColor; else delete p.fillColor; } });
+});
+$('#checkFillCustom').addEventListener('input', (e) => {
+  fillColor = e.target.value;
+  $('#checkFillSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', (b.dataset.color || '').toLowerCase() === fillColor.toLowerCase()));
+  applyToSelected(p => { if(p.type === 'check') p.fillColor = fillColor; });
+});
 
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
@@ -4367,7 +4399,10 @@ function redrawStampsForPage(justPlacedLast){
         el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;"><text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(p.customText)}</text></svg><div class="handle"></div><div class="del">×</div>`;
       } else {
         const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
-        const pathAttrs = def.fill ? `fill="${col}"` : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+        const fill = p.fillColor || (def.fill ? col : 'none');
+        const pathAttrs = fill !== 'none'
+          ? `fill="${fill}" stroke="${col}" stroke-width="2" stroke-linejoin="round"`
+          : `fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
         el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;"><path d="${def.path}" ${pathAttrs}/></svg><div class="handle"></div><div class="del">×</div>`;
       }
     } else {
@@ -4442,6 +4477,9 @@ function refreshSizeInputs(){
       if(p.type === 'check'){
         $('#checkColorCustom').value = p.color || checkColor;
         $('#checkColorSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color.toLowerCase() === (p.color || checkColor).toLowerCase()));
+        const fc = p.fillColor || '';
+        if(fc) $('#checkFillCustom').value = fc;
+        $('#checkFillSwatches').querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', (b.dataset.color || '').toLowerCase() === fc.toLowerCase()));
         const sym = p.symbol || 'check';
         $('#symbolPicker').querySelectorAll('.symbol-btn').forEach(b => b.classList.toggle('active', b.dataset.symbol === sym));
       }
@@ -4639,10 +4677,13 @@ async function processAll(){
               const def = MARK_SYMBOL_DEFS[p.symbol] || MARK_SYMBOL_DEFS.check;
               const scaleVal = Math.min(w, h) / 24;
               const yTop = y + h; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
-              if(def.fill){
-                page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color, opacity });
+              const thickness = Math.max(1, scaleVal * 3);
+              const fillHex = p.fillColor || (def.fill ? (p.color || '#1D8A4C') : null);
+              if(fillHex){
+                const fc = hexToRgbFrac(fillHex);
+                const fillColorObj = rgb(fc.r, fc.g, fc.b);
+                page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
               } else {
-                const thickness = Math.max(1, scaleVal * 3);
                 page.drawSvgPath(def.path, { x, y: yTop, scale: scaleVal, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
               }
             }
