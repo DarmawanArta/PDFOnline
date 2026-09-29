@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -175,6 +176,163 @@
     padding:6px 11px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
   }
   .add-range-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+
+  .org-card{
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:14px 16px;margin:0 0 14px;max-width:760px;
+  }
+  .org-toolbar{display:flex;align-items:center;gap:8px;margin-top:10px;margin-bottom:2px;}
+  .org-reset-btn{
+    border:1px dashed var(--line);background:transparent;border-radius:7px;
+    padding:5px 10px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
+  }
+  .org-reset-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .org-hint{font-size:11px;color:var(--ink-soft);}
+  .org-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
+  .org-thumb{
+    position:relative;width:88px;border:1px solid var(--line);border-radius:8px;background:#FAF9F5;
+    cursor:grab;user-select:none;overflow:hidden;
+  }
+  .org-thumb.dragging{opacity:0.35;}
+  .org-thumb.drag-over{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary) inset;}
+  .org-thumb canvas{display:block;width:100%;height:auto;pointer-events:none;}
+  .org-thumb .org-num{
+    text-align:center;font-size:10.5px;color:var(--ink-soft);padding:3px 0 5px;font-family:'IBM Plex Mono',monospace;
+  }
+  .org-thumb .org-del{
+    position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.9);color:var(--ink-soft);font-size:13px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .org-thumb .org-del:hover{background:var(--accent);color:#fff;}
+
+  .sign-gallery{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .sign-thumb{
+    position:relative;width:64px;height:40px;border:2px solid var(--line);border-radius:7px;
+    background:#fff repeating-conic-gradient(#F0EEE6 0% 25%, #fff 0% 50%) 0/10px 10px;
+    cursor:pointer;overflow:hidden;flex-shrink:0;
+  }
+  .sign-thumb img{width:100%;height:100%;object-fit:contain;}
+  .sign-thumb.active{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-dark) inset;}
+  .sign-thumb .sign-thumb-del{
+    position:absolute;top:1px;right:1px;width:15px;height:15px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.9);color:var(--ink-soft);font-size:11px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sign-thumb .sign-thumb-del:hover{background:var(--accent);color:#fff;}
+  .sign-make-row{display:flex;gap:8px;margin-top:10px;}
+  .sign-make-btn{
+    flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 8px;
+    font-size:12px;color:var(--ink);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;
+    align-items:center;gap:5px;
+  }
+  .sign-make-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .sign-make-btn svg{width:18px;height:18px;}
+
+  .sign-modal-overlay{
+    position:fixed;inset:0;background:rgba(20,24,20,0.55);display:flex;align-items:center;justify-content:center;
+    z-index:200;padding:20px;
+  }
+  .sign-modal{
+    background:#fff;border-radius:14px;padding:20px;max-width:380px;width:100%;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+  }
+  .sign-modal h3{margin:0;font-size:15px;color:var(--ink);}
+  .sign-modal p{margin:0;font-size:12px;color:var(--ink-soft);text-align:center;line-height:1.5;}
+  .sign-modal canvas.sign-pad-canvas{
+    border:1px dashed var(--line);border-radius:8px;background:#fff;touch-action:none;width:100%;max-width:320px;height:160px;
+  }
+  #signQrBox{background:#fff;padding:10px;border-radius:8px;}
+  .sign-modal-actions{display:flex;gap:8px;width:100%;}
+  .sign-modal-actions button{
+    flex:1;border-radius:8px;padding:9px;font-size:12.5px;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:#fff;color:var(--ink-soft);
+  }
+  .sign-modal-actions button.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .sign-modal-close{position:absolute;top:10px;right:14px;border:none;background:none;font-size:20px;color:var(--ink-soft);cursor:pointer;}
+
+  .sign-placed{
+    position:absolute;border:1.5px dashed transparent;cursor:move;
+  }
+  .sign-placed.active{border-color:var(--primary);}
+  .sign-placed img{width:100%;height:100%;display:block;pointer-events:none;}
+  .sign-placed .sp-del{
+    position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;border:none;
+    background:var(--accent);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:none;
+    align-items:center;justify-content:center;
+  }
+  .sign-placed.active .sp-del{display:flex;}
+  .sign-placed .sp-resize{
+    position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:3px;background:var(--primary);
+    cursor:nwse-resize;display:none;
+  }
+  .sign-placed.active .sp-resize{display:block;}
+
+  #signMobileView{
+    display:none;position:fixed;inset:0;background:#FAF9F5;z-index:500;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center;
+  }
+  #signMobileView canvas{
+    border:1px solid var(--line);border-radius:10px;background:#fff;touch-action:none;width:100%;max-width:420px;height:220px;
+  }
+  #signMobileView .sm-actions{display:flex;gap:10px;width:100%;max-width:420px;}
+  #signMobileView .sm-actions button{
+    flex:1;border-radius:9px;padding:12px;font-size:14px;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:#fff;
+  }
+  #signMobileView .sm-actions button.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+
+  .sign-scan-status{font-size:11.5px;color:var(--ink-soft);text-align:center;}
+
+  #signJoinView{
+    display:none;position:fixed;inset:0;background:#FAF9F5;z-index:400;overflow-y:auto;
+  }
+  #signJoinInner{max-width:760px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:14px;align-items:center;}
+  .join-card{
+    background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;width:100%;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+  }
+  .join-card h2{margin:0;font-size:17px;}
+  .join-card p{margin:0;font-size:12.5px;color:var(--ink-soft);line-height:1.55;max-width:420px;}
+  .join-queue{width:100%;max-width:340px;text-align:left;margin-top:4px;}
+  .join-queue-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--line-soft);}
+  .join-queue-row:last-child{border-bottom:none;}
+  .join-queue-badge{
+    width:18px;height:18px;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;font-family:'IBM Plex Mono',monospace;
+  }
+  .join-queue-badge.done{background:var(--primary);color:#fff;}
+  .join-queue-badge.pending{background:var(--line-soft);color:var(--ink-soft);}
+  .join-toolbar{display:flex;align-items:center;gap:8px;width:100%;justify-content:center;flex-wrap:wrap;}
+  .join-toolbar button{
+    border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 13px;font-size:12.5px;
+    cursor:pointer;font-family:inherit;color:var(--ink);
+  }
+  .join-toolbar button.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .join-toolbar button:disabled{opacity:0.5;cursor:not-allowed;}
+  #joinCanvasWrap{width:100%;display:flex;justify-content:center;overflow-x:auto;padding:6px 0;}
+  .sign-placed.readonly{cursor:default;border-style:solid;border-color:transparent;}
+  .sign-placed.readonly .sp-del, .sign-placed.readonly .sp-resize{display:none !important;}
+
+  .invite-row{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;}
+  .invite-row input{
+    flex:1;border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.5px;font-family:inherit;
+  }
+  .invite-row .invite-del{
+    border:none;background:none;color:var(--ink-soft);font-size:16px;cursor:pointer;width:24px;flex-shrink:0;
+  }
+  .signer-status-row{
+    display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-soft);width:100%;font-size:12.5px;
+  }
+  .signer-status-row:last-child{border-bottom:none;}
+  .signer-status-badge{
+    padding:2px 8px;border-radius:99px;font-size:10.5px;flex-shrink:0;
+  }
+  .signer-status-badge.pending{background:var(--line-soft);color:var(--ink-soft);}
+  .signer-status-badge.signed{background:#DCEFE4;color:var(--primary-dark);}
+  .signer-copy-btn{
+    border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;font-size:11px;cursor:pointer;
+    font-family:inherit;color:var(--ink-soft);flex-shrink:0;
+  }
+  .signer-copy-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
 
   .comp-card{
     display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
@@ -825,6 +983,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 7.5L19 17M19 7L13 12M8.5 16.5L11 14.2"/></svg>
       Split PDF
     </button>
+    <button class="app-tab" id="tabOrganizeView" data-view="organize">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+      Atur PDF
+    </button>
+    <button class="app-tab" id="tabSignView" data-view="sign">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17s2-1 4-1 3 1 5 1 3-1 5-1 4 1 4 1"/><path d="M6 13L15 4a2 2 0 013 3l-9 9-4 1 1-4z"/></svg>
+      Tanda Tangani PDF
+    </button>
     <button class="app-tab" id="tabCompView" data-view="comp">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg>
       Kompres PDF
@@ -880,6 +1046,16 @@
       <div class="hc-icon" style="background:#DCEEE0;color:#2F7A4C;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 7.5L19 17M19 7L13 12M8.5 16.5L11 14.2"/></svg></div>
       <h3>Split PDF</h3>
       <p>Pisahkan satu halaman atau semuanya menjadi beberapa berkas PDF terpisah.</p>
+    </div>
+    <div class="home-card" data-view="organize">
+      <div class="hc-icon" style="background:#E6E0F5;color:#5B3FA6;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></div>
+      <h3>Atur PDF</h3>
+      <p>Ubah urutan halaman dengan cara seret-lepas, dan buang halaman yang tidak perlu.</p>
+    </div>
+    <div class="home-card" data-view="sign">
+      <div class="hc-icon" style="background:#FDE8D2;color:#B8722A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17s2-1 4-1 3 1 5 1 3-1 5-1 4 1 4 1"/><path d="M6 13L15 4a2 2 0 013 3l-9 9-4 1 1-4z"/></svg></div>
+      <h3>Tanda Tangani PDF</h3>
+      <p>Bubuhkan tanda tangan digital — gambar langsung, atau tanda tangan lewat HP dengan pindai QR.</p>
     </div>
     <div class="home-card" data-view="comp">
       <div class="hc-icon" style="background:#DCE7F3;color:#2E6DA4;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg></div>
@@ -1160,6 +1336,104 @@
     </section>
   </main>
 
+  <main class="workspace" id="organizeView" style="display:none;--th-1:#5B3FA6;--th-2:#3E2A73;--th-tint:rgba(91,63,166,0.055);">
+    <aside class="sidebar">
+      <div class="tool-hero"><div class="tool-hero-blob"></div><div class="tool-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></div><h2>Atur PDF</h2><p>Ubah urutan halaman, buang yang tak perlu.</p></div>
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="organizeDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+        </div>
+        <input type="file" id="organizeInput" accept="application/pdf" multiple>
+      </div>
+      <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
+        <h2>Berkas diunggah (<span id="organizePoolCount">0</span>)</h2>
+      </div>
+      <div class="filelist" id="organizePoolList">
+        <div class="empty-hint">Belum ada PDF diunggah.</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="organizeSub" style="margin-top:0;">Unggah PDF, lalu seret halaman untuk mengatur urutannya di kanan.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="organizeBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>
+          Proses &amp; Unduh
+        </button>
+      </div>
+      <div class="canvas-wrap" id="organizeCardsWrap" style="align-items:flex-start;justify-content:flex-start;display:block;">
+        <div class="empty-viewer" id="organizeEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></div>
+          <h3>Atur ulang urutan halaman PDF</h3>
+          <p>Unggah satu atau beberapa PDF di panel kiri. Setiap halaman akan tampil sebagai thumbnail — seret dan lepas untuk mengubah urutannya, atau klik × untuk membuang halaman yang tidak diperlukan.</p>
+        </div>
+        <div id="organizeCardsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <main class="workspace" id="signView" style="display:none;--th-1:#B8722A;--th-2:#8A551E;--th-tint:rgba(184,114,42,0.055);">
+    <aside class="sidebar">
+      <div class="tool-hero"><div class="tool-hero-blob"></div><div class="tool-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17s2-1 4-1 3 1 5 1 3-1 5-1 4 1 4 1"/><path d="M6 13L15 4a2 2 0 013 3l-9 9-4 1 1-4z"/></svg></div><h2>Tanda Tangani PDF</h2><p>Gambar tanda tangan atau pindai QR dari HP.</p></div>
+      <div class="sidebar-section">
+        <h2>1 · Unggah PDF</h2>
+        <div class="drop" id="signDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <p><b>Klik atau seret</b><br>satu berkas PDF</p>
+        </div>
+        <input type="file" id="signInput" accept="application/pdf">
+      </div>
+      <div class="sidebar-section">
+        <h2>2 · Tanda Tangan</h2>
+        <div class="sign-make-row">
+          <button type="button" class="sign-make-btn" id="signDrawBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Gambar di sini
+          </button>
+          <button type="button" class="sign-make-btn" id="signQrBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01"/></svg>
+            Pindai QR dari HP
+          </button>
+        </div>
+        <div class="sign-gallery" id="signGallery"></div>
+      </div>
+      <div class="sidebar-section">
+        <h2>3 · TTD Bergantian (opsional)</h2>
+        <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.5;">Undang beberapa orang menandatangani PDF ini satu per satu, sesuai urutan — masing-masing dapat link sendiri.</p>
+        <button type="button" class="org-reset-btn" id="signInviteBtn" style="width:100%;">+ Undang Orang Lain</button>
+        <div id="signMultiStatusBox" style="display:none;margin-top:10px;"></div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="footer-sub" id="signSub" style="margin-top:0;">Unggah PDF dan buat tanda tangan, lalu klik pada halaman untuk menempelkannya.</div>
+      </div>
+    </aside>
+    <section class="viewer">
+      <div class="viewer-toolbar">
+        <div class="page-nav">
+          <button id="signPrevPage">‹</button>
+          <div class="page-indicator mono" id="signPageIndicator">— / —</div>
+          <button id="signNextPage">›</button>
+        </div>
+        <div class="tb-spacer"></div>
+        <button class="primary-action" id="signBtn" disabled style="width:auto;padding:9px 16px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13L15 4a2 2 0 013 3l-9 9-4 1 1-4z"/></svg>
+          Proses &amp; Unduh
+        </button>
+      </div>
+      <div class="canvas-wrap" id="signCanvasWrap">
+        <div class="empty-viewer" id="signEmptyHint">
+          <div class="seal-lg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 13L15 4a2 2 0 013 3l-9 9-4 1 1-4z"/></svg></div>
+          <h3>Bubuhkan tanda tangan digital</h3>
+          <p>Unggah PDF di panel kiri, buat tanda tangan (gambar langsung atau pindai QR dari HP), lalu klik di halaman untuk menempelkannya. Seret untuk memindah, tarik sudut untuk mengubah ukuran.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
   <main class="workspace" id="compView" style="display:none;--th-1:#2E6DA4;--th-2:#1D4A75;--th-tint:rgba(46,109,164,0.055);">
     <aside class="sidebar">
       <div class="tool-hero"><div class="tool-hero-blob"></div><div class="tool-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v4a1 1 0 001 1h4M4 21v-4a1 1 0 011-1h4M20 21v-4a1 1 0 00-1-1h-4M16 3v4a1 1 0 01-1 1h-4"/></svg></div><h2>Kompres PDF</h2><p>Perkecil ukuran berkas, kualitas tetap terjaga.</p></div>
@@ -1215,6 +1489,10 @@
             <option value="color" selected>Warna</option>
             <option value="grayscale">Skala Abu-abu (Grayscale)</option>
           </select>
+        </div>
+        <div class="toolbar-group">
+          <label for="compTarget">Target ukuran (MB)</label>
+          <input type="number" id="compTarget" min="0.05" step="0.1" placeholder="opsional" style="width:84px;" title="Isi ukuran maksimal per berkas dalam MB. Kualitas diatur otomatis agar hasil tidak melebihi target.">
         </div>
         <div class="tb-spacer"></div>
         <button class="primary-action" id="compBtn" disabled style="width:auto;padding:9px 16px;">
@@ -1760,6 +2038,23 @@
   </div>
 </div>
 
+<div id="signMobileView">
+  <div id="signMobileDrawStep" style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <h2 style="margin:0;font-size:17px;">Gambar Tanda Tangan Anda</h2>
+    <p style="margin:0;font-size:12.5px;color:var(--ink-soft);max-width:380px;">Gunakan jari untuk menandatangani di kotak bawah, lalu ketuk Kirim. Tidak perlu login apa pun — tanda tangan otomatis muncul di komputer Anda lewat internet.</p>
+    <canvas id="signMobileCanvas"></canvas>
+    <div class="sm-actions">
+      <button type="button" id="signMobileClear">Hapus</button>
+      <button type="button" id="signMobileSend" class="primary">Kirim</button>
+    </div>
+    <p id="signMobileStatus" style="font-size:12px;color:var(--primary-dark);min-height:16px;"></p>
+  </div>
+</div>
+
+<div id="signJoinView">
+  <div id="signJoinInner"></div>
+</div>
+
 <div class="overlay" id="overlay">
   <div class="overlay-card">
     <div class="spinner"></div>
@@ -1865,6 +2160,348 @@ let opacityPct = 100;
 let placementCounter = 0;
 
 const $ = (sel) => document.querySelector(sel);
+
+// ---------- Mode tanda tangan via HP (dibuka lewat pindai QR) — lewat internet (Supabase), tanpa login ----------
+(function initSignMobileMode(){
+  const params = new URLSearchParams(location.search);
+  const sessionId = params.get('sign');
+  if(!sessionId) return;
+  document.querySelectorAll('body > *').forEach(el => {
+    if(el.id !== 'signMobileView') el.style.display = 'none';
+  });
+  $('#signMobileView').style.display = 'flex';
+
+  const canvas = $('#signMobileCanvas');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2,2);
+  ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1F2A24';
+
+  let drawing = false, last = null, hasStrokes = false;
+  function getPt(e){
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  function down(e){ e.preventDefault(); drawing = true; last = getPt(e); }
+  function move(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p = getPt(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p; hasStrokes = true;
+  }
+  function up(){ drawing = false; }
+  canvas.addEventListener('mousedown', down); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+  canvas.addEventListener('touchstart', down, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', up);
+
+  $('#signMobileClear').addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasStrokes = false;
+    $('#signMobileStatus').textContent = '';
+  });
+
+  $('#signMobileSend').addEventListener('click', async () => {
+    if(!hasStrokes){ $('#signMobileStatus').textContent = 'Gambar tanda tangan dulu.'; return; }
+    $('#signMobileStatus').textContent = 'Mengirim…';
+    try{
+      await sbReadyPromise;
+      if(!sbClient){ $('#signMobileStatus').textContent = 'Tidak ada koneksi internet ke server. Coba lagi.'; return; }
+      const dataUrl = canvas.toDataURL('image/png');
+      const { error } = await sbClient.from('sign_sessions').insert({ id: sessionId, data_url: dataUrl });
+      if(error) throw error;
+      $('#signMobileStatus').textContent = 'Terkirim! Silakan kembali ke komputer Anda.';
+    }catch(err){
+      console.error(err);
+      $('#signMobileStatus').textContent = 'Gagal mengirim. Periksa koneksi internet lalu coba lagi.';
+    }
+  });
+})();
+
+async function initJoinSignMode(){
+  const params = new URLSearchParams(location.search);
+  const token = params.get('joinsign');
+  if(!token) return;
+  document.querySelectorAll('body > *').forEach(el => {
+    if(el.id !== 'signJoinView') el.style.display = 'none';
+  });
+  const view = $('#signJoinView');
+  const inner = $('#signJoinInner');
+  view.style.display = 'block';
+
+  function renderCard(html){ inner.innerHTML = `<div class="join-card">${html}</div>`; }
+  renderCard('<h2>Memuat…</h2><p>Mohon tunggu sebentar.</p>');
+
+  await sbReadyPromise;
+  if(!sbClient){ renderCard('<h2>Tidak Ada Koneksi</h2><p>Periksa koneksi internet Anda lalu muat ulang halaman ini.</p>'); return; }
+
+  const { data: signer, error: sErr } = await sbClient.from('sign_doc_signers').select('*').eq('id', token).maybeSingle();
+  if(sErr || !signer){ renderCard('<h2>Link Tidak Valid</h2><p>Link ini tidak ditemukan atau sudah tidak berlaku.</p>'); return; }
+
+  const { data: doc, error: dErr } = await sbClient.from('sign_docs').select('*').eq('id', signer.doc_id).maybeSingle();
+  if(dErr || !doc){ renderCard('<h2>Dokumen Tidak Ditemukan</h2><p>Dokumen untuk sesi ini sudah tidak tersedia.</p>'); return; }
+
+  if(signer.status === 'signed'){
+    renderCard(`<h2>Sudah Ditandatangani</h2><p>Anda (${escapeHtml(signer.signer_name)}) sudah menandatangani dokumen "${escapeHtml(doc.name)}". Terima kasih!</p>`);
+    return;
+  }
+
+  async function checkTurnAndProceed(){
+    const { data: others, error: oErr } = await sbClient.from('sign_doc_signers').select('*').eq('doc_id', signer.doc_id).order('order_index');
+    if(oErr){ renderCard('<h2>Terjadi Kesalahan</h2><p>Coba muat ulang halaman.</p>'); return; }
+    const before = others.filter(s => s.order_index < signer.order_index);
+    const notReady = before.some(s => s.status !== 'signed');
+    if(notReady){
+      let rows = '';
+      before.forEach(s => {
+        rows += `<div class="join-queue-row"><span class="join-queue-badge ${s.status === 'signed' ? 'done' : 'pending'}">${s.order_index}</span><span>${escapeHtml(s.signer_name)}</span><span style="margin-left:auto;color:var(--ink-soft);">${s.status === 'signed' ? 'Selesai' : 'Menunggu'}</span></div>`;
+      });
+      renderCard(`<h2>Menunggu Giliran</h2><p>Anda urutan ke-${signer.order_index} untuk menandatangani "${escapeHtml(doc.name)}". Halaman ini otomatis lanjut begitu giliran Anda tiba.</p><div class="join-queue">${rows}</div>`);
+      setTimeout(checkTurnAndProceed, 4000);
+      return;
+    }
+    startSigningUI(others);
+  }
+
+  async function startSigningUI(allSigners){
+    renderCard('<h2>Menyiapkan Dokumen…</h2><p>Mohon tunggu sebentar.</p>');
+    const { data: fileBlob, error: dlErr } = await sbClient.storage.from('sign-docs').download(doc.storage_path);
+    if(dlErr || !fileBlob){ renderCard('<h2>Gagal Memuat Dokumen</h2><p>Coba muat ulang halaman.</p>'); return; }
+    const bytes = new Uint8Array(await fileBlob.arrayBuffer());
+    let pdfjsDoc;
+    try{ pdfjsDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise; }
+    catch(err){ renderCard('<h2>Gagal Membaca PDF</h2><p>Berkas rusak atau tidak valid.</p>'); return; }
+
+    const priorPlacements = {};
+    allSigners.filter(s => s.order_index < signer.order_index && s.placements).forEach(s => {
+      s.placements.forEach(p => {
+        if(!priorPlacements[p.page]) priorPlacements[p.page] = [];
+        priorPlacements[p.page].push(p);
+      });
+    });
+
+    let jPage = 1;
+    const jPageCount = pdfjsDoc.numPages;
+    let jPageW = 0, jPageH = 0;
+    const jPlacements = {};
+    let jCurrentSigDataUrl = null;
+    let jSigRatio = 0.4;
+
+    inner.innerHTML = `
+      <div class="join-card" style="text-align:left;align-items:stretch;">
+        <h2 style="text-align:center;">Halo, ${escapeHtml(signer.signer_name)}</h2>
+        <p style="text-align:center;">Giliran Anda menandatangani "${escapeHtml(doc.name)}". Buat tanda tangan, lalu klik pada halaman untuk menempelkannya.</p>
+        <div class="join-toolbar">
+          <button type="button" id="joinPrevPage">‹</button>
+          <span id="joinPageIndicator" style="font-size:12.5px;color:var(--ink-soft);">1 / ${jPageCount}</span>
+          <button type="button" id="joinNextPage">›</button>
+          <button type="button" id="joinDrawBtn" class="primary">Buat Tanda Tangan</button>
+        </div>
+        <div id="joinCanvasWrap"></div>
+        <div class="join-toolbar">
+          <button type="button" id="joinSubmitBtn" class="primary" disabled>Selesai &amp; Kirim</button>
+        </div>
+        <p id="joinStatus" style="text-align:center;font-size:12px;color:var(--primary-dark);min-height:16px;"></p>
+      </div>
+    `;
+
+    function renderJoinPlacedBox(stage, p){
+      const box = document.createElement('div');
+      box.className = 'sign-placed active';
+      box.style.left = (p.xFrac * stage.offsetWidth) + 'px';
+      box.style.top = (p.yFrac * stage.offsetHeight) + 'px';
+      box.style.width = (p.wFrac * stage.offsetWidth) + 'px';
+      box.style.height = (p.hFrac * stage.offsetHeight) + 'px';
+      const img = document.createElement('img'); img.src = p.dataUrl; box.appendChild(img);
+      const del = document.createElement('button');
+      del.className = 'sp-del'; del.type = 'button'; del.textContent = '×';
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        jPlacements[jPage] = jPlacements[jPage].filter(x => x !== p);
+        const totalLeft = Object.values(jPlacements).reduce((a,arr) => a+arr.length, 0);
+        $('#joinSubmitBtn').disabled = totalLeft === 0;
+        renderJoinPage();
+      });
+      box.appendChild(del);
+      const resize = document.createElement('div');
+      resize.className = 'sp-resize';
+      box.appendChild(resize);
+      box.addEventListener('pointerdown', (e) => {
+        if(e.target === resize || e.target === del) return;
+        e.stopPropagation();
+        box.setPointerCapture(e.pointerId);
+        const startX = e.clientX, startY = e.clientY;
+        const startLeft = p.xFrac * stage.offsetWidth, startTop = p.yFrac * stage.offsetHeight;
+        const bw = p.wFrac * stage.offsetWidth, bh = p.hFrac * stage.offsetHeight;
+        function onMove(ev){
+          let nx = startLeft + (ev.clientX - startX);
+          let ny = startTop + (ev.clientY - startY);
+          nx = Math.max(0, Math.min(nx, stage.offsetWidth - bw));
+          ny = Math.max(0, Math.min(ny, stage.offsetHeight - bh));
+          box.style.left = nx + 'px'; box.style.top = ny + 'px';
+          p.xFrac = nx / stage.offsetWidth; p.yFrac = ny / stage.offsetHeight;
+        }
+        function onUp(){ box.removeEventListener('pointermove', onMove); box.removeEventListener('pointerup', onUp); }
+        box.addEventListener('pointermove', onMove);
+        box.addEventListener('pointerup', onUp);
+      });
+      resize.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        resize.setPointerCapture(e.pointerId);
+        const startX = e.clientX;
+        const startW = p.wFrac * stage.offsetWidth;
+        const ratio = p.hFrac / p.wFrac;
+        function onMove(ev){
+          let nw = Math.max(24, startW + (ev.clientX - startX));
+          nw = Math.min(nw, stage.offsetWidth - (p.xFrac * stage.offsetWidth));
+          let nh = nw * ratio;
+          nh = Math.min(nh, stage.offsetHeight - (p.yFrac * stage.offsetHeight));
+          nw = nh / ratio;
+          box.style.width = nw + 'px'; box.style.height = nh + 'px';
+          p.wFrac = nw / stage.offsetWidth; p.hFrac = nh / stage.offsetHeight;
+        }
+        function onUp(){ resize.removeEventListener('pointermove', onMove); resize.removeEventListener('pointerup', onUp); }
+        resize.addEventListener('pointermove', onMove);
+        resize.addEventListener('pointerup', onUp);
+      });
+      box.addEventListener('click', (e) => e.stopPropagation());
+      stage.appendChild(box);
+    }
+
+    async function renderJoinPage(){
+      $('#joinPageIndicator').textContent = jPage + ' / ' + jPageCount;
+      $('#joinPrevPage').disabled = jPage <= 1;
+      $('#joinNextPage').disabled = jPage >= jPageCount;
+      const wrap = $('#joinCanvasWrap');
+      wrap.innerHTML = '';
+      const page = await pdfjsDoc.getPage(jPage);
+      const baseVp = page.getViewport({ scale: 1 });
+      jPageW = baseVp.width; jPageH = baseVp.height;
+      const containerWidth = Math.min(680, window.innerWidth - 60);
+      const scale = Math.min(1.6, Math.max(0.4, containerWidth / baseVp.width));
+      const viewport = page.getViewport({ scale });
+      const stage = document.createElement('div');
+      stage.className = 'page-stage';
+      stage.style.width = viewport.width + 'px';
+      stage.style.height = viewport.height + 'px';
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width; canvas.height = viewport.height;
+      stage.appendChild(canvas);
+      wrap.appendChild(stage);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+      (priorPlacements[jPage] || []).forEach(p => {
+        const box = document.createElement('div');
+        box.className = 'sign-placed';
+        box.style.left = (p.xFrac * stage.offsetWidth) + 'px';
+        box.style.top = (p.yFrac * stage.offsetHeight) + 'px';
+        box.style.width = (p.wFrac * stage.offsetWidth) + 'px';
+        box.style.height = (p.hFrac * stage.offsetHeight) + 'px';
+        const img = document.createElement('img');
+        img.src = p.dataUrl;
+        box.appendChild(img);
+        stage.appendChild(box);
+      });
+
+      (jPlacements[jPage] || []).forEach(p => renderJoinPlacedBox(stage, p));
+
+      stage.addEventListener('click', (e) => {
+        if(e.target !== stage && e.target !== canvas) return;
+        if(!jCurrentSigDataUrl){ $('#joinStatus').textContent = 'Buat tanda tangan dulu.'; return; }
+        const rect = stage.getBoundingClientRect();
+        const xFrac = (e.clientX - rect.left) / rect.width;
+        const yFrac = (e.clientY - rect.top) / rect.height;
+        const wFrac = 0.28;
+        const hFrac = wFrac * (jPageW / jPageH) * jSigRatio;
+        const p = {
+          page: jPage,
+          xFrac: Math.max(0, Math.min(xFrac - wFrac/2, 1 - wFrac)),
+          yFrac: Math.max(0, Math.min(yFrac - hFrac/2, 1 - hFrac)),
+          wFrac, hFrac, dataUrl: jCurrentSigDataUrl
+        };
+        if(!jPlacements[jPage]) jPlacements[jPage] = [];
+        jPlacements[jPage].push(p);
+        $('#joinSubmitBtn').disabled = false;
+        renderJoinPage();
+      });
+    }
+
+    $('#joinPrevPage').addEventListener('click', () => { if(jPage > 1){ jPage--; renderJoinPage(); } });
+    $('#joinNextPage').addEventListener('click', () => { if(jPage < jPageCount){ jPage++; renderJoinPage(); } });
+
+    $('#joinDrawBtn').addEventListener('click', () => {
+      openSignModal(`
+        <h3>Gambar Tanda Tangan</h3>
+        <canvas class="sign-pad-canvas" id="joinPadCanvas"></canvas>
+        <div class="sign-modal-actions">
+          <button type="button" id="joinPadClear">Hapus</button>
+          <button type="button" id="joinPadUse" class="primary">Gunakan</button>
+        </div>
+      `);
+      const canvas = $('#joinPadCanvas');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(2,2);
+      ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1F2A24';
+      let drawing = false, last = null, hasStrokes = false;
+      function getPt(e){
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+      }
+      function down(e){ e.preventDefault(); drawing = true; last = getPt(e); }
+      function move(e){
+        if(!drawing) return;
+        e.preventDefault();
+        const p = getPt(e);
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+        last = p; hasStrokes = true;
+      }
+      function up(){ drawing = false; }
+      canvas.addEventListener('mousedown', down); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+      canvas.addEventListener('touchstart', down, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', up);
+      $('#joinPadClear').addEventListener('click', () => { ctx.clearRect(0,0,canvas.width,canvas.height); hasStrokes = false; });
+      $('#joinPadUse').addEventListener('click', () => {
+        if(!hasStrokes){ toast('Gambar tanda tangan dulu'); return; }
+        const dataUrl = canvas.toDataURL('image/png');
+        const img = new Image();
+        img.onload = () => {
+          jSigRatio = img.naturalHeight / img.naturalWidth || 0.4;
+          jCurrentSigDataUrl = dataUrl;
+          closeSignModal();
+          $('#joinStatus').textContent = 'Tanda tangan siap — klik di halaman untuk menempelkan.';
+        };
+        img.src = dataUrl;
+      });
+    });
+
+    $('#joinSubmitBtn').addEventListener('click', async () => {
+      const flatPlacements = [];
+      Object.keys(jPlacements).forEach(pg => jPlacements[pg].forEach(p => flatPlacements.push(p)));
+      if(!flatPlacements.length) return;
+      $('#joinSubmitBtn').disabled = true;
+      $('#joinStatus').textContent = 'Mengirim…';
+      try{
+        const { error } = await sbClient.from('sign_doc_signers').update({
+          status: 'signed', placements: flatPlacements, signed_at: new Date().toISOString()
+        }).eq('id', signer.id);
+        if(error) throw error;
+        renderCard(`<h2>Terima Kasih!</h2><p>Tanda tangan Anda (${escapeHtml(signer.signer_name)}) untuk "${escapeHtml(doc.name)}" berhasil dikirim.</p>`);
+      }catch(err){
+        console.error(err);
+        $('#joinSubmitBtn').disabled = false;
+        $('#joinStatus').textContent = 'Gagal mengirim, coba lagi.';
+      }
+    });
+
+    renderJoinPage();
+  }
+
+  checkTurnAndProceed();
+}
+
 const fileList = $('#fileList');
 const canvasWrap = $('#canvasWrap');
 const emptyViewer = $('#emptyViewer');
@@ -1920,6 +2557,8 @@ async function handlePdfFiles(fileListArg){
 document.querySelector('#tabStampView').addEventListener('click', () => switchTab('stamp'));
 document.querySelector('#tabMergeView').addEventListener('click', () => switchTab('merge'));
 document.querySelector('#tabSplitView').addEventListener('click', () => switchTab('split'));
+document.querySelector('#tabOrganizeView').addEventListener('click', () => switchTab('organize'));
+document.querySelector('#tabSignView').addEventListener('click', () => switchTab('sign'));
 document.querySelector('#tabCompView').addEventListener('click', () => switchTab('comp'));
 document.querySelector('#tabLockView').addEventListener('click', () => switchTab('lock'));
 document.querySelector('#tabUnlockView').addEventListener('click', () => switchTab('unlock'));
@@ -1932,6 +2571,8 @@ function switchTab(view){
   document.querySelector('#tabStampView').classList.toggle('active', view === 'stamp');
   document.querySelector('#tabMergeView').classList.toggle('active', view === 'merge');
   document.querySelector('#tabSplitView').classList.toggle('active', view === 'split');
+  document.querySelector('#tabOrganizeView').classList.toggle('active', view === 'organize');
+  document.querySelector('#tabSignView').classList.toggle('active', view === 'sign');
   document.querySelector('#tabCompView').classList.toggle('active', view === 'comp');
   document.querySelector('#tabLockView').classList.toggle('active', view === 'lock');
   document.querySelector('#tabUnlockView').classList.toggle('active', view === 'unlock');
@@ -1945,6 +2586,8 @@ function switchTab(view){
   document.querySelector('#stampView').style.display = view === 'stamp' ? 'flex' : 'none';
   document.querySelector('#mergeView').style.display = view === 'merge' ? 'flex' : 'none';
   document.querySelector('#splitView').style.display = view === 'split' ? 'flex' : 'none';
+  document.querySelector('#organizeView').style.display = view === 'organize' ? 'flex' : 'none';
+  document.querySelector('#signView').style.display = view === 'sign' ? 'flex' : 'none';
   document.querySelector('#compView').style.display = view === 'comp' ? 'flex' : 'none';
   document.querySelector('#lockView').style.display = view === 'lock' ? 'flex' : 'none';
   document.querySelector('#unlockView').style.display = view === 'unlock' ? 'flex' : 'none';
@@ -2353,6 +2996,748 @@ async function splitAndDownload(){
   }
 }
 
+// ---------- Atur PDF (urutan halaman) ----------
+let organizePool = []; // { id, name, bytes, pageCount, pdfjsDoc, order: [nomorHalamanAsli,...], thumbCache: {} }
+
+const organizeInput = $('#organizeInput');
+$('#organizeDrop').addEventListener('click', () => organizeInput.click());
+organizeInput.addEventListener('change', e => handleOrganizeFiles(e.target.files));
+setupDrop($('#organizeDrop'), handleOrganizeFiles);
+
+async function handleOrganizeFiles(fileListArg){
+  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if(!files.length) return;
+  for(const file of files){
+    const buf = await file.arrayBuffer();
+    let pdfjsDoc;
+    try{
+      pdfjsDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+    }catch(err){
+      toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+      continue;
+    }
+    const pageCount = pdfjsDoc.numPages;
+    organizePool.push({
+      id: 'o' + Math.random().toString(36).slice(2,9),
+      name: file.name, bytes: buf, pageCount, pdfjsDoc,
+      order: Array.from({length: pageCount}, (_,i) => i+1),
+      thumbCache: {}
+    });
+  }
+  renderOrganizePool();
+  await renderOrganizeCards();
+}
+
+function renderOrganizePool(){
+  const wrap = $('#organizePoolList');
+  $('#organizePoolCount').textContent = organizePool.length;
+  if(!organizePool.length){
+    wrap.innerHTML = '<div class="empty-hint">Belum ada PDF diunggah.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  organizePool.forEach((f, idx) => {
+    const el = document.createElement('div');
+    el.className = 'file-item';
+    el.innerHTML = `
+      <div class="fi-icon">${idx+1}</div>
+      <div class="fi-meta">
+        <div class="fi-name">${escapeHtml(f.name)}</div>
+        <div class="fi-sub">${f.order.length} dari ${f.pageCount} halaman</div>
+      </div>
+      <button class="fi-remove" title="Hapus">×</button>
+    `;
+    el.querySelector('.fi-remove').addEventListener('click', async () => {
+      organizePool = organizePool.filter(x => x.id !== f.id);
+      renderOrganizePool();
+      await renderOrganizeCards();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+async function getOrganizeThumbCanvas(f, pageNum){
+  if(f.thumbCache[pageNum]) return f.thumbCache[pageNum];
+  const page = await f.pdfjsDoc.getPage(pageNum);
+  const vp = page.getViewport({scale: 1});
+  const scale = 84 / vp.width;
+  const svp = page.getViewport({scale});
+  const canvas = document.createElement('canvas');
+  canvas.width = svp.width; canvas.height = svp.height;
+  await page.render({canvasContext: canvas.getContext('2d'), viewport: svp}).promise;
+  f.thumbCache[pageNum] = canvas;
+  return canvas;
+}
+
+async function renderOrganizeCards(){
+  const wrap = $('#organizeCardsList');
+  $('#organizeEmptyHint').style.display = organizePool.length ? 'none' : 'block';
+  wrap.innerHTML = '';
+  for(const f of organizePool){
+    const card = document.createElement('div');
+    card.className = 'org-card';
+    card.innerHTML = `
+      <div class="split-card-head">
+        <div class="sc-icon">PDF</div>
+        <div class="sc-meta">
+          <div class="sc-name">${escapeHtml(f.name)}</div>
+          <div class="sc-sub">${f.order.length} dari ${f.pageCount} halaman</div>
+        </div>
+        <button class="sc-del" title="Hapus berkas ini">×</button>
+      </div>
+      <div class="org-toolbar">
+        <button type="button" class="org-reset-btn">Kembalikan urutan semula</button>
+        <span class="org-hint">Seret thumbnail untuk mengubah urutan, klik × untuk membuang halaman</span>
+      </div>
+      <div class="org-grid"></div>
+    `;
+    card.querySelector('.sc-del').addEventListener('click', async () => {
+      organizePool = organizePool.filter(x => x.id !== f.id);
+      renderOrganizePool();
+      await renderOrganizeCards();
+    });
+    card.querySelector('.org-reset-btn').addEventListener('click', async () => {
+      f.order = Array.from({length: f.pageCount}, (_,i) => i+1);
+      renderOrganizePool();
+      await renderOrganizeCards();
+    });
+    const grid = card.querySelector('.org-grid');
+    for(const pageNum of f.order){
+      const thumb = document.createElement('div');
+      thumb.className = 'org-thumb';
+      thumb.draggable = true;
+      thumb.dataset.page = pageNum;
+      const canvas = await getOrganizeThumbCanvas(f, pageNum);
+      thumb.appendChild(canvas.cloneNode(false)); // placeholder, diisi gambar di bawah
+      thumb.querySelector('canvas').getContext('2d').drawImage(canvas, 0, 0);
+      const num = document.createElement('div');
+      num.className = 'org-num';
+      num.textContent = 'Hal. ' + pageNum;
+      thumb.appendChild(num);
+      const del = document.createElement('button');
+      del.className = 'org-del';
+      del.type = 'button';
+      del.title = 'Buang halaman ini';
+      del.textContent = '×';
+      del.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        f.order = f.order.filter(p => p !== pageNum);
+        renderOrganizePool();
+        await renderOrganizeCards();
+      });
+      thumb.appendChild(del);
+
+      thumb.addEventListener('dragstart', (e) => {
+        thumb.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', String(pageNum));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      thumb.addEventListener('dragend', () => thumb.classList.remove('dragging'));
+      thumb.addEventListener('dragover', (e) => { e.preventDefault(); thumb.classList.add('drag-over'); });
+      thumb.addEventListener('dragleave', () => thumb.classList.remove('drag-over'));
+      thumb.addEventListener('drop', (e) => {
+        e.preventDefault();
+        thumb.classList.remove('drag-over');
+        const draggedPage = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        if(!draggedPage || draggedPage === pageNum) return;
+        const from = f.order.indexOf(draggedPage);
+        const to = f.order.indexOf(pageNum);
+        if(from === -1 || to === -1) return;
+        f.order.splice(from, 1);
+        f.order.splice(to, 0, draggedPage);
+        renderOrganizeCardGrid(f, grid);
+      });
+      grid.appendChild(thumb);
+    }
+    wrap.appendChild(card);
+  }
+  updateOrganizeState();
+}
+
+// Menata ulang DOM grid satu berkas saja (dipakai setelah drag&drop) tanpa re-render seluruh kartu
+function renderOrganizeCardGrid(f, grid){
+  const thumbs = {};
+  grid.querySelectorAll('.org-thumb').forEach(t => { thumbs[t.dataset.page] = t; });
+  f.order.forEach(pageNum => {
+    const t = thumbs[pageNum];
+    if(t) grid.appendChild(t);
+  });
+  renderOrganizePool();
+  updateOrganizeState();
+}
+
+function updateOrganizeState(){
+  const validFiles = organizePool.filter(f => f.order.length > 0);
+  $('#organizeBtn').disabled = validFiles.length === 0;
+  if(!organizePool.length) $('#organizeSub').textContent = 'Unggah PDF, lalu seret halaman untuk mengatur urutannya di kanan.';
+  else if(!validFiles.length) $('#organizeSub').textContent = 'Semua halaman terbuang — sisakan minimal 1 halaman.';
+  else $('#organizeSub').textContent = validFiles.length + ' berkas siap diproses.';
+}
+
+$('#organizeBtn').addEventListener('click', organizeAndDownload);
+
+async function organizeAndDownload(){
+  const validFiles = organizePool.filter(f => f.order.length > 0);
+  if(!validFiles.length) return;
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  try{
+    const { PDFDocument } = PDFLib;
+    const results = [];
+    for(const f of validFiles){
+      $('#overlayText').textContent = 'Menyusun ulang "' + f.name + '"…';
+      const srcDoc = await PDFDocument.load(f.bytes.slice(0));
+      const indices = f.order.map(p => p - 1);
+      const outDoc = await PDFDocument.create();
+      const copiedPages = await outDoc.copyPages(srcDoc, indices);
+      copiedPages.forEach(p => outDoc.addPage(p));
+      const outBytes = await outDoc.save();
+      const outName = f.name.replace(/\.pdf$/i, '') + '_diatur.pdf';
+      results.push({ name: outName, bytes: outBytes });
+    }
+    if(results.length === 1){
+      downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
+    } else {
+      $('#overlayText').textContent = 'Menyusun berkas ZIP…';
+      const zip = new JSZip();
+      results.forEach(r => zip.file(r.name, r.bytes));
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hasil_atur_pdf.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    }
+    toast(results.length + ' berkas berhasil diatur ulang dan diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat mengatur ulang PDF');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- Tanda Tangani PDF ----------
+let signDoc = null; // { name, bytes, pdfjsDoc, pageCount, placements: {page:[..]} , pageW, pageH }
+let signPage = 1;
+let signatureLibrary = []; // { id, dataUrl, ratio } ratio = tinggi/lebar gambar asli
+let currentSignatureId = null;
+let selectedPlacementId = null;
+let signQrUnsub = null;
+
+const signInput = $('#signInput');
+$('#signDrop').addEventListener('click', () => signInput.click());
+signInput.addEventListener('change', e => handleSignFile(e.target.files[0]));
+setupDrop($('#signDrop'), (files) => handleSignFile(files[0]));
+
+async function handleSignFile(file){
+  if(!file) return;
+  if(!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))){ toast('Berkas harus PDF'); return; }
+  const buf = await file.arrayBuffer();
+  let pdfjsDoc;
+  try{
+    pdfjsDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+  }catch(err){
+    toast('Gagal membaca "' + file.name + '" — bukan PDF yang valid');
+    return;
+  }
+  signDoc = { name: file.name, bytes: buf, pdfjsDoc, pageCount: pdfjsDoc.numPages, placements: {} };
+  signPage = 1;
+  selectedPlacementId = null;
+  $('#signEmptyHint').style.display = 'none';
+  await renderSignPage();
+  updateSignState();
+}
+
+$('#signPrevPage').addEventListener('click', async () => { if(signDoc && signPage > 1){ signPage--; selectedPlacementId = null; await renderSignPage(); } });
+$('#signNextPage').addEventListener('click', async () => { if(signDoc && signPage < signDoc.pageCount){ signPage++; selectedPlacementId = null; await renderSignPage(); } });
+
+async function renderSignPage(){
+  if(!signDoc) return;
+  $('#signPageIndicator').textContent = signPage + ' / ' + signDoc.pageCount;
+  $('#signPrevPage').disabled = signPage <= 1;
+  $('#signNextPage').disabled = signPage >= signDoc.pageCount;
+
+  const wrap = $('#signCanvasWrap');
+  const old = $('#signPageStage');
+  if(old) old.remove();
+
+  const page = await signDoc.pdfjsDoc.getPage(signPage);
+  const containerWidth = wrap.clientWidth - 56;
+  const baseVp = page.getViewport({ scale: 1 });
+  signDoc.pageW = baseVp.width;
+  signDoc.pageH = baseVp.height;
+  const scale = Math.min(1.6, Math.max(0.4, containerWidth / baseVp.width));
+  const viewport = page.getViewport({ scale });
+
+  const stage = document.createElement('div');
+  stage.className = 'page-stage';
+  stage.id = 'signPageStage';
+  stage.style.width = viewport.width + 'px';
+  stage.style.height = viewport.height + 'px';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width; canvas.height = viewport.height;
+  stage.appendChild(canvas);
+  wrap.appendChild(stage);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+  stage.addEventListener('click', (e) => {
+    if(e.target !== stage && e.target !== canvas) return;
+    selectedPlacementId = null;
+    if(!currentSignatureId){ toast('Buat atau pilih tanda tangan dahulu di panel kiri'); return; }
+    const rect = stage.getBoundingClientRect();
+    const xFrac = (e.clientX - rect.left) / rect.width;
+    const yFrac = (e.clientY - rect.top) / rect.height;
+    placeSignatureAt(xFrac, yFrac, stage);
+  });
+
+  (signDoc.placements[signPage] || []).forEach(p => renderPlacedSignature(stage, p));
+}
+
+function placeSignatureAt(xFrac, yFrac, stage){
+  const sig = signatureLibrary.find(s => s.id === currentSignatureId);
+  if(!sig) return;
+  const wFrac = 0.28;
+  const hFrac = wFrac * (signDoc.pageW / signDoc.pageH) * sig.ratio;
+  const p = {
+    id: 'sp' + Math.random().toString(36).slice(2,9),
+    dataUrl: sig.dataUrl,
+    xFrac: Math.max(0, Math.min(xFrac - wFrac/2, 1 - wFrac)),
+    yFrac: Math.max(0, Math.min(yFrac - hFrac/2, 1 - hFrac)),
+    wFrac, hFrac
+  };
+  if(!signDoc.placements[signPage]) signDoc.placements[signPage] = [];
+  signDoc.placements[signPage].push(p);
+  selectedPlacementId = p.id;
+  renderSignPage();
+  updateSignState();
+}
+
+function renderPlacedSignature(stage, p){
+  const box = document.createElement('div');
+  box.className = 'sign-placed' + (p.id === selectedPlacementId ? ' active' : '');
+  box.style.left = (p.xFrac * stage.offsetWidth) + 'px';
+  box.style.top = (p.yFrac * stage.offsetHeight) + 'px';
+  box.style.width = (p.wFrac * stage.offsetWidth) + 'px';
+  box.style.height = (p.hFrac * stage.offsetHeight) + 'px';
+
+  const img = document.createElement('img');
+  img.src = p.dataUrl;
+  box.appendChild(img);
+
+  const del = document.createElement('button');
+  del.className = 'sp-del'; del.type = 'button'; del.textContent = '×'; del.title = 'Hapus tanda tangan ini';
+  del.addEventListener('click', (e) => {
+    e.stopPropagation();
+    signDoc.placements[signPage] = signDoc.placements[signPage].filter(x => x.id !== p.id);
+    selectedPlacementId = null;
+    renderSignPage();
+    updateSignState();
+  });
+  box.appendChild(del);
+
+  const resize = document.createElement('div');
+  resize.className = 'sp-resize';
+  box.appendChild(resize);
+
+  box.addEventListener('pointerdown', (e) => {
+    if(e.target === resize || e.target === del) return;
+    e.stopPropagation();
+    selectedPlacementId = p.id;
+    box.classList.add('active');
+    box.querySelectorAll('.sp-del,.sp-resize').forEach(el => el.style.display = '');
+    box.setPointerCapture(e.pointerId);
+    const startX = e.clientX, startY = e.clientY;
+    const startLeft = p.xFrac * stage.offsetWidth, startTop = p.yFrac * stage.offsetHeight;
+    const bw = p.wFrac * stage.offsetWidth, bh = p.hFrac * stage.offsetHeight;
+    function onMove(ev){
+      let nx = startLeft + (ev.clientX - startX);
+      let ny = startTop + (ev.clientY - startY);
+      nx = Math.max(0, Math.min(nx, stage.offsetWidth - bw));
+      ny = Math.max(0, Math.min(ny, stage.offsetHeight - bh));
+      box.style.left = nx + 'px'; box.style.top = ny + 'px';
+      p.xFrac = nx / stage.offsetWidth; p.yFrac = ny / stage.offsetHeight;
+    }
+    function onUp(){ box.removeEventListener('pointermove', onMove); box.removeEventListener('pointerup', onUp); }
+    box.addEventListener('pointermove', onMove);
+    box.addEventListener('pointerup', onUp);
+  });
+
+  resize.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    selectedPlacementId = p.id;
+    resize.setPointerCapture(e.pointerId);
+    const startX = e.clientX;
+    const startW = p.wFrac * stage.offsetWidth;
+    const ratio = p.hFrac / p.wFrac;
+    function onMove(ev){
+      let nw = Math.max(24, startW + (ev.clientX - startX));
+      nw = Math.min(nw, stage.offsetWidth - (p.xFrac * stage.offsetWidth));
+      let nh = nw * ratio;
+      nh = Math.min(nh, stage.offsetHeight - (p.yFrac * stage.offsetHeight));
+      nw = nh / ratio;
+      box.style.width = nw + 'px'; box.style.height = nh + 'px';
+      p.wFrac = nw / stage.offsetWidth; p.hFrac = nh / stage.offsetHeight;
+    }
+    function onUp(){ resize.removeEventListener('pointermove', onMove); resize.removeEventListener('pointerup', onUp); }
+    resize.addEventListener('pointermove', onMove);
+    resize.addEventListener('pointerup', onUp);
+  });
+
+  box.addEventListener('click', (e) => e.stopPropagation());
+  stage.appendChild(box);
+}
+
+function updateSignState(){
+  const total = signDoc ? Object.values(signDoc.placements).reduce((a,arr) => a+arr.length, 0) : 0;
+  $('#signBtn').disabled = !signDoc || total === 0;
+  if(!signDoc) $('#signSub').textContent = 'Unggah PDF dan buat tanda tangan, lalu klik pada halaman untuk menempelkannya.';
+  else if(!total) $('#signSub').textContent = 'Klik pada halaman untuk menempelkan tanda tangan.';
+  else $('#signSub').textContent = total + ' tanda tangan siap diproses.';
+}
+
+// --- Pustaka tanda tangan (gambar langsung / dari HP) ---
+function addSignatureToLibrary(dataUrl){
+  const img = new Image();
+  img.onload = () => {
+    const ratio = img.naturalHeight / img.naturalWidth;
+    const sig = { id: 'sg' + Math.random().toString(36).slice(2,9), dataUrl, ratio: ratio || 0.4 };
+    signatureLibrary.push(sig);
+    currentSignatureId = sig.id;
+    renderSignGallery();
+  };
+  img.src = dataUrl;
+}
+
+function renderSignGallery(){
+  const wrap = $('#signGallery');
+  wrap.innerHTML = '';
+  signatureLibrary.forEach(sig => {
+    const el = document.createElement('div');
+    el.className = 'sign-thumb' + (sig.id === currentSignatureId ? ' active' : '');
+    el.innerHTML = `<img src="${sig.dataUrl}"><button type="button" class="sign-thumb-del" title="Hapus">×</button>`;
+    el.addEventListener('click', () => { currentSignatureId = sig.id; renderSignGallery(); });
+    el.querySelector('.sign-thumb-del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      signatureLibrary = signatureLibrary.filter(s => s.id !== sig.id);
+      if(currentSignatureId === sig.id) currentSignatureId = signatureLibrary.length ? signatureLibrary[signatureLibrary.length-1].id : null;
+      renderSignGallery();
+    });
+    wrap.appendChild(el);
+  });
+}
+
+// --- Modal generik untuk gambar tanda tangan / tampilkan QR ---
+function openSignModal(innerHtml){
+  closeSignModal();
+  const overlay = document.createElement('div');
+  overlay.className = 'sign-modal-overlay';
+  overlay.id = 'signModalOverlay';
+  overlay.innerHTML = `<div class="sign-modal" style="position:relative;">
+    <button type="button" class="sign-modal-close" id="signModalCloseBtn">×</button>
+    ${innerHtml}
+  </div>`;
+  document.body.appendChild(overlay);
+  $('#signModalCloseBtn').addEventListener('click', closeSignModal);
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) closeSignModal(); });
+  return overlay;
+}
+function closeSignModal(){
+  if(signQrUnsub){ signQrUnsub(); signQrUnsub = null; }
+  const existing = $('#signModalOverlay');
+  if(existing) existing.remove();
+}
+
+// --- Gambar langsung ---
+$('#signDrawBtn').addEventListener('click', () => {
+  const overlay = openSignModal(`
+    <h3>Gambar Tanda Tangan</h3>
+    <canvas class="sign-pad-canvas" id="signPadCanvas"></canvas>
+    <div class="sign-modal-actions">
+      <button type="button" id="signPadClear">Hapus</button>
+      <button type="button" id="signPadUse" class="primary">Gunakan</button>
+    </div>
+  `);
+  const canvas = $('#signPadCanvas');
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2,2);
+  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1F2A24';
+  let drawing = false, last = null, hasStrokes = false;
+  function getPt(e){
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - r.left, y: t.clientY - r.top };
+  }
+  function down(e){ e.preventDefault(); drawing = true; last = getPt(e); }
+  function move(e){
+    if(!drawing) return;
+    e.preventDefault();
+    const p = getPt(e);
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+    last = p; hasStrokes = true;
+  }
+  function up(){ drawing = false; }
+  canvas.addEventListener('mousedown', down); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+  canvas.addEventListener('touchstart', down, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', up);
+  $('#signPadClear').addEventListener('click', () => { ctx.clearRect(0,0,canvas.width,canvas.height); hasStrokes = false; });
+  $('#signPadUse').addEventListener('click', () => {
+    if(!hasStrokes){ toast('Gambar tanda tangan dulu'); return; }
+    addSignatureToLibrary(canvas.toDataURL('image/png'));
+    closeSignModal();
+  });
+});
+
+// --- Pindai QR dari HP (lewat internet via Supabase, tanpa login) ---
+$('#signQrBtn').addEventListener('click', async () => {
+  await sbReadyPromise;
+  if(!sbClient){
+    toast('Tidak ada koneksi ke server — coba lagi, atau pakai tombol "Gambar di sini"');
+    return;
+  }
+  const sessionId = (crypto.randomUUID ? crypto.randomUUID() : 'sg' + Math.random().toString(36).slice(2) + Date.now().toString(36));
+  // Bersihkan sesi lama sekalian (lebih dari 1 jam) — tidak perlu ditunggu
+  sbClient.from('sign_sessions').delete().lt('created_at', new Date(Date.now() - 3600000).toISOString()).then(() => {});
+
+  const url = location.origin + location.pathname + '?sign=' + sessionId;
+  openSignModal(`
+    <h3>Tanda Tangan via HP</h3>
+    <p>Pindai kode ini pakai kamera HP Anda (tanpa perlu login apa pun), gambar tanda tangan, lalu ketuk Kirim. Tanda tangan akan otomatis muncul di sini lewat internet.</p>
+    <div id="signQrBox"></div>
+    <p class="sign-scan-status" id="signScanStatus">Menunggu tanda tangan dari HP…</p>
+  `);
+  new QRCode($('#signQrBox'), { text: url, width: 200, height: 200, colorDark: '#1F2A24', colorLight: '#ffffff' });
+
+  const statusEl = $('#signScanStatus');
+  let stopped = false;
+  const intervalId = setInterval(async () => {
+    if(stopped) return;
+    try{
+      const { data, error } = await sbClient.from('sign_sessions').select('data_url').eq('id', sessionId).maybeSingle();
+      if(error) throw error;
+      if(data && data.data_url){
+        stopped = true;
+        clearInterval(intervalId);
+        addSignatureToLibrary(data.data_url);
+        toast('Tanda tangan dari HP diterima');
+        closeSignModal();
+        sbClient.from('sign_sessions').delete().eq('id', sessionId).then(() => {});
+      }
+    }catch(err){
+      console.error(err);
+      if(statusEl) statusEl.textContent = 'Koneksi terputus, mencoba lagi…';
+    }
+  }, 1500);
+
+  signQrUnsub = () => { stopped = true; clearInterval(intervalId); };
+});
+
+// --- Proses & unduh ---
+$('#signBtn').addEventListener('click', signAndDownload);
+
+async function embedPlacementsIntoPdf(pdfDoc, placementsByPage, embeddedCache){
+  embeddedCache = embeddedCache || {};
+  const pages = pdfDoc.getPages();
+  for(const pnumStr of Object.keys(placementsByPage)){
+    const pnum = parseInt(pnumStr, 10);
+    const placements = placementsByPage[pnum];
+    if(!placements || !placements.length) continue;
+    const page = pages[pnum - 1];
+    if(!page) continue;
+    const { width: pw, height: ph } = page.getSize();
+    for(const p of placements){
+      if(!embeddedCache[p.dataUrl]){
+        embeddedCache[p.dataUrl] = await pdfDoc.embedPng(dataUrlToBytes(p.dataUrl));
+      }
+      const embedded = embeddedCache[p.dataUrl];
+      const w = p.wFrac * pw, h = p.hFrac * ph;
+      const x = p.xFrac * pw;
+      const y = ph - (p.yFrac * ph) - h;
+      page.drawImage(embedded, { x, y, width: w, height: h });
+    }
+  }
+  return embeddedCache;
+}
+
+async function signAndDownload(){
+  if(!signDoc) return;
+  const total = Object.values(signDoc.placements).reduce((a,arr) => a+arr.length, 0);
+  if(!total) return;
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  $('#overlayText').textContent = 'Membubuhkan tanda tangan…';
+  try{
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(signDoc.bytes.slice(0));
+    await embedPlacementsIntoPdf(pdfDoc, signDoc.placements);
+    const outBytes = await pdfDoc.save();
+    const outName = signDoc.name.replace(/\.pdf$/i, '') + '_ttd.pdf';
+    downloadBytes(outBytes, outName, 'application/pdf');
+    toast('PDF bertanda tangan berhasil diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Terjadi kesalahan saat membubuhkan tanda tangan');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+// ---------- TTD Bergantian (multi-penandatangan, lewat internet) ----------
+let multiSignSession = null; // { docId, signers: [...] , pollId }
+
+$('#signInviteBtn').addEventListener('click', () => {
+  if(!signDoc){ toast('Unggah PDF dahulu di panel kiri'); return; }
+  openInviteModal();
+});
+
+function openInviteModal(){
+  const overlay = openSignModal(`
+    <h3>Undang untuk TTD Bergantian</h3>
+    <p>Masukkan nama tiap orang sesuai urutan tanda tangan. Setiap orang akan dapat link sendiri.</p>
+    <div id="inviteRows" style="width:100%;"></div>
+    <button type="button" class="org-reset-btn" id="inviteAddRow" style="width:100%;">+ Tambah Orang</button>
+    <div class="sign-modal-actions">
+      <button type="button" id="inviteCancel">Batal</button>
+      <button type="button" id="inviteSubmit" class="primary">Buat Sesi &amp; Link</button>
+    </div>
+  `);
+  const rowsWrap = overlay.querySelector('#inviteRows');
+  function addRow(val){
+    const row = document.createElement('div');
+    row.className = 'invite-row';
+    row.innerHTML = `<input type="text" placeholder="Nama penandatangan" value="${val ? escapeHtml(val) : ''}"><button type="button" class="invite-del">×</button>`;
+    row.querySelector('.invite-del').addEventListener('click', () => {
+      if(rowsWrap.children.length > 1) row.remove();
+    });
+    rowsWrap.appendChild(row);
+  }
+  addRow(''); addRow('');
+  overlay.querySelector('#inviteAddRow').addEventListener('click', () => addRow(''));
+  overlay.querySelector('#inviteCancel').addEventListener('click', closeSignModal);
+  overlay.querySelector('#inviteSubmit').addEventListener('click', async () => {
+    const names = Array.from(rowsWrap.querySelectorAll('input')).map(i => i.value.trim()).filter(Boolean);
+    if(names.length < 1){ toast('Isi minimal 1 nama'); return; }
+    await createMultiSignSession(names);
+  });
+}
+
+async function createMultiSignSession(names){
+  await sbReadyPromise;
+  if(!sbClient){ toast('Tidak ada koneksi ke server'); return; }
+  const overlayEl = $('#overlay');
+  overlayEl.classList.add('show');
+  $('#overlayText').textContent = 'Menyiapkan sesi TTD bergantian…';
+  try{
+    const docId = (crypto.randomUUID ? crypto.randomUUID() : 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36));
+    const storagePath = docId + '/original.pdf';
+    const blob = new Blob([signDoc.bytes], { type: 'application/pdf' });
+    const { error: upErr } = await sbClient.storage.from('sign-docs').upload(storagePath, blob, { contentType: 'application/pdf' });
+    if(upErr) throw upErr;
+    const { error: docErr } = await sbClient.from('sign_docs').insert({
+      id: docId, name: signDoc.name, storage_path: storagePath, total_signers: names.length, status: 'in_progress'
+    });
+    if(docErr) throw docErr;
+    const signerRows = names.map((n, i) => ({
+      id: (crypto.randomUUID ? crypto.randomUUID() : 's' + Math.random().toString(36).slice(2) + i),
+      doc_id: docId, order_index: i + 1, signer_name: n, status: 'pending'
+    }));
+    const { error: signersErr } = await sbClient.from('sign_doc_signers').insert(signerRows);
+    if(signersErr) throw signersErr;
+
+    multiSignSession = { docId, signers: signerRows.map(s => ({ ...s })) };
+    closeSignModal();
+    $('#signMultiStatusBox').style.display = 'block';
+    renderMultiSignStatus();
+    startMultiSignPolling();
+    toast('Sesi TTD bergantian dibuat — bagikan link ke tiap orang');
+  }catch(err){
+    console.error(err);
+    toast('Gagal membuat sesi TTD bergantian');
+  }finally{
+    overlayEl.classList.remove('show');
+  }
+}
+
+function renderMultiSignStatus(){
+  const box = $('#signMultiStatusBox');
+  if(!multiSignSession){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  const signedCount = multiSignSession.signers.filter(s => s.status === 'signed').length;
+  const total = multiSignSession.signers.length;
+  let html = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;">${signedCount} dari ${total} sudah tanda tangan</div>`;
+  multiSignSession.signers.forEach(s => {
+    const link = location.origin + location.pathname + '?joinsign=' + s.id;
+    html += `<div class="signer-status-row">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);width:16px;flex-shrink:0;">${s.order_index}</span>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.signer_name)}</span>
+      <span class="signer-status-badge ${s.status}">${s.status === 'signed' ? 'Sudah TTD' : 'Menunggu'}</span>
+      <button type="button" class="signer-copy-btn" data-link="${escapeHtml(link)}">Salin Link</button>
+    </div>`;
+  });
+  html += `<button type="button" class="org-reset-btn" id="multiSignDownloadBtn" style="width:100%;margin-top:10px;">Unduh PDF ${signedCount === total ? 'Final' : '(sejauh ini)'}</button>`;
+  box.innerHTML = html;
+  box.querySelectorAll('.signer-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try{ await navigator.clipboard.writeText(btn.dataset.link); toast('Link disalin'); }
+      catch(err){ toast('Gagal menyalin, salin manual: ' + btn.dataset.link); }
+    });
+  });
+  $('#multiSignDownloadBtn').addEventListener('click', downloadMultiSignFinal);
+}
+
+function startMultiSignPolling(){
+  if(multiSignSession.pollId) clearInterval(multiSignSession.pollId);
+  multiSignSession.pollId = setInterval(async () => {
+    if(!multiSignSession || !sbClient) return;
+    const { data, error } = await sbClient.from('sign_doc_signers').select('*').eq('doc_id', multiSignSession.docId).order('order_index');
+    if(error){ console.error(error); return; }
+    if(data){
+      multiSignSession.signers = data;
+      renderMultiSignStatus();
+      if(data.every(s => s.status === 'signed')){
+        clearInterval(multiSignSession.pollId);
+        sbClient.from('sign_docs').update({ status: 'completed' }).eq('id', multiSignSession.docId).then(() => {});
+      }
+    }
+  }, 3000);
+}
+
+async function downloadMultiSignFinal(){
+  if(!multiSignSession) return;
+  const overlayEl = $('#overlay');
+  overlayEl.classList.add('show');
+  $('#overlayText').textContent = 'Menyusun PDF final…';
+  try{
+    const { data: docRow, error: docErr } = await sbClient.from('sign_docs').select('*').eq('id', multiSignSession.docId).single();
+    if(docErr) throw docErr;
+    const { data: fileBlob, error: dlErr } = await sbClient.storage.from('sign-docs').download(docRow.storage_path);
+    if(dlErr) throw dlErr;
+    const bytes = new Uint8Array(await fileBlob.arrayBuffer());
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await PDFDocument.load(bytes);
+    let embeddedCache = {};
+    for(const signer of multiSignSession.signers){
+      if(signer.status !== 'signed' || !signer.placements) continue;
+      const byPage = {};
+      signer.placements.forEach(p => {
+        if(!byPage[p.page]) byPage[p.page] = [];
+        byPage[p.page].push(p);
+      });
+      embeddedCache = await embedPlacementsIntoPdf(pdfDoc, byPage, embeddedCache);
+    }
+    const outBytes = await pdfDoc.save();
+    const outName = docRow.name.replace(/\.pdf$/i, '') + '_ttd_bersama.pdf';
+    downloadBytes(outBytes, outName, 'application/pdf');
+    toast('PDF hasil TTD bergantian berhasil diunduh');
+  }catch(err){
+    console.error(err);
+    toast('Gagal mengunduh PDF final');
+  }finally{
+    overlayEl.classList.remove('show');
+  }
+}
+
 // ---------- Kompres PDF ----------
 let compPool = []; // { id, name, bytes, pageCount }
 
@@ -2452,6 +3837,64 @@ function applyColorMode(ctx, canvas, mode){
 }
 
 $('#compBtn').addEventListener('click', compressAndDownload);
+$('#compTarget').addEventListener('input', () => {
+  // Saat target MB diisi, kualitas diatur otomatis (DPI dipakai sebagai batas resolusi maksimal)
+  const on = parseFloat($('#compTarget').value) > 0;
+  $('#compQuality').disabled = on;
+  $('#compQuality').title = on ? 'Diatur otomatis karena target ukuran diisi' : '';
+});
+
+// Render ulang semua halaman -> JPEG -> PDF baru pada DPI & kualitas tertentu
+async function buildCompressedPdf(srcDoc, dpi, jpegQuality, colorMode, onPage){
+  const { PDFDocument } = PDFLib;
+  const outDoc = await PDFDocument.create();
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  for(let p = 1; p <= srcDoc.numPages; p++){
+    if(onPage) onPage(p, srcDoc.numPages);
+    const page = await srcDoc.getPage(p);
+    const baseVp = page.getViewport({ scale: 1 }); // ukuran halaman asli dalam pt (1pt = 1/72 inci)
+    const vp = page.getViewport({ scale: dpi / 72 });
+    canvas.width = Math.max(1, Math.round(vp.width));
+    canvas.height = Math.max(1, Math.round(vp.height));
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    applyColorMode(ctx, canvas, colorMode);
+    const jpegBytes = dataUrlToBytes(canvas.toDataURL('image/jpeg', jpegQuality));
+    const embeddedImg = await outDoc.embedJpg(jpegBytes);
+    const outPage = outDoc.addPage([baseVp.width, baseVp.height]);
+    outPage.drawImage(embeddedImg, { x: 0, y: 0, width: baseVp.width, height: baseVp.height });
+  }
+  return await outDoc.save();
+}
+
+// Cari pengaturan (DPI, kualitas) terbaik yang hasilnya <= targetBytes lewat pencarian biner
+async function compressToTarget(srcDoc, targetBytes, maxDpi, colorMode, onStatus){
+  const dpis = [1, 0.75, 0.55, 0.4, 0.3].map(f => Math.max(36, Math.round(maxDpi * f)));
+  const uniqDpis = dpis.filter((d, i) => dpis.indexOf(d) === i);
+  const quals = [0.85, 0.7, 0.55, 0.4, 0.28];
+  const ladder = []; // urut dari kualitas terbaik (file besar) ke terkecil
+  uniqDpis.forEach(d => quals.forEach(q => ladder.push({ dpi: d, q })));
+
+  let lo = 0, hi = ladder.length - 1, best = null, smallest = null, attempt = 0;
+  const maxAttempts = Math.ceil(Math.log2(ladder.length)) + 2;
+  while(lo <= hi && attempt < maxAttempts){
+    const mid = Math.floor((lo + hi) / 2);
+    const cfg = ladder[mid];
+    attempt++;
+    const bytes = await buildCompressedPdf(srcDoc, cfg.dpi, cfg.q, colorMode,
+      (p, n) => onStatus && onStatus(attempt, p, n, cfg));
+    if(mid === ladder.length - 1) smallest = bytes;
+    if(bytes.byteLength <= targetBytes){ best = { bytes, cfg }; hi = mid - 1; }
+    else { lo = mid + 1; }
+  }
+  if(best) return { bytes: best.bytes, cfg: best.cfg, reached: true };
+  if(!smallest){
+    const cfg = ladder[ladder.length - 1];
+    smallest = await buildCompressedPdf(srcDoc, cfg.dpi, cfg.q, colorMode,
+      (p, n) => onStatus && onStatus(attempt + 1, p, n, cfg));
+  }
+  return { bytes: smallest, cfg: ladder[ladder.length - 1], reached: false };
+}
 
 async function compressAndDownload(){
   if(!compPool.length) return;
@@ -2459,41 +3902,46 @@ async function compressAndDownload(){
   const jpegQuality = qualityMap[$('#compQuality').value] || 0.6;
   const dpi = parseInt($('#compDpi').value, 10) || 150;
   const colorMode = $('#compColor').value;
+  const targetMB = parseFloat($('#compTarget').value);
+  const targetBytes = targetMB > 0 ? Math.round(targetMB * 1024 * 1024) : 0;
 
   const overlay = $('#overlay');
   overlay.classList.add('show');
   try{
-    const { PDFDocument } = PDFLib;
     const results = [];
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+    let missed = 0;
 
     for(const f of compPool){
       const statusEl = document.querySelector('#compCard_' + f.id + ' .cc-status');
-      const srcDoc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
-      const outDoc = await PDFDocument.create();
+      let outBytes;
 
-      for(let p = 1; p <= srcDoc.numPages; p++){
-        if(statusEl) statusEl.textContent = 'Halaman ' + p + '/' + srcDoc.numPages;
-        $('#overlayText').textContent = 'Mengompres "' + f.name + '" — halaman ' + p + ' dari ' + srcDoc.numPages + '…';
-        const page = await srcDoc.getPage(p);
-        const baseVp = page.getViewport({ scale: 1 }); // ukuran halaman asli dalam pt (1pt = 1/72 inci)
-        const scale = dpi / 72;
-        const vp = page.getViewport({ scale });
-        canvas.width = Math.max(1, Math.round(vp.width));
-        canvas.height = Math.max(1, Math.round(vp.height));
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
-        applyColorMode(ctx, canvas, colorMode);
-        const jpegBytes = dataUrlToBytes(canvas.toDataURL('image/jpeg', jpegQuality));
-        const embeddedImg = await outDoc.embedJpg(jpegBytes);
-        const outPage = outDoc.addPage([baseVp.width, baseVp.height]);
-        outPage.drawImage(embeddedImg, { x: 0, y: 0, width: baseVp.width, height: baseVp.height });
+      if(targetBytes && f.bytes.byteLength <= targetBytes){
+        // Sudah di bawah target: tidak perlu dikompres (kualitas asli tetap terjaga)
+        outBytes = new Uint8Array(f.bytes);
+        if(statusEl) statusEl.textContent = 'Sudah ≤ target (' + fmtBytes(f.bytes.byteLength) + ')';
+      } else {
+        const srcDoc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
+        if(targetBytes){
+          const r = await compressToTarget(srcDoc, targetBytes, dpi, colorMode, (attempt, p, n, cfg) => {
+            if(statusEl) statusEl.textContent = 'Percobaan ' + attempt + ' · hal. ' + p + '/' + n;
+            $('#overlayText').textContent = 'Menyesuaikan ke ' + targetMB + ' MB — "' + f.name + '" percobaan ' + attempt + ', halaman ' + p + '/' + n + '…';
+          });
+          outBytes = r.bytes;
+          if(!r.reached) missed++;
+        } else {
+          outBytes = await buildCompressedPdf(srcDoc, dpi, jpegQuality, colorMode, (p, n) => {
+            if(statusEl) statusEl.textContent = 'Halaman ' + p + '/' + n;
+            $('#overlayText').textContent = 'Mengompres "' + f.name + '" — halaman ' + p + ' dari ' + n + '…';
+          });
+        }
       }
 
-      const outBytes = await outDoc.save();
       const outName = f.name.replace(/\.pdf$/i, '') + '_kompres.pdf';
       results.push({ name: outName, bytes: outBytes, origSize: f.bytes.byteLength });
-      if(statusEl) statusEl.textContent = fmtBytes(f.bytes.byteLength) + ' → ' + fmtBytes(outBytes.byteLength);
+      if(statusEl && !(targetBytes && f.bytes.byteLength <= targetBytes)){
+        const over = targetBytes && outBytes.byteLength > targetBytes ? ' ⚠ di atas target' : '';
+        statusEl.textContent = fmtBytes(f.bytes.byteLength) + ' → ' + fmtBytes(outBytes.byteLength) + over;
+      }
     }
 
     if(results.length === 1){
@@ -2511,7 +3959,9 @@ async function compressAndDownload(){
     }
     const totalBefore = results.reduce((a,r)=>a+r.origSize,0);
     const totalAfter = results.reduce((a,r)=>a+r.bytes.byteLength,0);
-    toast(results.length + ' PDF dikompres: ' + fmtBytes(totalBefore) + ' → ' + fmtBytes(totalAfter));
+    let msg = results.length + ' PDF dikompres: ' + fmtBytes(totalBefore) + ' → ' + fmtBytes(totalAfter);
+    if(missed) msg += ' — ' + missed + ' berkas belum mencapai target (sudah di batas terkecil)';
+    toast(msg);
   }catch(err){
     console.error(err);
     toast('Terjadi kesalahan saat mengompres PDF');
@@ -3736,6 +5186,7 @@ $('#feedbackSendBtn').addEventListener('click', async () => {
 });
 
 refreshAuthUI();
+initJoinSignMode();
 
 // ---------- Ekstraksi teks per halaman (tanpa OCR & OCR) ----------
 function clusterTextItemsToRows(items){
