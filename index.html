@@ -15,6 +15,7 @@
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -2815,80 +2816,101 @@ async function imageFileToPdfBytes(file){
   return await outDoc.save();
 }
 
+// Menunggu semua <img> di dalam elemen selesai dimuat (gambar base64 dari mammoth, dll),
+// supaya html2canvas tidak memotretnya dalam keadaan kosong/belum sempat digambar.
+function waitForImages(container, timeoutMs){
+  const imgs = Array.from(container.querySelectorAll('img'));
+  if(!imgs.length) return Promise.resolve();
+  return Promise.race([
+    Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; }))),
+    new Promise(res => setTimeout(res, timeoutMs))
+  ]);
+}
+
+// Merender HTML apa adanya (termasuk tabel, bold/italic, gambar, dsb) menjadi PDF dengan
+// "memotret" tampilannya (html2canvas) lalu memotong hasilnya per halaman A4 — supaya isi,
+// tata letak, dan format aslinya tetap persis sama seperti yang terlihat, bukan disusun ulang jadi teks polos.
+async function htmlToPdfBytes(innerHtmlString, opts){
+  opts = opts || {};
+  const pagePxWidth = opts.pageWidthPx || 794; // ~A4 lebar pada 96dpi
+  const A4_RATIO = 1.41421356; // rasio tinggi:lebar kertas A4 potret
+  const pagePxHeight = Math.round(opts.landscape ? pagePxWidth / A4_RATIO : pagePxWidth * A4_RATIO);
+
+  const container = document.createElement('div');
+  container.style.cssText = `position:absolute;left:-99999px;top:0;width:${pagePxWidth}px;background:#ffffff;
+    font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111;padding:40px;box-sizing:border-box;`;
+  container.innerHTML = `<style>
+    table{border-collapse:collapse;}
+    td,th{border:1px solid #999;padding:4px 7px;font-size:12px;}
+    img{max-width:100%;}
+    h1,h2,h3{margin:0.6em 0 0.3em;}
+    p{margin:0 0 0.6em;}
+    ul,ol{margin:0 0 0.6em;padding-left:1.4em;}
+  </style>` + innerHtmlString;
+  document.body.appendChild(container);
+
+  let fullCanvas;
+  try{
+    await waitForImages(container, 4000);
+    await new Promise(r => setTimeout(r, 50)); // beri waktu layout/font settle sebelum dipotret
+    fullCanvas = await html2canvas(container, { scale: 1.5, backgroundColor: '#ffffff', useCORS: true, windowWidth: pagePxWidth });
+  } finally {
+    container.remove();
+  }
+
+  const scaleFactor = fullCanvas.width / pagePxWidth;
+  const pageCanvasHeight = Math.max(1, Math.round(pagePxHeight * scaleFactor));
+  const totalPages = Math.max(1, Math.ceil(fullCanvas.height / pageCanvasHeight));
+
+  const { PDFDocument } = PDFLib;
+  const outDoc = await PDFDocument.create();
+  const PT_PER_PX = 72 / 96;
+  const pageWpt = pagePxWidth * PT_PER_PX;
+  const pageHpt = pagePxHeight * PT_PER_PX;
+
+  for(let i = 0; i < totalPages; i++){
+    const remaining = fullCanvas.height - i * pageCanvasHeight;
+    const sliceH = Math.min(pageCanvasHeight, remaining);
+    const sliceCanvas = document.createElement('canvas');
+    sliceCanvas.width = fullCanvas.width;
+    sliceCanvas.height = sliceH;
+    const ctx = sliceCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+    ctx.drawImage(fullCanvas, 0, i * pageCanvasHeight, fullCanvas.width, sliceH, 0, 0, fullCanvas.width, sliceH);
+    const pngBytes = dataUrlToBytes(sliceCanvas.toDataURL('image/png'));
+    const embedded = await outDoc.embedPng(pngBytes);
+    const page = outDoc.addPage([pageWpt, pageHpt]);
+    const drawH = (sliceH / fullCanvas.width) * pageWpt;
+    page.drawImage(embedded, { x: 0, y: pageHpt - drawH, width: pageWpt, height: drawH });
+  }
+  return await outDoc.save();
+}
+
 async function excelFileToPdfBytes(file){
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: 'array' });
-  const { PDFDocument, StandardFonts } = PDFLib;
-  const outDoc = await PDFDocument.create();
-  const font = await outDoc.embedFont(StandardFonts.Courier);
-  const fontSize = 8;
-  const lineHeight = 11;
-  const pageW = 841.89, pageH = 595.28; // A4 landscape — lebih lega untuk tabel
-  const marginX = 30, marginTop = 40, marginBottom = 30;
-  const maxCharsPerLine = Math.floor((pageW - marginX * 2) / (fontSize * 0.6));
-
+  let html = '';
   wb.SheetNames.forEach(sheetName => {
     const sheet = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-    let page = outDoc.addPage([pageW, pageH]);
-    let y = pageH - marginTop;
-    page.drawText('Sheet: ' + sheetName, { x: marginX, y, size: 10, font });
-    y -= lineHeight * 1.8;
-    rows.forEach(row => {
-      let line = row.map(c => String(c)).join('  |  ');
-      if(line.length > maxCharsPerLine) line = line.slice(0, maxCharsPerLine - 1) + '…';
-      if(y < marginBottom){ page = outDoc.addPage([pageW, pageH]); y = pageH - marginTop; }
-      page.drawText(line || ' ', { x: marginX, y, size: fontSize, font });
-      y -= lineHeight;
-    });
+    html += `<h3>${escapeHtml(sheetName)}</h3>` + XLSX.utils.sheet_to_html(sheet, { editable: false }) + '<div style="height:28px;"></div>';
   });
-  if(outDoc.getPageCount() === 0) outDoc.addPage([pageW, pageH]);
-  return await outDoc.save();
+  return await htmlToPdfBytes(html, { pageWidthPx: 1100, landscape: true });
 }
 
 async function docxFileToPdfBytes(file){
   if(!window.mammoth) throw new Error('Pustaka pembaca .docx belum termuat');
   const buf = await file.arrayBuffer();
-  const result = await mammoth.convertToHtml({ arrayBuffer: buf });
-  const tmp = document.createElement('div');
-  tmp.innerHTML = result.value;
-  const text = tmp.textContent || tmp.innerText || '';
-  const paragraphs = text.split('\n').map(t => t.trim()).filter(Boolean);
-
-  const { PDFDocument, StandardFonts } = PDFLib;
-  const outDoc = await PDFDocument.create();
-  const font = await outDoc.embedFont(StandardFonts.Helvetica);
-  const fontSize = 11;
-  const lineHeight = 15;
-  const pageW = 595.28, pageH = 841.89; // A4 potret
-  const marginX = 50, marginTop = 50, marginBottom = 50;
-  const maxWidth = pageW - marginX * 2;
-
-  function wrapLine(str){
-    const words = str.split(/\s+/);
-    const lines = [];
-    let cur = '';
-    words.forEach(w => {
-      const test = cur ? cur + ' ' + w : w;
-      if(font.widthOfTextAtSize(test, fontSize) > maxWidth && cur){ lines.push(cur); cur = w; }
-      else cur = test;
-    });
-    if(cur) lines.push(cur);
-    return lines.length ? lines : [''];
-  }
-
-  let page = outDoc.addPage([pageW, pageH]);
-  let y = pageH - marginTop;
-  if(!paragraphs.length) paragraphs.push('(Dokumen tidak memiliki teks yang bisa dibaca)');
-  paragraphs.forEach(p => {
-    wrapLine(p).forEach(line => {
-      if(y < marginBottom){ page = outDoc.addPage([pageW, pageH]); y = pageH - marginTop; }
-      page.drawText(line, { x: marginX, y, size: fontSize, font });
-      y -= lineHeight;
-    });
-    y -= lineHeight * 0.4; // jarak antar paragraf
-  });
-  return await outDoc.save();
+  const result = await mammoth.convertToHtml(
+    { arrayBuffer: buf },
+    { convertImage: mammoth.images.imgElement(async (image) => {
+        const b64 = await image.read('base64');
+        return { src: 'data:' + image.contentType + ';base64,' + b64 };
+      })
+    }
+  );
+  const html = result.value && result.value.trim() ? result.value : '<p>(Dokumen tidak memiliki konten yang bisa dibaca)</p>';
+  return await htmlToPdfBytes(html, { pageWidthPx: 794, landscape: false });
 }
 
 // Mengubah satu berkas non-PDF menjadi PDF. Mengembalikan {ok:true, file} atau {ok:false, reason}.
