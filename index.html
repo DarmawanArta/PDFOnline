@@ -11,6 +11,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Google Drive Picker: HANYA berfungsi saat aplikasi ini di-hosting di domain sendiri (bukan di artifact Claude), karena Claude memblokir domain Google lewat kebijakan keamanannya. Lihat komentar GOOGLE_CLIENT_ID di bagian skrip utama untuk cara mengaktifkannya. -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -187,6 +191,8 @@
     padding:5px 10px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
   }
   .org-reset-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .org-reset-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .org-reset-btn:disabled:hover{border-color:var(--line);color:var(--ink-soft);}
   .org-hint{font-size:11px;color:var(--ink-soft);}
   .org-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
   .org-thumb{
@@ -197,7 +203,8 @@
   .org-thumb.drag-over{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary) inset;}
   .org-thumb canvas{display:block;width:100%;height:auto;pointer-events:none;}
   .org-thumb .org-num{
-    text-align:center;font-size:10.5px;color:var(--ink-soft);padding:3px 0 5px;font-family:'IBM Plex Mono',monospace;
+    text-align:center;font-size:9px;color:var(--ink-soft);padding:3px 4px 5px;font-family:'IBM Plex Mono',monospace;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .org-thumb .org-del{
     position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;
@@ -205,6 +212,12 @@
     display:flex;align-items:center;justify-content:center;
   }
   .org-thumb .org-del:hover{background:var(--accent);color:#fff;}
+  .org-thumb .org-preview{
+    position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.9);color:var(--ink-soft);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .org-thumb .org-preview:hover{background:var(--primary);color:#fff;}
 
   .sign-gallery{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
   .sign-thumb{
@@ -274,6 +287,14 @@
   .wm-box-row:last-child{border-bottom:none;}
   .wm-box-del{border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;margin-left:auto;}
   .wm-box-del:hover{color:var(--accent);}
+
+  .gdrive-btn{
+    width:100%;margin-top:6px;border:1px solid var(--line);background:#fff;border-radius:8px;
+    padding:8px 10px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .gdrive-btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .gdrive-btn svg{flex-shrink:0;}
 
   #signMobileView{
     display:none;position:fixed;inset:0;background:#FAF9F5;z-index:500;flex-direction:column;
@@ -769,6 +790,27 @@
   }
   .file-item:hover .fi-remove{display:block;}
   .file-item .fi-remove:hover{background:var(--accent-soft);color:var(--accent);}
+  .file-item .fi-preview{
+    flex-shrink:0;width:22px;height:22px;border-radius:50%;border:none;background:transparent;
+    color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .file-item .fi-preview:hover{background:var(--line-soft);color:var(--primary-dark);}
+
+  .fp-overlay{
+    position:fixed;inset:0;background:rgba(20,24,20,0.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .fp-modal{
+    background:#fff;border-radius:12px;max-width:720px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .fp-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .fp-name{flex:1;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fp-close{border:none;background:none;font-size:20px;color:var(--ink-soft);cursor:pointer;flex-shrink:0;}
+  .fp-close:hover{color:var(--accent);}
+  .fp-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;background:#FAF9F5;}
+  .fp-loading{color:var(--ink-soft);font-size:12.5px;padding:40px 0;}
+  .fp-page-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .fp-page{box-shadow:var(--shadow);background:#fff;max-width:100%;}
+  .fp-page-label{font-size:10.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
 
   .empty-hint{padding:22px 16px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
 
@@ -1131,9 +1173,9 @@
         <h2>1 · Berkas PDF</h2>
         <div class="drop" id="pdfDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF</p>
+          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF/Word/Excel/gambar</p>
         </div>
-        <input type="file" id="pdfInput" accept="application/pdf" multiple>
+        <input type="file" id="pdfInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
 
       <div class="sidebar-section">
@@ -1279,9 +1321,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="mergeDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah 10+ PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah 10+ file PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="mergeInput" accept="application/pdf" multiple>
+        <input type="file" id="mergeInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Sumber PDF (<span id="poolCount">0</span>)</h2>
@@ -1320,9 +1362,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="splitDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="splitInput" accept="application/pdf" multiple>
+        <input type="file" id="splitInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="splitPoolCount">0</span>)</h2>
@@ -1360,9 +1402,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="organizeDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="organizeInput" accept="application/pdf" multiple>
+        <input type="file" id="organizeInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="organizePoolCount">0</span>)</h2>
@@ -1400,9 +1442,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="signDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>satu berkas PDF</p>
+          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/gambar</p>
         </div>
-        <input type="file" id="signInput" accept="application/pdf">
+        <input type="file" id="signInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
       </div>
       <div class="sidebar-section">
         <h2>2 · Tanda Tangan</h2>
@@ -1421,7 +1463,7 @@
       <div class="sidebar-section">
         <h2>3 · TTD Bergantian (opsional)</h2>
         <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.5;">Undang beberapa orang menandatangani PDF ini satu per satu, sesuai urutan — masing-masing dapat link sendiri.</p>
-        <button type="button" class="org-reset-btn" id="signInviteBtn" style="width:100%;">+ Undang Orang Lain</button>
+        <button type="button" class="org-reset-btn" id="signInviteBtn" style="width:100%;" disabled title="Unggah PDF dahulu di panel kiri">+ Undang Orang Lain</button>
         <div id="signMultiStatusBox" style="display:none;margin-top:10px;"></div>
       </div>
       <div class="sidebar-footer">
@@ -1458,9 +1500,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="wmDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>satu berkas PDF</p>
+          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/gambar</p>
         </div>
-        <input type="file" id="wmInput" accept="application/pdf">
+        <input type="file" id="wmInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
       </div>
       <div class="sidebar-section">
         <h2>2 · Kotak Penutup</h2>
@@ -1509,9 +1551,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="compDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="compInput" accept="application/pdf" multiple>
+        <input type="file" id="compInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="compPoolCount">0</span>)</h2>
@@ -1586,9 +1628,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="lockDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus — nama file = nama pasien</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus — nama file = nama pasien</p>
         </div>
-        <input type="file" id="lockInput" accept="application/pdf" multiple>
+        <input type="file" id="lockInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section">
         <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
@@ -1654,9 +1696,9 @@
         <h2>1 · Unggah PDF Terkunci</h2>
         <div class="drop" id="unlockDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus — nama file = nama pasien</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus — nama file = nama pasien</p>
         </div>
-        <input type="file" id="unlockInput" accept="application/pdf" multiple>
+        <input type="file" id="unlockInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section">
         <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
@@ -1722,9 +1764,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="jpgDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="jpgInput" accept="application/pdf" multiple>
+        <input type="file" id="jpgInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="jpgPoolCount">0</span>)</h2>
@@ -1781,9 +1823,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="wordDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="wordInput" accept="application/pdf" multiple>
+        <input type="file" id="wordInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -1829,9 +1871,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="excelDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="excelInput" accept="application/pdf" multiple>
+        <input type="file" id="excelInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -1877,9 +1919,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="pptDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
         </div>
-        <input type="file" id="pptInput" accept="application/pdf" multiple>
+        <input type="file" id="pptInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -2228,6 +2270,152 @@ let opacityPct = 100;
 let placementCounter = 0;
 
 const $ = (sel) => document.querySelector(sel);
+
+// ====================================================================
+// GOOGLE DRIVE PICKER — isi 2 nilai di bawah ini SETELAH aplikasi ini
+// di-deploy ke domain/hosting Anda sendiri (Netlify/Vercel/GitHub Pages/dll).
+// Tidak akan berfungsi selama masih dibuka lewat artifact Claude, karena
+// domain Google diblokir oleh kebijakan keamanan Claude.
+//
+// Cara mendapatkan nilainya (gratis, lewat akun Google Anda sendiri):
+// 1. Buka https://console.cloud.google.com/ → buat project baru (atau pakai yang ada).
+// 2. Menu "APIs & Services" → "Library" → aktifkan "Google Drive API" DAN "Google Picker API".
+// 3. Menu "APIs & Services" → "Credentials":
+//    a. Buat "API key" → salin ke GOOGLE_API_KEY di bawah.
+//    b. Buat "OAuth client ID" tipe "Web application" → di kolom
+//       "Authorized JavaScript origins" isi alamat domain hosting Anda
+//       (mis. https://nama-app-anda.netlify.app) → salin Client ID ke
+//       GOOGLE_CLIENT_ID di bawah.
+// 4. Simpan, unggah ulang file ini ke hosting Anda.
+// ====================================================================
+const GOOGLE_CLIENT_ID = 'GANTI_DENGAN_CLIENT_ID_ANDA.apps.googleusercontent.com';
+const GOOGLE_API_KEY = 'GANTI_DENGAN_API_KEY_ANDA';
+const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+let gAccessToken = null;
+let gTokenClient = null;
+let gPickerLoaded = false;
+
+function driveConfigReady(){
+  return GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.startsWith('GANTI_') && GOOGLE_API_KEY && !GOOGLE_API_KEY.startsWith('GANTI_');
+}
+
+function ensureGoogleToken(){
+  return new Promise((resolve, reject) => {
+    if(!window.google || !google.accounts || !google.accounts.oauth2){ reject(new Error('Google Identity Services belum termuat')); return; }
+    if(!gTokenClient){
+      gTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: GOOGLE_DRIVE_SCOPE,
+        callback: (resp) => {
+          if(resp.error){ reject(resp); return; }
+          gAccessToken = resp.access_token;
+          resolve(gAccessToken);
+        }
+      });
+    }
+    if(gAccessToken){ resolve(gAccessToken); return; }
+    try{ gTokenClient.requestAccessToken({ prompt: '' }); }
+    catch(err){ reject(err); }
+  });
+}
+
+function ensurePickerLoaded(){
+  return new Promise((resolve, reject) => {
+    if(!window.gapi){ reject(new Error('Google API (gapi) belum termuat')); return; }
+    if(gPickerLoaded){ resolve(); return; }
+    gapi.load('picker', { callback: () => { gPickerLoaded = true; resolve(); } });
+  });
+}
+
+async function pickFromGoogleDrive(inputId, mimeTypesCsv){
+  if(!driveConfigReady()){
+    toast('Isi dulu GOOGLE_CLIENT_ID & GOOGLE_API_KEY di kode (lihat komentar di bagian atas skrip) sebelum memakai fitur Google Drive');
+    return;
+  }
+  try{
+    await ensurePickerLoaded();
+    await ensureGoogleToken();
+  }catch(err){
+    console.error(err);
+    toast('Gagal terhubung ke Google Drive. Periksa koneksi internet & konfigurasi Client ID/API Key.');
+    return;
+  }
+
+  const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+    .setMimeTypes(mimeTypesCsv)
+    .setIncludeFolders(true);
+  const picker = new google.picker.PickerBuilder()
+    .addView(view)
+    .setOAuthToken(gAccessToken)
+    .setDeveloperKey(GOOGLE_API_KEY)
+    .setCallback((data) => {
+      if(data.action !== google.picker.Action.PICKED) return;
+      importDriveFileIntoInput(data.docs[0], inputId);
+    })
+    .build();
+  picker.setVisible(true);
+}
+
+async function importDriveFileIntoInput(doc, inputId){
+  if(doc.mimeType && doc.mimeType.startsWith('application/vnd.google-apps.')){
+    toast('"' + doc.name + '" adalah file Google Docs/Sheets/Slides asli — unduh dulu sebagai PDF/Word/Excel dari Drive, baru unggah ke sini.');
+    return;
+  }
+  const overlay = $('#overlay');
+  overlay.classList.add('show');
+  $('#overlayText').textContent = 'Mengambil "' + doc.name + '" dari Google Drive…';
+  try{
+    const res = await fetch('https://www.googleapis.com/drive/v3/files/' + doc.id + '?alt=media', {
+      headers: { Authorization: 'Bearer ' + gAccessToken }
+    });
+    if(!res.ok) throw new Error('Gagal mengunduh dari Drive (' + res.status + ')');
+    const blob = await res.blob();
+    const file = new File([blob], doc.name, { type: doc.mimeType || blob.type });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.getElementById(inputId);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }catch(err){
+    console.error(err);
+    toast('Gagal mengambil berkas dari Google Drive');
+  }finally{
+    overlay.classList.remove('show');
+  }
+}
+
+const DRIVE_TARGETS = [
+  { dropId: 'pdfDrop', inputId: 'pdfInput', mime: 'application/pdf' },
+  { dropId: 'stampDrop', inputId: 'stampInput', mime: 'image/png,image/jpeg' },
+  { dropId: 'mergeDrop', inputId: 'mergeInput', mime: 'application/pdf' },
+  { dropId: 'splitDrop', inputId: 'splitInput', mime: 'application/pdf' },
+  { dropId: 'organizeDrop', inputId: 'organizeInput', mime: 'application/pdf' },
+  { dropId: 'signDrop', inputId: 'signInput', mime: 'application/pdf' },
+  { dropId: 'wmDrop', inputId: 'wmInput', mime: 'application/pdf' },
+  { dropId: 'compDrop', inputId: 'compInput', mime: 'application/pdf' },
+  { dropId: 'lockDrop', inputId: 'lockInput', mime: 'application/pdf' },
+  { dropId: 'lockExcelDrop', inputId: 'lockExcelInput', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel' },
+  { dropId: 'unlockDrop', inputId: 'unlockInput', mime: 'application/pdf' },
+  { dropId: 'unlockExcelDrop', inputId: 'unlockExcelInput', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel' },
+  { dropId: 'jpgDrop', inputId: 'jpgInput', mime: 'application/pdf' },
+  { dropId: 'wordDrop', inputId: 'wordInput', mime: 'application/pdf' },
+  { dropId: 'excelDrop', inputId: 'excelInput', mime: 'application/pdf' },
+  { dropId: 'pptDrop', inputId: 'pptInput', mime: 'application/pdf' }
+];
+
+function initGoogleDriveButtons(){
+  DRIVE_TARGETS.forEach(t => {
+    const drop = document.getElementById(t.dropId);
+    if(!drop || !drop.parentElement) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'gdrive-btn';
+    btn.innerHTML = '<svg viewBox="0 0 87.3 78" width="14" height="14"><path fill="#0066da" d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z"/><path fill="#00ac47" d="M43.65 25l-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 00-1.2 4.5h27.5z"/><path fill="#ea4335" d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z"/><path fill="#00832d" d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z"/><path fill="#2684fc" d="M59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/><path fill="#ffba00" d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z"/></svg> Ambil dari Google Drive';
+    btn.addEventListener('click', (e) => { e.stopPropagation(); pickFromGoogleDrive(t.inputId, t.mime); });
+    drop.insertAdjacentElement('afterend', btn);
+  });
+}
+
 
 // ---------- Mode tanda tangan via HP (dibuka lewat pindai QR) — lewat internet (Supabase), tanpa login ----------
 (function initSignMobileMode(){
@@ -2592,6 +2780,213 @@ function fmtBytes(n){
   return (n/1024/1024).toFixed(1) + ' MB';
 }
 
+// ---------- Paksa berkas non-PDF (Word/Excel/gambar) menjadi PDF sebelum diproses ----------
+function isPdfFile(f){
+  return f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+}
+
+async function imageFileToPdfBytes(file){
+  const { PDFDocument } = PDFLib;
+  const outDoc = await PDFDocument.create();
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = reject;
+    im.src = dataUrl;
+  });
+  // Gambar disamakan ke PNG dulu (aman untuk semua tipe: webp, gif, dst.) lewat canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  const pngBytes = dataUrlToBytes(canvas.toDataURL('image/png'));
+  const embedded = await outDoc.embedPng(pngBytes);
+  // Ukuran halaman mengikuti gambar, dibatasi maksimal setara A4 lebar supaya wajar dicetak
+  const maxW = 595.28 * 2; // ~2x lebar A4 dalam pt, cukup longgar untuk foto resolusi tinggi
+  const scale = embedded.width > maxW ? maxW / embedded.width : 1;
+  const w = embedded.width * scale, h = embedded.height * scale;
+  const page = outDoc.addPage([w, h]);
+  page.drawImage(embedded, { x: 0, y: 0, width: w, height: h });
+  return await outDoc.save();
+}
+
+async function excelFileToPdfBytes(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const outDoc = await PDFDocument.create();
+  const font = await outDoc.embedFont(StandardFonts.Courier);
+  const fontSize = 8;
+  const lineHeight = 11;
+  const pageW = 841.89, pageH = 595.28; // A4 landscape — lebih lega untuk tabel
+  const marginX = 30, marginTop = 40, marginBottom = 30;
+  const maxCharsPerLine = Math.floor((pageW - marginX * 2) / (fontSize * 0.6));
+
+  wb.SheetNames.forEach(sheetName => {
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    let page = outDoc.addPage([pageW, pageH]);
+    let y = pageH - marginTop;
+    page.drawText('Sheet: ' + sheetName, { x: marginX, y, size: 10, font });
+    y -= lineHeight * 1.8;
+    rows.forEach(row => {
+      let line = row.map(c => String(c)).join('  |  ');
+      if(line.length > maxCharsPerLine) line = line.slice(0, maxCharsPerLine - 1) + '…';
+      if(y < marginBottom){ page = outDoc.addPage([pageW, pageH]); y = pageH - marginTop; }
+      page.drawText(line || ' ', { x: marginX, y, size: fontSize, font });
+      y -= lineHeight;
+    });
+  });
+  if(outDoc.getPageCount() === 0) outDoc.addPage([pageW, pageH]);
+  return await outDoc.save();
+}
+
+async function docxFileToPdfBytes(file){
+  if(!window.mammoth) throw new Error('Pustaka pembaca .docx belum termuat');
+  const buf = await file.arrayBuffer();
+  const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+  const tmp = document.createElement('div');
+  tmp.innerHTML = result.value;
+  const text = tmp.textContent || tmp.innerText || '';
+  const paragraphs = text.split('\n').map(t => t.trim()).filter(Boolean);
+
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const outDoc = await PDFDocument.create();
+  const font = await outDoc.embedFont(StandardFonts.Helvetica);
+  const fontSize = 11;
+  const lineHeight = 15;
+  const pageW = 595.28, pageH = 841.89; // A4 potret
+  const marginX = 50, marginTop = 50, marginBottom = 50;
+  const maxWidth = pageW - marginX * 2;
+
+  function wrapLine(str){
+    const words = str.split(/\s+/);
+    const lines = [];
+    let cur = '';
+    words.forEach(w => {
+      const test = cur ? cur + ' ' + w : w;
+      if(font.widthOfTextAtSize(test, fontSize) > maxWidth && cur){ lines.push(cur); cur = w; }
+      else cur = test;
+    });
+    if(cur) lines.push(cur);
+    return lines.length ? lines : [''];
+  }
+
+  let page = outDoc.addPage([pageW, pageH]);
+  let y = pageH - marginTop;
+  if(!paragraphs.length) paragraphs.push('(Dokumen tidak memiliki teks yang bisa dibaca)');
+  paragraphs.forEach(p => {
+    wrapLine(p).forEach(line => {
+      if(y < marginBottom){ page = outDoc.addPage([pageW, pageH]); y = pageH - marginTop; }
+      page.drawText(line, { x: marginX, y, size: fontSize, font });
+      y -= lineHeight;
+    });
+    y -= lineHeight * 0.4; // jarak antar paragraf
+  });
+  return await outDoc.save();
+}
+
+// Mengubah satu berkas non-PDF menjadi PDF. Mengembalikan {ok:true, file} atau {ok:false, reason}.
+async function coerceFileToPdf(file){
+  if(isPdfFile(file)) return { ok: true, file };
+  const name = file.name.toLowerCase();
+  try{
+    let bytes;
+    if(file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/.test(name)){
+      bytes = await imageFileToPdfBytes(file);
+    } else if(/\.(xlsx|xls)$/.test(name)){
+      bytes = await excelFileToPdfBytes(file);
+    } else if(/\.docx$/.test(name)){
+      bytes = await docxFileToPdfBytes(file);
+    } else if(/\.doc$/.test(name)){
+      return { ok: false, reason: 'format .doc lama tidak didukung — simpan ulang sebagai .docx atau PDF dulu' };
+    } else if(/\.(ppt|pptx)$/.test(name)){
+      return { ok: false, reason: 'PowerPoint belum didukung untuk konversi otomatis — simpan sebagai PDF dulu dari PowerPoint' };
+    } else {
+      return { ok: false, reason: 'format berkas tidak dikenali' };
+    }
+    const pdfFile = new File([bytes], file.name.replace(/\.[^.]+$/, '') + '.pdf', { type: 'application/pdf' });
+    return { ok: true, file: pdfFile };
+  }catch(err){
+    console.error(err);
+    return { ok: false, reason: 'gagal dikonversi' };
+  }
+}
+
+// Memproses banyak berkas sekaligus (dari drag-drop / pilih banyak file), otomatis mengubah yang bukan PDF
+async function coerceFilesToPdf(fileListArg){
+  const out = [];
+  const failed = [];
+  for(const f of Array.from(fileListArg)){
+    if(isPdfFile(f)){ out.push(f); continue; }
+    const r = await coerceFileToPdf(f);
+    if(r.ok) out.push(r.file);
+    else failed.push(f.name + ' (' + r.reason + ')');
+  }
+  if(failed.length) toast('Tidak bisa diproses: ' + failed.join(', '));
+  return out;
+}
+
+// ---------- Pratinjau berkas (dipakai di semua daftar file) ----------
+const FP_MAX_PAGES = 30;
+async function openFilePreview(bytes, name){
+  const modal = document.createElement('div');
+  modal.className = 'fp-overlay';
+  modal.innerHTML = `
+    <div class="fp-modal">
+      <div class="fp-head">
+        <span class="fp-name">${escapeHtml(name)}</span>
+        <button type="button" class="fp-close">×</button>
+      </div>
+      <div class="fp-body"><div class="fp-loading">Memuat pratinjau…</div></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.fp-close').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if(e.target === modal) close(); });
+
+  try{
+    const pdfjsDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    const body = modal.querySelector('.fp-body');
+    body.innerHTML = '';
+    const total = pdfjsDoc.numPages;
+    const toRender = Math.min(total, FP_MAX_PAGES);
+    for(let p = 1; p <= toRender; p++){
+      const page = await pdfjsDoc.getPage(p);
+      const vp = page.getViewport({ scale: 1 });
+      const scale = Math.min(1.3, 620 / vp.width);
+      const svp = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = svp.width; canvas.height = svp.height;
+      canvas.className = 'fp-page';
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: svp }).promise;
+      const wrap = document.createElement('div');
+      wrap.className = 'fp-page-wrap';
+      wrap.appendChild(canvas);
+      const label = document.createElement('div');
+      label.className = 'fp-page-label';
+      label.textContent = 'Halaman ' + p + ' / ' + total;
+      wrap.appendChild(label);
+      body.appendChild(wrap);
+    }
+    if(total > toRender){
+      const note = document.createElement('div');
+      note.className = 'fp-loading';
+      note.textContent = 'Menampilkan ' + toRender + ' dari ' + total + ' halaman pertama.';
+      body.appendChild(note);
+    }
+  }catch(err){
+    console.error(err);
+    modal.querySelector('.fp-body').innerHTML = '<div class="fp-loading">Gagal memuat pratinjau — berkas mungkin rusak.</div>';
+  }
+}
+
 // ---------- Upload: PDFs ----------
 const pdfInput = $('#pdfInput');
 $('#pdfDrop').addEventListener('click', ()=> pdfInput.click());
@@ -2599,7 +2994,7 @@ pdfInput.addEventListener('change', e => handlePdfFiles(e.target.files));
 setupDrop($('#pdfDrop'), handlePdfFiles);
 
 async function handlePdfFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -2690,7 +3085,7 @@ mergeInput.addEventListener('change', e => handleMergeFiles(e.target.files));
 setupDrop($('#mergeDrop'), handleMergeFiles);
 
 async function handleMergeFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -2725,8 +3120,10 @@ function renderMergePool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${f.pageCount ?? '?'} halaman</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus dari sumber">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       mergePool = mergePool.filter(x => x.id !== f.id);
       mergeGroups.forEach(g => { g.fileIds = g.fileIds.filter(id => id !== f.id); });
@@ -2896,7 +3293,7 @@ splitInput.addEventListener('change', e => handleSplitFiles(e.target.files));
 setupDrop($('#splitDrop'), handleSplitFiles);
 
 async function handleSplitFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -2937,8 +3334,10 @@ function renderSplitPool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${f.pageCount} halaman · ${f.ranges.length} rentang</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       splitPool = splitPool.filter(x => x.id !== f.id);
       renderSplitPool();
@@ -3067,8 +3466,9 @@ async function splitAndDownload(){
   }
 }
 
-// ---------- Atur PDF (urutan halaman) ----------
-let organizePool = []; // { id, name, bytes, pageCount, pdfjsDoc, order: [nomorHalamanAsli,...], thumbCache: {} }
+// ---------- Atur PDF (urutan halaman, bisa pindah antar berkas) ----------
+let organizePool = []; // berkas ASLI yang diunggah: { id, name, bytes, pageCount, pdfjsDoc, thumbCache }
+let organizeOutputs = []; // kartu hasil susunan: { id, name, pages: [{srcId, pageNum}, ...] }
 
 const organizeInput = $('#organizeInput');
 $('#organizeDrop').addEventListener('click', () => organizeInput.click());
@@ -3076,7 +3476,7 @@ organizeInput.addEventListener('change', e => handleOrganizeFiles(e.target.files
 setupDrop($('#organizeDrop'), handleOrganizeFiles);
 
 async function handleOrganizeFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -3088,11 +3488,11 @@ async function handleOrganizeFiles(fileListArg){
       continue;
     }
     const pageCount = pdfjsDoc.numPages;
-    organizePool.push({
-      id: 'o' + Math.random().toString(36).slice(2,9),
-      name: file.name, bytes: buf, pageCount, pdfjsDoc,
-      order: Array.from({length: pageCount}, (_,i) => i+1),
-      thumbCache: {}
+    const id = 'o' + Math.random().toString(36).slice(2,9);
+    organizePool.push({ id, name: file.name, bytes: buf, pageCount, pdfjsDoc, thumbCache: {} });
+    organizeOutputs.push({
+      id, name: file.name,
+      pages: Array.from({length: pageCount}, (_,i) => ({ srcId: id, pageNum: i+1 }))
     });
   }
   renderOrganizePool();
@@ -3108,18 +3508,22 @@ function renderOrganizePool(){
   }
   wrap.innerHTML = '';
   organizePool.forEach((f, idx) => {
+    const remaining = organizeOutputs.reduce((a,o) => a + o.pages.filter(p => p.srcId === f.id).length, 0);
     const el = document.createElement('div');
     el.className = 'file-item';
     el.innerHTML = `
       <div class="fi-icon">${idx+1}</div>
       <div class="fi-meta">
         <div class="fi-name">${escapeHtml(f.name)}</div>
-        <div class="fi-sub">${f.order.length} dari ${f.pageCount} halaman</div>
+        <div class="fi-sub">${remaining} dari ${f.pageCount} halaman masih dipakai</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', async () => {
       organizePool = organizePool.filter(x => x.id !== f.id);
+      organizeOutputs.forEach(o => { o.pages = o.pages.filter(p => p.srcId !== f.id); });
       renderOrganizePool();
       await renderOrganizeCards();
     });
@@ -3128,6 +3532,7 @@ function renderOrganizePool(){
 }
 
 async function getOrganizeThumbCanvas(f, pageNum){
+  if(!f) return null;
   if(f.thumbCache[pageNum]) return f.thumbCache[pageNum];
   const page = await f.pdfjsDoc.getPage(pageNum);
   const vp = page.getViewport({scale: 1});
@@ -3140,50 +3545,104 @@ async function getOrganizeThumbCanvas(f, pageNum){
   return canvas;
 }
 
+async function openSinglePagePreview(srcFile, pageNum){
+  const modal = document.createElement('div');
+  modal.className = 'fp-overlay';
+  modal.innerHTML = `
+    <div class="fp-modal" style="max-width:520px;">
+      <div class="fp-head">
+        <span class="fp-name">${escapeHtml(srcFile ? srcFile.name : '')} — Hal. ${pageNum}</span>
+        <button type="button" class="fp-close">×</button>
+      </div>
+      <div class="fp-body"><div class="fp-loading">Memuat…</div></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.fp-close').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if(e.target === modal) close(); });
+  try{
+    if(!srcFile) throw new Error('sumber tidak ditemukan');
+    const page = await srcFile.pdfjsDoc.getPage(pageNum);
+    const vp = page.getViewport({ scale: 1 });
+    const scale = Math.min(2.2, 460 / vp.width);
+    const svp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = svp.width; canvas.height = svp.height;
+    canvas.className = 'fp-page';
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: svp }).promise;
+    const body = modal.querySelector('.fp-body');
+    body.innerHTML = '';
+    body.appendChild(canvas);
+  }catch(err){
+    console.error(err);
+    modal.querySelector('.fp-body').innerHTML = '<div class="fp-loading">Gagal memuat halaman.</div>';
+  }
+}
+
 async function renderOrganizeCards(){
   const wrap = $('#organizeCardsList');
-  $('#organizeEmptyHint').style.display = organizePool.length ? 'none' : 'block';
+  $('#organizeEmptyHint').style.display = organizeOutputs.length ? 'none' : 'block';
   wrap.innerHTML = '';
-  for(const f of organizePool){
+  for(const o of organizeOutputs){
     const card = document.createElement('div');
     card.className = 'org-card';
+    card.dataset.outputId = o.id;
     card.innerHTML = `
       <div class="split-card-head">
         <div class="sc-icon">PDF</div>
         <div class="sc-meta">
-          <div class="sc-name">${escapeHtml(f.name)}</div>
-          <div class="sc-sub">${f.order.length} dari ${f.pageCount} halaman</div>
+          <div class="sc-name">${escapeHtml(o.name)}</div>
+          <div class="sc-sub">${o.pages.length} halaman</div>
         </div>
-        <button class="sc-del" title="Hapus berkas ini">×</button>
+        <button class="sc-del" title="Hapus kartu ini">×</button>
       </div>
       <div class="org-toolbar">
-        <button type="button" class="org-reset-btn">Kembalikan urutan semula</button>
-        <span class="org-hint">Seret thumbnail untuk mengubah urutan, klik × untuk membuang halaman</span>
+        <button type="button" class="org-reset-btn">Kembalikan ke berkas asal</button>
+        <span class="org-hint">Seret thumbnail untuk mengatur urutan — bisa juga diseret ke kartu berkas lain</span>
       </div>
       <div class="org-grid"></div>
     `;
     card.querySelector('.sc-del').addEventListener('click', async () => {
-      organizePool = organizePool.filter(x => x.id !== f.id);
-      renderOrganizePool();
+      organizeOutputs = organizeOutputs.filter(x => x.id !== o.id);
       await renderOrganizeCards();
     });
     card.querySelector('.org-reset-btn').addEventListener('click', async () => {
-      f.order = Array.from({length: f.pageCount}, (_,i) => i+1);
+      const src = organizePool.find(f => f.id === o.id);
+      if(src){
+        o.pages = Array.from({length: src.pageCount}, (_,i) => ({ srcId: src.id, pageNum: i+1 }));
+      } else {
+        o.pages = o.pages.filter(p => p.srcId === o.id);
+      }
       renderOrganizePool();
       await renderOrganizeCards();
     });
     const grid = card.querySelector('.org-grid');
-    for(const pageNum of f.order){
+
+    for(const entry of o.pages){
+      const srcFile = organizePool.find(f => f.id === entry.srcId);
       const thumb = document.createElement('div');
       thumb.className = 'org-thumb';
       thumb.draggable = true;
-      thumb.dataset.page = pageNum;
-      const canvas = await getOrganizeThumbCanvas(f, pageNum);
-      thumb.appendChild(canvas.cloneNode(false)); // placeholder, diisi gambar di bawah
-      thumb.querySelector('canvas').getContext('2d').drawImage(canvas, 0, 0);
+      thumb.dataset.srcId = entry.srcId;
+      thumb.dataset.page = entry.pageNum;
+      const canvas = await getOrganizeThumbCanvas(srcFile, entry.pageNum);
+      if(canvas){
+        thumb.appendChild(canvas.cloneNode(false));
+        thumb.querySelector('canvas').getContext('2d').drawImage(canvas, 0, 0);
+      }
+      const preview = document.createElement('button');
+      preview.className = 'org-preview';
+      preview.type = 'button';
+      preview.title = 'Pratinjau halaman ini sebelum dipindah';
+      preview.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+      preview.addEventListener('click', (ev) => { ev.stopPropagation(); openSinglePagePreview(srcFile, entry.pageNum); });
+      thumb.appendChild(preview);
       const num = document.createElement('div');
       num.className = 'org-num';
-      num.textContent = 'Hal. ' + pageNum;
+      const numText = (srcFile ? srcFile.name.replace(/\.pdf$/i,'') + ' · ' : '') + 'Hal. ' + entry.pageNum;
+      num.textContent = numText;
+      num.title = numText;
       thumb.appendChild(num);
       const del = document.createElement('button');
       del.className = 'org-del';
@@ -3192,7 +3651,7 @@ async function renderOrganizeCards(){
       del.textContent = '×';
       del.addEventListener('click', async (ev) => {
         ev.stopPropagation();
-        f.order = f.order.filter(p => p !== pageNum);
+        o.pages = o.pages.filter(p => p !== entry);
         renderOrganizePool();
         await renderOrganizeCards();
       });
@@ -3200,72 +3659,100 @@ async function renderOrganizeCards(){
 
       thumb.addEventListener('dragstart', (e) => {
         thumb.classList.add('dragging');
-        e.dataTransfer.setData('text/plain', String(pageNum));
+        e.dataTransfer.setData('text/plain', JSON.stringify({ outputId: o.id, srcId: entry.srcId, pageNum: entry.pageNum, dragId: thumb.dataset.dragId = 'dg' + Math.random().toString(36).slice(2,8) }));
         e.dataTransfer.effectAllowed = 'move';
       });
       thumb.addEventListener('dragend', () => thumb.classList.remove('dragging'));
-      thumb.addEventListener('dragover', (e) => { e.preventDefault(); thumb.classList.add('drag-over'); });
+      thumb.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); thumb.classList.add('drag-over'); });
       thumb.addEventListener('dragleave', () => thumb.classList.remove('drag-over'));
       thumb.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         thumb.classList.remove('drag-over');
-        const draggedPage = parseInt(e.dataTransfer.getData('text/plain'), 10);
-        if(!draggedPage || draggedPage === pageNum) return;
-        const from = f.order.indexOf(draggedPage);
-        const to = f.order.indexOf(pageNum);
-        if(from === -1 || to === -1) return;
-        f.order.splice(from, 1);
-        f.order.splice(to, 0, draggedPage);
-        renderOrganizeCardGrid(f, grid);
+        moveOrganizeEntry(e, o, entry);
       });
       grid.appendChild(thumb);
     }
+
+    // Menjatuhkan di area kosong kartu (bukan tepat di atas thumbnail) -> taruh di akhir kartu ini
+    grid.addEventListener('dragover', (e) => { e.preventDefault(); });
+    grid.addEventListener('drop', (e) => {
+      e.preventDefault();
+      moveOrganizeEntry(e, o, null);
+    });
+
     wrap.appendChild(card);
   }
   updateOrganizeState();
 }
 
-// Menata ulang DOM grid satu berkas saja (dipakai setelah drag&drop) tanpa re-render seluruh kartu
-function renderOrganizeCardGrid(f, grid){
-  const thumbs = {};
-  grid.querySelectorAll('.org-thumb').forEach(t => { thumbs[t.dataset.page] = t; });
-  f.order.forEach(pageNum => {
-    const t = thumbs[pageNum];
-    if(t) grid.appendChild(t);
-  });
+// Memindahkan satu halaman (dari kartu manapun) ke kartu tujuan `targetOutput`,
+// disisipkan sebelum `targetEntry` — atau di akhir kalau targetEntry null.
+async function moveOrganizeEntry(e, targetOutput, targetEntry){
+  let data;
+  try{ data = JSON.parse(e.dataTransfer.getData('text/plain')); }catch(err){ return; }
+  if(!data) return;
+  const sourceOutput = organizeOutputs.find(o => o.id === data.outputId);
+  if(!sourceOutput) return;
+  const fromIdx = sourceOutput.pages.findIndex(p => p.srcId === data.srcId && p.pageNum === data.pageNum);
+  if(fromIdx === -1) return;
+  const [moved] = sourceOutput.pages.splice(fromIdx, 1);
+
+  if(sourceOutput === targetOutput && targetEntry){
+    // reorder di kartu yang sama: cari ulang posisi target setelah splice di atas
+    const toIdx = targetOutput.pages.indexOf(targetEntry);
+    targetOutput.pages.splice(toIdx === -1 ? targetOutput.pages.length : toIdx, 0, moved);
+  } else if(targetEntry){
+    const toIdx = targetOutput.pages.indexOf(targetEntry);
+    targetOutput.pages.splice(toIdx === -1 ? targetOutput.pages.length : toIdx, 0, moved);
+  } else {
+    targetOutput.pages.push(moved);
+  }
   renderOrganizePool();
-  updateOrganizeState();
+  await renderOrganizeCards();
 }
 
 function updateOrganizeState(){
-  const validFiles = organizePool.filter(f => f.order.length > 0);
-  $('#organizeBtn').disabled = validFiles.length === 0;
-  if(!organizePool.length) $('#organizeSub').textContent = 'Unggah PDF, lalu seret halaman untuk mengatur urutannya di kanan.';
-  else if(!validFiles.length) $('#organizeSub').textContent = 'Semua halaman terbuang — sisakan minimal 1 halaman.';
-  else $('#organizeSub').textContent = validFiles.length + ' berkas siap diproses.';
+  const validOutputs = organizeOutputs.filter(o => o.pages.length > 0);
+  $('#organizeBtn').disabled = validOutputs.length === 0;
+  if(!organizeOutputs.length) $('#organizeSub').textContent = 'Unggah PDF, lalu seret halaman untuk mengatur urutannya di kanan.';
+  else if(!validOutputs.length) $('#organizeSub').textContent = 'Semua halaman terbuang — sisakan minimal 1 halaman.';
+  else $('#organizeSub').textContent = validOutputs.length + ' kartu siap diproses.';
 }
 
 $('#organizeBtn').addEventListener('click', organizeAndDownload);
 
 async function organizeAndDownload(){
-  const validFiles = organizePool.filter(f => f.order.length > 0);
-  if(!validFiles.length) return;
+  const validOutputs = organizeOutputs.filter(o => o.pages.length > 0);
+  if(!validOutputs.length) return;
   const overlay = $('#overlay');
   overlay.classList.add('show');
   try{
     const { PDFDocument } = PDFLib;
+    const srcDocCache = {};
+    async function getSrcLibDoc(srcId){
+      if(srcDocCache[srcId] !== undefined) return srcDocCache[srcId];
+      const src = organizePool.find(p => p.id === srcId);
+      const doc = src ? await PDFDocument.load(src.bytes.slice(0)) : null;
+      srcDocCache[srcId] = doc;
+      return doc;
+    }
     const results = [];
-    for(const f of validFiles){
-      $('#overlayText').textContent = 'Menyusun ulang "' + f.name + '"…';
-      const srcDoc = await PDFDocument.load(f.bytes.slice(0));
-      const indices = f.order.map(p => p - 1);
+    for(const o of validOutputs){
+      $('#overlayText').textContent = 'Menyusun ulang "' + o.name + '"…';
       const outDoc = await PDFDocument.create();
-      const copiedPages = await outDoc.copyPages(srcDoc, indices);
-      copiedPages.forEach(p => outDoc.addPage(p));
+      for(const entry of o.pages){
+        const libDoc = await getSrcLibDoc(entry.srcId);
+        if(!libDoc) continue;
+        const [copied] = await outDoc.copyPages(libDoc, [entry.pageNum - 1]);
+        outDoc.addPage(copied);
+      }
+      if(outDoc.getPageCount() === 0) continue;
       const outBytes = await outDoc.save();
-      const outName = f.name.replace(/\.pdf$/i, '') + '_diatur.pdf';
+      const outName = o.name.replace(/\.pdf$/i, '') + '_diatur.pdf';
       results.push({ name: outName, bytes: outBytes });
     }
+    if(!results.length){ toast('Tidak ada halaman valid untuk diproses'); return; }
     if(results.length === 1){
       downloadBytes(results[0].bytes, results[0].name, 'application/pdf');
     } else {
@@ -3289,6 +3776,7 @@ async function organizeAndDownload(){
 }
 
 // ---------- Tanda Tangani PDF ----------
+// ---------- Tanda Tangani PDF ----------
 let signDoc = null; // { name, bytes, pdfjsDoc, pageCount, placements: {page:[..]} , pageW, pageH }
 let signPage = 1;
 let signatureLibrary = []; // { id, dataUrl, ratio } ratio = tinggi/lebar gambar asli
@@ -3303,7 +3791,11 @@ setupDrop($('#signDrop'), (files) => handleSignFile(files[0]));
 
 async function handleSignFile(file){
   if(!file) return;
-  if(!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))){ toast('Berkas harus PDF'); return; }
+  if(!isPdfFile(file)){
+    const r = await coerceFileToPdf(file);
+    if(!r.ok){ toast('Tidak bisa diproses: ' + r.reason); return; }
+    file = r.file;
+  }
   const buf = await file.arrayBuffer();
   let pdfjsDoc;
   try{
@@ -3463,6 +3955,8 @@ function renderPlacedSignature(stage, p){
 function updateSignState(){
   const total = signDoc ? Object.values(signDoc.placements).reduce((a,arr) => a+arr.length, 0) : 0;
   $('#signBtn').disabled = !signDoc || total === 0;
+  $('#signInviteBtn').disabled = !signDoc;
+  $('#signInviteBtn').title = signDoc ? '' : 'Unggah PDF dahulu di panel kiri';
   if(!signDoc) $('#signSub').textContent = 'Unggah PDF dan buat tanda tangan, lalu klik pada halaman untuk menempelkannya.';
   else if(!total) $('#signSub').textContent = 'Klik pada halaman untuk menempelkan tanda tangan.';
   else $('#signSub').textContent = total + ' tanda tangan siap diproses.';
@@ -3578,29 +4072,43 @@ $('#signQrBtn').addEventListener('click', async () => {
     <p>Pindai kode ini pakai kamera HP Anda (tanpa perlu login apa pun), gambar tanda tangan, lalu ketuk Kirim. Tanda tangan akan otomatis muncul di sini lewat internet.</p>
     <div id="signQrBox"></div>
     <p class="sign-scan-status" id="signScanStatus">Menunggu tanda tangan dari HP…</p>
+    <button type="button" id="signQrCheckNow" class="org-reset-btn" style="width:100%;">Sudah TTD di HP? Cek sekarang</button>
   `);
   new QRCode($('#signQrBox'), { text: url, width: 200, height: 200, colorDark: '#1F2A24', colorLight: '#ffffff' });
 
   const statusEl = $('#signScanStatus');
   let stopped = false;
-  const intervalId = setInterval(async () => {
-    if(stopped) return;
+  let checking = false;
+
+  async function checkSession(manual){
+    if(stopped || checking) return;
+    checking = true;
     try{
-      const { data, error } = await sbClient.from('sign_sessions').select('data_url').eq('id', sessionId).maybeSingle();
+      // Pakai select array biasa (bukan .maybeSingle) supaya tidak ada ambiguitas respons kosong vs error
+      const { data, error } = await sbClient.from('sign_sessions').select('data_url').eq('id', sessionId).limit(1);
       if(error) throw error;
-      if(data && data.data_url){
+      const row = data && data[0];
+      if(row && row.data_url){
         stopped = true;
         clearInterval(intervalId);
-        addSignatureToLibrary(data.data_url);
+        addSignatureToLibrary(row.data_url);
         toast('Tanda tangan dari HP diterima');
         closeSignModal();
         sbClient.from('sign_sessions').delete().eq('id', sessionId).then(() => {});
+      } else if(manual && statusEl){
+        statusEl.textContent = 'Belum ada tanda tangan masuk — pastikan sudah menekan "Kirim" di HP, lalu coba lagi.';
       }
     }catch(err){
       console.error(err);
-      if(statusEl) statusEl.textContent = 'Koneksi terputus, mencoba lagi…';
+      if(statusEl) statusEl.textContent = 'Gagal memeriksa: ' + (err.message || 'kesalahan tidak dikenal') + ' — mencoba lagi…';
+    }finally{
+      checking = false;
     }
-  }, 1500);
+  }
+
+  const intervalId = setInterval(() => checkSession(false), 1500);
+  const checkBtn = $('#signQrCheckNow');
+  if(checkBtn) checkBtn.addEventListener('click', () => checkSession(true));
 
   signQrUnsub = () => { stopped = true; clearInterval(intervalId); };
 });
@@ -3725,7 +4233,7 @@ async function createMultiSignSession(names){
     toast('Sesi TTD bergantian dibuat — bagikan link ke tiap orang');
   }catch(err){
     console.error(err);
-    toast('Gagal membuat sesi TTD bergantian');
+    toast('Gagal membuat sesi TTD bergantian: ' + (err && err.message ? err.message : 'kesalahan tidak dikenal'));
   }finally{
     overlayEl.classList.remove('show');
   }
@@ -3829,7 +4337,11 @@ setupDrop($('#wmDrop'), (files) => handleWmFile(files[0]));
 
 async function handleWmFile(file){
   if(!file) return;
-  if(!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))){ toast('Berkas harus PDF'); return; }
+  if(!isPdfFile(file)){
+    const r = await coerceFileToPdf(file);
+    if(!r.ok){ toast('Tidak bisa diproses: ' + r.reason); return; }
+    file = r.file;
+  }
   const buf = await file.arrayBuffer();
   let pdfjsDoc;
   try{ pdfjsDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise; }
@@ -4059,7 +4571,7 @@ compInput.addEventListener('change', e => handleCompFiles(e.target.files));
 setupDrop($('#compDrop'), handleCompFiles);
 
 async function handleCompFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -4094,8 +4606,10 @@ function renderCompPool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       compPool = compPool.filter(x => x.id !== f.id);
       renderCompPool(); renderCompCards();
@@ -4294,7 +4808,7 @@ lockInput.addEventListener('change', e => handleLockFiles(e.target.files));
 setupDrop($('#lockDrop'), handleLockFiles);
 
 async function handleLockFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -4329,8 +4843,10 @@ function renderLockPool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${fmtBytes(f.bytes.byteLength)} · ${statusLabel}</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       lockPool = lockPool.filter(x => x.id !== f.id);
       renderLockPool(); renderLockCards();
@@ -4631,7 +5147,7 @@ unlockInput.addEventListener('change', e => handleUnlockFiles(e.target.files));
 setupDrop($('#unlockDrop'), handleUnlockFiles);
 
 async function handleUnlockFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -4661,8 +5177,10 @@ function renderUnlockPool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${fmtBytes(f.bytes.byteLength)} · ${statusLabel}</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       unlockPool = unlockPool.filter(x => x.id !== f.id);
       renderUnlockPool(); renderUnlockCards();
@@ -4864,7 +5382,7 @@ jpgInput.addEventListener('change', e => handleJpgFiles(e.target.files));
 setupDrop($('#jpgDrop'), handleJpgFiles);
 
 async function handleJpgFiles(fileListArg){
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -4899,8 +5417,10 @@ function renderJpgPool(){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       jpgPool = jpgPool.filter(x => x.id !== f.id);
       renderJpgPool(); renderJpgCards();
@@ -5499,6 +6019,7 @@ $('#feedbackSendBtn').addEventListener('click', async () => {
 
 refreshAuthUI();
 initJoinSignMode();
+initGoogleDriveButtons();
 
 // ---------- Ekstraksi teks per halaman (tanpa OCR & OCR) ----------
 function clusterTextItemsToRows(items){
@@ -5646,7 +6167,7 @@ function initOfficeTool(cfg){
 async function handleOfficeFiles(cfg, fileListArg){
   const k = cfg.kind;
   const state = officeState[k];
-  const files = Array.from(fileListArg).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const files = await coerceFilesToPdf(fileListArg);
   if(!files.length) return;
   for(const file of files){
     const buf = await file.arrayBuffer();
@@ -5683,8 +6204,10 @@ function renderOfficePool(cfg){
         <div class="fi-name">${escapeHtml(f.name)}</div>
         <div class="fi-sub">${f.pageCount} halaman · ${fmtBytes(f.bytes.byteLength)}</div>
       </div>
+      <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
       state.pool = state.pool.filter(x => x.id !== f.id);
       renderOfficePool(cfg); renderOfficeCards(cfg);
