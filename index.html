@@ -16,6 +16,8 @@
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxtojson@2.2.0/dist/index.umd.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -1174,9 +1176,9 @@
         <h2>1 · Berkas PDF</h2>
         <div class="drop" id="pdfDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF/Word/Excel/gambar</p>
+          <p><b>Klik atau seret</b><br>bisa pilih banyak PDF/Word/Excel/PowerPoint/gambar</p>
         </div>
-        <input type="file" id="pdfInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="pdfInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
 
       <div class="sidebar-section">
@@ -1322,9 +1324,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="mergeDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah 10+ file PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah 10+ file PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="mergeInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="mergeInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Sumber PDF (<span id="poolCount">0</span>)</h2>
@@ -1363,9 +1365,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="splitDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="splitInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="splitInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="splitPoolCount">0</span>)</h2>
@@ -1403,9 +1405,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="organizeDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="organizeInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="organizeInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="organizePoolCount">0</span>)</h2>
@@ -1443,9 +1445,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="signDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/gambar</p>
+          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/PowerPoint/gambar</p>
         </div>
-        <input type="file" id="signInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
+        <input type="file" id="signInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
       </div>
       <div class="sidebar-section">
         <h2>2 · Tanda Tangan</h2>
@@ -1501,9 +1503,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="wmDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/gambar</p>
+          <p><b>Klik atau seret</b><br>satu berkas PDF/Word/Excel/PowerPoint/gambar</p>
         </div>
-        <input type="file" id="wmInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
+        <input type="file" id="wmInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf">
       </div>
       <div class="sidebar-section">
         <h2>2 · Kotak Penutup</h2>
@@ -1552,9 +1554,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="compDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="compInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="compInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="compPoolCount">0</span>)</h2>
@@ -1629,9 +1631,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="lockDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus — nama file = nama pasien</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus — nama file = nama pasien</p>
         </div>
-        <input type="file" id="lockInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="lockInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section">
         <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
@@ -1697,9 +1699,9 @@
         <h2>1 · Unggah PDF Terkunci</h2>
         <div class="drop" id="unlockDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus — nama file = nama pasien</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus — nama file = nama pasien</p>
         </div>
-        <input type="file" id="unlockInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="unlockInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section">
         <h2>2 · Template Excel (Nama &amp; Tgl Lahir)</h2>
@@ -1765,9 +1767,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="jpgDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="jpgInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="jpgInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="jpgPoolCount">0</span>)</h2>
@@ -1824,9 +1826,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="wordDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="wordInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="wordInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -1872,9 +1874,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="excelDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="excelInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="excelInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -1920,9 +1922,9 @@
         <h2>1 · Unggah PDF</h2>
         <div class="drop" id="pptDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/gambar sekaligus</p>
+          <p><b>Klik atau seret</b><br>bisa unggah beberapa PDF/Word/Excel/PowerPoint/gambar sekaligus</p>
         </div>
-        <input type="file" id="pptInput" accept=".pdf,.docx,.xlsx,.xls,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
+        <input type="file" id="pptInput" accept=".pdf,.docx,.xlsx,.xls,.pptx,.png,.jpg,.jpeg,.webp,.gif,application/pdf" multiple>
       </div>
       <div class="sidebar-section" style="border-bottom:none;">
         <h2>2 · Mode Baca Teks</h2>
@@ -2834,11 +2836,12 @@ async function htmlToPdfBytes(innerHtmlString, opts){
   opts = opts || {};
   const pagePxWidth = opts.pageWidthPx || 794; // ~A4 lebar pada 96dpi
   const A4_RATIO = 1.41421356; // rasio tinggi:lebar kertas A4 potret
-  const pagePxHeight = Math.round(opts.landscape ? pagePxWidth / A4_RATIO : pagePxWidth * A4_RATIO);
+  const pagePxHeight = opts.pageHeightPx || Math.round(opts.landscape ? pagePxWidth / A4_RATIO : pagePxWidth * A4_RATIO);
+  const pad = opts.noPadding ? 0 : 40;
 
   const container = document.createElement('div');
   container.style.cssText = `position:absolute;left:-99999px;top:0;width:${pagePxWidth}px;background:#ffffff;
-    font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111;padding:40px;box-sizing:border-box;`;
+    font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111;padding:${pad}px;box-sizing:border-box;`;
   container.innerHTML = `<style>
     table{border-collapse:collapse;}
     td,th{border:1px solid #999;padding:4px 7px;font-size:12px;}
@@ -2887,13 +2890,83 @@ async function htmlToPdfBytes(innerHtmlString, opts){
   return await outDoc.save();
 }
 
+function argbToCss(argb){
+  if(!argb) return null;
+  const hex = argb.length === 8 ? argb.slice(2) : argb;
+  if(!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+  return '#' + hex;
+}
+function excelCellRefToColRow(ref){
+  const m = ref.match(/^([A-Z]+)(\d+)$/);
+  if(!m) return null;
+  let col = 0;
+  for(let i = 0; i < m[1].length; i++) col = col * 26 + (m[1].charCodeAt(i) - 64);
+  return { col, row: parseInt(m[2], 10) };
+}
+function excelCellStyleAttr(cell){
+  const parts = [];
+  const font = cell.font || {};
+  if(font.bold) parts.push('font-weight:bold');
+  if(font.italic) parts.push('font-style:italic');
+  if(font.underline) parts.push('text-decoration:underline');
+  if(font.size) parts.push('font-size:' + Math.round(font.size * 1.1) + 'px');
+  const textColor = font.color && font.color.argb ? argbToCss(font.color.argb) : null;
+  if(textColor) parts.push('color:' + textColor);
+  const al = cell.alignment || {};
+  if(al.horizontal) parts.push('text-align:' + al.horizontal);
+  if(al.vertical) parts.push('vertical-align:' + (al.vertical === 'middle' ? 'middle' : al.vertical));
+  const fill = cell.fill;
+  if(fill && fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor && fill.fgColor.argb){
+    const bg = argbToCss(fill.fgColor.argb);
+    if(bg) parts.push('background-color:' + bg);
+  }
+  return parts.join(';');
+}
+
+// Membaca .xlsx lewat ExcelJS (bukan SheetJS versi gratis yang tidak membaca warna/format sel sama
+// sekali) supaya warna isi sel, teks tebal, dan sel gabungan (merge) ikut terbawa ke PDF.
 async function excelFileToPdfBytes(file){
+  if(!window.ExcelJS) throw new Error('Pustaka pembaca Excel belum termuat');
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: 'array' });
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
   let html = '';
-  wb.SheetNames.forEach(sheetName => {
-    const sheet = wb.Sheets[sheetName];
-    html += `<h3>${escapeHtml(sheetName)}</h3>` + XLSX.utils.sheet_to_html(sheet, { editable: false }) + '<div style="height:28px;"></div>';
+  wb.worksheets.forEach(ws => {
+    const mergeInfo = {};
+    const mergeSkip = new Set();
+    (ws.model && ws.model.merges ? ws.model.merges : []).forEach(rangeStr => {
+      const parts = rangeStr.split(':');
+      const start = excelCellRefToColRow(parts[0]);
+      const end = parts[1] ? excelCellRefToColRow(parts[1]) : start;
+      if(!start || !end) return;
+      mergeInfo[start.row + '_' + start.col] = { colspan: end.col - start.col + 1, rowspan: end.row - start.row + 1 };
+      for(let r = start.row; r <= end.row; r++){
+        for(let c = start.col; c <= end.col; c++){
+          if(r === start.row && c === start.col) continue;
+          mergeSkip.add(r + '_' + c);
+        }
+      }
+    });
+    const colCount = Math.max(1, ws.columnCount || 1);
+    const rowCount = Math.max(1, ws.rowCount || 1);
+    html += `<h3>${escapeHtml(ws.name)}</h3><table>`;
+    for(let r = 1; r <= rowCount; r++){
+      const row = ws.getRow(r);
+      html += '<tr>';
+      for(let c = 1; c <= colCount; c++){
+        const key = r + '_' + c;
+        if(mergeSkip.has(key)) continue;
+        const cell = row.getCell(c);
+        const span = mergeInfo[key];
+        const styleAttr = excelCellStyleAttr(cell);
+        const attrs = (span ? ` colspan="${span.colspan}" rowspan="${span.rowspan}"` : '') + (styleAttr ? ` style="${styleAttr}"` : '');
+        let text = '';
+        try{ text = (cell.text !== undefined && cell.text !== null) ? String(cell.text) : ''; }catch(e){ text = cell.value != null ? String(cell.value) : ''; }
+        html += `<td${attrs}>${escapeHtml(text)}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</table><div style="height:28px;"></div>';
   });
   return await htmlToPdfBytes(html, { pageWidthPx: 1100, landscape: true });
 }
@@ -2913,6 +2986,86 @@ async function docxFileToPdfBytes(file){
   return await htmlToPdfBytes(html, { pageWidthPx: 794, landscape: false });
 }
 
+// Menyusun satu elemen slide PowerPoint (teks, gambar, kotak bentuk, tabel, dst.) jadi HTML
+// dengan posisi & ukuran persis seperti aslinya (posisi absolut, satuan pt dari pptxtojson).
+function renderPptxElement(el){
+  if(!el || !el.type) return '';
+  const base = `position:absolute;left:${el.left||0}pt;top:${el.top||0}pt;width:${el.width||0}pt;height:${el.height||0}pt;`;
+  const rotate = el.rotate ? `transform:rotate(${el.rotate}deg);` : '';
+  if(el.type === 'group'){
+    let inner = '';
+    (el.elements || []).forEach(child => { inner += renderPptxElement(child); });
+    return `<div style="${base}${rotate}">${inner}</div>`;
+  }
+  if(el.type === 'image'){
+    let src = el.base64 || '';
+    if(!src) return '';
+    if(!src.startsWith('data:')) src = 'data:image/png;base64,' + src;
+    return `<img src="${src}" style="${base}${rotate}object-fit:contain;">`;
+  }
+  if(el.type === 'text' || el.type === 'shape'){
+    let bg = '';
+    if(el.fill && el.fill.type === 'color' && el.fill.value && !el.strokeOnly) bg = `background:${el.fill.value};`;
+    let border = '';
+    if(el.borderColor && el.borderWidth){
+      const bt = el.borderType === 'dashed' ? 'dashed' : (el.borderType === 'dotted' ? 'dotted' : 'solid');
+      border = `border:${el.borderWidth}pt ${bt} ${el.borderColor};`;
+    }
+    const vAlignMap = { t: 'flex-start', top: 'flex-start', mid: 'center', middle: 'center', b: 'flex-end', bottom: 'flex-end' };
+    const vAlign = vAlignMap[el.vAlign] || 'flex-start';
+    const content = el.content || '';
+    return `<div style="${base}${rotate}${bg}${border}display:flex;flex-direction:column;justify-content:${vAlign};overflow:hidden;box-sizing:border-box;">${content}</div>`;
+  }
+  if(el.type === 'table'){
+    try{
+      let t = `<table style="${base}${rotate}border-collapse:collapse;table-layout:fixed;">`;
+      (el.data || []).forEach(row => {
+        t += '<tr>';
+        (row || []).forEach(cell => {
+          const span = (cell && cell.rowSpan > 1) ? ` rowspan="${cell.rowSpan}"` : '';
+          const cspan = (cell && cell.colSpan > 1) ? ` colspan="${cell.colSpan}"` : '';
+          const text = cell ? (cell.text !== undefined ? cell.text : (cell.content || '')) : '';
+          t += `<td${span}${cspan} style="border:1px solid #999;padding:2px 5px;font-size:10pt;">${typeof text === 'string' ? text : ''}</td>`;
+        });
+        t += '</tr>';
+      });
+      t += '</table>';
+      return t;
+    }catch(e){ return ''; }
+  }
+  if(el.type === 'diagram' && Array.isArray(el.textList) && el.textList.length){
+    const items = el.textList.map(t => '<li>' + escapeHtml(typeof t === 'string' ? t : (t && t.text) || '') + '</li>').join('');
+    return `<div style="${base}${rotate}"><ul>${items}</ul></div>`;
+  }
+  // chart/video/audio/math/tipe tak dikenal: dilewati (tidak krusial untuk isi dokumen)
+  return '';
+}
+
+async function pptxFileToPdfBytes(file){
+  if(!window.pptxtojson) throw new Error('Pustaka pembaca PowerPoint belum termuat');
+  const buf = await file.arrayBuffer();
+  const json = await window.pptxtojson.parse(buf, { imageMode: 'base64', videoMode: 'none', audioMode: 'none' });
+  const slideW = (json.size && json.size.width) || 960;
+  const slideH = (json.size && json.size.height) || 540;
+  let html = '';
+  (json.slides || []).forEach(slide => {
+    let bgStyle = 'background:#ffffff;';
+    if(slide.fill && slide.fill.type === 'color' && slide.fill.value) bgStyle = 'background:' + slide.fill.value + ';';
+    html += `<div style="position:relative;width:${slideW}pt;height:${slideH}pt;${bgStyle}overflow:hidden;box-sizing:border-box;">`;
+    (slide.elements || []).forEach(el => { html += renderPptxElement(el); });
+    html += '</div>';
+  });
+  if(!json.slides || !json.slides.length){
+    html = `<div style="position:relative;width:${slideW}pt;height:${slideH}pt;display:flex;align-items:center;justify-content:center;">(Tidak ada slide yang bisa dibaca)</div>`;
+  }
+  const PT_TO_PX = 96 / 72;
+  return await htmlToPdfBytes(html, {
+    pageWidthPx: Math.round(slideW * PT_TO_PX),
+    pageHeightPx: Math.round(slideH * PT_TO_PX),
+    noPadding: true
+  });
+}
+
 // Mengubah satu berkas non-PDF menjadi PDF. Mengembalikan {ok:true, file} atau {ok:false, reason}.
 async function coerceFileToPdf(file){
   if(isPdfFile(file)) return { ok: true, file };
@@ -2927,8 +3080,10 @@ async function coerceFileToPdf(file){
       bytes = await docxFileToPdfBytes(file);
     } else if(/\.doc$/.test(name)){
       return { ok: false, reason: 'format .doc lama tidak didukung — simpan ulang sebagai .docx atau PDF dulu' };
-    } else if(/\.(ppt|pptx)$/.test(name)){
-      return { ok: false, reason: 'PowerPoint belum didukung untuk konversi otomatis — simpan sebagai PDF dulu dari PowerPoint' };
+    } else if(/\.pptx$/.test(name)){
+      bytes = await pptxFileToPdfBytes(file);
+    } else if(/\.ppt$/.test(name)){
+      return { ok: false, reason: 'format .ppt lama tidak didukung — simpan ulang sebagai .pptx atau PDF dulu' };
     } else {
       return { ok: false, reason: 'format berkas tidak dikenali' };
     }
