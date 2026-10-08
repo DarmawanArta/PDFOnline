@@ -186,7 +186,7 @@
 
   .org-card{
     background:#fff;border:1px solid var(--line);border-radius:10px;
-    padding:14px 16px;margin:0 0 14px;max-width:760px;
+    padding:14px 16px;margin:0 0 14px;max-width:980px;
   }
   .org-toolbar{display:flex;align-items:center;gap:8px;margin-top:10px;margin-bottom:2px;}
   .org-reset-btn{
@@ -199,25 +199,25 @@
   .org-hint{font-size:11px;color:var(--ink-soft);}
   .org-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;}
   .org-thumb{
-    position:relative;width:88px;border:1px solid var(--line);border-radius:8px;background:#FAF9F5;
+    position:relative;width:150px;border:1px solid var(--line);border-radius:8px;background:#FAF9F5;
     cursor:grab;user-select:none;overflow:hidden;
   }
   .org-thumb.dragging{opacity:0.35;}
   .org-thumb.drag-over{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary) inset;}
   .org-thumb canvas{display:block;width:100%;height:auto;pointer-events:none;}
   .org-thumb .org-num{
-    text-align:center;font-size:9px;color:var(--ink-soft);padding:3px 4px 5px;font-family:'IBM Plex Mono',monospace;
+    text-align:center;font-size:10.5px;color:var(--ink-soft);padding:4px 5px 6px;font-family:'IBM Plex Mono',monospace;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .org-thumb .org-del{
-    position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;border:none;
-    background:rgba(255,255,255,0.9);color:var(--ink-soft);font-size:13px;line-height:1;cursor:pointer;
+    position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.92);color:var(--ink-soft);font-size:15px;line-height:1;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
   }
   .org-thumb .org-del:hover{background:var(--accent);color:#fff;}
   .org-thumb .org-preview{
-    position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;border:none;
-    background:rgba(255,255,255,0.9);color:var(--ink-soft);cursor:pointer;
+    position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;border:none;
+    background:rgba(255,255,255,0.92);color:var(--ink-soft);cursor:pointer;
     display:flex;align-items:center;justify-content:center;
   }
   .org-thumb .org-preview:hover{background:var(--primary);color:#fff;}
@@ -813,6 +813,11 @@
   .fp-loading{color:var(--ink-soft);font-size:12.5px;padding:40px 0;}
   .fp-page-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
   .fp-page{box-shadow:var(--shadow);background:#fff;max-width:100%;}
+
+  .fp-overlay-full{padding:16px;}
+  .fp-modal-full{max-width:none;width:100%;height:100%;max-height:100%;}
+  .fp-body-full{align-items:center;justify-content:center;padding:16px;}
+  .fp-body-full .fp-page{max-width:none;}
   .fp-page-label{font-size:10.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
 
   .empty-hint{padding:22px 16px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
@@ -2844,7 +2849,7 @@ async function htmlToPdfBytes(innerHtmlString, opts){
     font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111;padding:${pad}px;box-sizing:border-box;`;
   container.innerHTML = `<style>
     table{border-collapse:collapse;}
-    td,th{border:1px solid #999;padding:4px 7px;font-size:12px;}
+    td,th{${opts.tableBorderless ? '' : 'border:1px solid #999;'}padding:4px 7px;font-size:12px;}
     img{max-width:100%;}
     h1,h2,h3{margin:0.6em 0 0.3em;}
     p{margin:0 0 0.6em;}
@@ -2896,12 +2901,51 @@ function argbToCss(argb){
   if(!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
   return '#' + hex;
 }
+// Palet warna tema bawaan "Office" (dipakai kalau sel memakai warna tema, bukan RGB langsung —
+// kasus paling umum untuk header berwarna di file Excel standar). Pendekatan ini akurat untuk
+// tema bawaan, tapi mungkin meleset kalau file memakai tema kustom.
+const OFFICE_THEME_HEX = ['FFFFFF','000000','E7E6E6','44546A','4472C4','ED7D31','A5A5A5','FFC000','5B9BD5','70AD47','0563C1','954F72'];
+function applyExcelTint(hex, tint){
+  if(!tint) return hex;
+  const r0 = parseInt(hex.slice(0,2),16)/255, g0 = parseInt(hex.slice(2,4),16)/255, b0 = parseInt(hex.slice(4,6),16)/255;
+  const max = Math.max(r0,g0,b0), min = Math.min(r0,g0,b0);
+  let h=0, s=0, l=(max+min)/2;
+  if(max !== min){
+    const d = max-min;
+    s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    if(max===r0) h=(g0-b0)/d+(g0<b0?6:0); else if(max===g0) h=(b0-r0)/d+2; else h=(r0-g0)/d+4;
+    h/=6;
+  }
+  l = tint < 0 ? l*(1+tint) : l*(1-tint)+tint;
+  function hue2rgb(p,q,t){ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; }
+  let r,g,b;
+  if(s===0){ r=g=b=l; } else { const q = l<0.5 ? l*(1+s) : l+s-l*s; const p = 2*l-q; r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3); }
+  const toHex = v => Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,'0');
+  return toHex(r)+toHex(g)+toHex(b);
+}
+function excelResolveColor(colorObj){
+  if(!colorObj) return null;
+  if(colorObj.argb) return argbToCss(colorObj.argb);
+  if(colorObj.theme !== undefined && OFFICE_THEME_HEX[colorObj.theme]){
+    return '#' + applyExcelTint(OFFICE_THEME_HEX[colorObj.theme], colorObj.tint || 0);
+  }
+  return null;
+}
 function excelCellRefToColRow(ref){
   const m = ref.match(/^([A-Z]+)(\d+)$/);
   if(!m) return null;
   let col = 0;
   for(let i = 0; i < m[1].length; i++) col = col * 26 + (m[1].charCodeAt(i) - 64);
   return { col, row: parseInt(m[2], 10) };
+}
+function excelBorderSideCss(side){
+  if(!side || !side.style) return null;
+  const widthMap = { hair:'0.5px', thin:'1px', medium:'2px', thick:'2.5px', double:'3px' };
+  const styleMap = { double:'double', dashed:'dashed', dashDot:'dashed', dashDotDot:'dashed', dotted:'dotted', hair:'dotted' };
+  const w = widthMap[side.style] || '1px';
+  const st = styleMap[side.style] || 'solid';
+  const col = excelResolveColor(side.color) || '#000000';
+  return `${w} ${st} ${col}`;
 }
 function excelCellStyleAttr(cell){
   const parts = [];
@@ -2910,21 +2954,30 @@ function excelCellStyleAttr(cell){
   if(font.italic) parts.push('font-style:italic');
   if(font.underline) parts.push('text-decoration:underline');
   if(font.size) parts.push('font-size:' + Math.round(font.size * 1.1) + 'px');
-  const textColor = font.color && font.color.argb ? argbToCss(font.color.argb) : null;
+  const textColor = excelResolveColor(font.color);
   if(textColor) parts.push('color:' + textColor);
   const al = cell.alignment || {};
   if(al.horizontal) parts.push('text-align:' + al.horizontal);
-  if(al.vertical) parts.push('vertical-align:' + (al.vertical === 'middle' ? 'middle' : al.vertical));
+  parts.push('vertical-align:' + (al.vertical === 'middle' ? 'middle' : (al.vertical || 'bottom')));
+  if(al.wrapText) parts.push('white-space:normal;word-break:break-word'); else parts.push('white-space:nowrap');
   const fill = cell.fill;
-  if(fill && fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor && fill.fgColor.argb){
-    const bg = argbToCss(fill.fgColor.argb);
+  if(fill && fill.type === 'pattern' && fill.pattern === 'solid' && fill.fgColor){
+    const bg = excelResolveColor(fill.fgColor);
     if(bg) parts.push('background-color:' + bg);
+  }
+  const border = cell.border;
+  if(border){
+    const bt = excelBorderSideCss(border.top); if(bt) parts.push('border-top:' + bt);
+    const br = excelBorderSideCss(border.right); if(br) parts.push('border-right:' + br);
+    const bb = excelBorderSideCss(border.bottom); if(bb) parts.push('border-bottom:' + bb);
+    const bl = excelBorderSideCss(border.left); if(bl) parts.push('border-left:' + bl);
   }
   return parts.join(';');
 }
 
 // Membaca .xlsx lewat ExcelJS (bukan SheetJS versi gratis yang tidak membaca warna/format sel sama
-// sekali) supaya warna isi sel, teks tebal, dan sel gabungan (merge) ikut terbawa ke PDF.
+// sekali) supaya warna isi sel, teks tebal, garis sel asli, lebar kolom, dan sel gabungan (merge)
+// ikut terbawa ke PDF — bukan tabel generik yang kisi-kisinya dipukul rata semua.
 async function excelFileToPdfBytes(file){
   if(!window.ExcelJS) throw new Error('Pustaka pembaca Excel belum termuat');
   const buf = await file.arrayBuffer();
@@ -2949,10 +3002,20 @@ async function excelFileToPdfBytes(file){
     });
     const colCount = Math.max(1, ws.columnCount || 1);
     const rowCount = Math.max(1, ws.rowCount || 1);
-    html += `<h3>${escapeHtml(ws.name)}</h3><table>`;
+
+    let colgroup = '<colgroup>';
+    for(let c = 1; c <= colCount; c++){
+      const col = ws.getColumn(c);
+      const widthPx = Math.max(22, Math.round((col && col.width ? col.width : 8.43) * 7));
+      colgroup += `<col style="width:${widthPx}px">`;
+    }
+    colgroup += '</colgroup>';
+
+    html += `<h3>${escapeHtml(ws.name)}</h3><table>${colgroup}`;
     for(let r = 1; r <= rowCount; r++){
       const row = ws.getRow(r);
-      html += '<tr>';
+      const rowH = row && row.height ? Math.round(row.height * (96/72)) : null;
+      html += `<tr${rowH ? ` style="height:${rowH}px"` : ''}>`;
       for(let c = 1; c <= colCount; c++){
         const key = r + '_' + c;
         if(mergeSkip.has(key)) continue;
@@ -2968,7 +3031,7 @@ async function excelFileToPdfBytes(file){
     }
     html += '</table><div style="height:28px;"></div>';
   });
-  return await htmlToPdfBytes(html, { pageWidthPx: 1100, landscape: true });
+  return await htmlToPdfBytes(html, { pageWidthPx: 1100, landscape: true, tableBorderless: true });
 }
 
 async function docxFileToPdfBytes(file){
@@ -3713,7 +3776,7 @@ async function getOrganizeThumbCanvas(f, pageNum){
   if(f.thumbCache[pageNum]) return f.thumbCache[pageNum];
   const page = await f.pdfjsDoc.getPage(pageNum);
   const vp = page.getViewport({scale: 1});
-  const scale = 84 / vp.width;
+  const scale = 300 / vp.width; // dirender lebih besar dari lebar tampil (150px) agar tetap tajam di layar retina/zoom
   const svp = page.getViewport({scale});
   const canvas = document.createElement('canvas');
   canvas.width = svp.width; canvas.height = svp.height;
@@ -3724,14 +3787,14 @@ async function getOrganizeThumbCanvas(f, pageNum){
 
 async function openSinglePagePreview(srcFile, pageNum){
   const modal = document.createElement('div');
-  modal.className = 'fp-overlay';
+  modal.className = 'fp-overlay fp-overlay-full';
   modal.innerHTML = `
-    <div class="fp-modal" style="max-width:520px;">
+    <div class="fp-modal fp-modal-full">
       <div class="fp-head">
         <span class="fp-name">${escapeHtml(srcFile ? srcFile.name : '')} — Hal. ${pageNum}</span>
         <button type="button" class="fp-close">×</button>
       </div>
-      <div class="fp-body"><div class="fp-loading">Memuat…</div></div>
+      <div class="fp-body fp-body-full"><div class="fp-loading">Memuat…</div></div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -3742,10 +3805,16 @@ async function openSinglePagePreview(srcFile, pageNum){
     if(!srcFile) throw new Error('sumber tidak ditemukan');
     const page = await srcFile.pdfjsDoc.getPage(pageNum);
     const vp = page.getViewport({ scale: 1 });
-    const scale = Math.min(2.2, 460 / vp.width);
+    // Dibuat sebesar mungkin memenuhi layar (dikali devicePixelRatio biar tajam di layar retina/HP)
+    const availW = Math.max(320, window.innerWidth - 80);
+    const availH = Math.max(320, window.innerHeight - 160);
+    const fitScale = Math.min(availW / vp.width, availH / vp.height);
+    const scale = fitScale * (window.devicePixelRatio || 1);
     const svp = page.getViewport({ scale });
     const canvas = document.createElement('canvas');
     canvas.width = svp.width; canvas.height = svp.height;
+    canvas.style.width = Math.round(vp.width * fitScale) + 'px';
+    canvas.style.height = Math.round(vp.height * fitScale) + 'px';
     canvas.className = 'fp-page';
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: svp }).promise;
     const body = modal.querySelector('.fp-body');
@@ -3812,7 +3881,7 @@ async function renderOrganizeCards(){
       preview.className = 'org-preview';
       preview.type = 'button';
       preview.title = 'Pratinjau halaman ini sebelum dipindah';
-      preview.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+      preview.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
       preview.addEventListener('click', (ev) => { ev.stopPropagation(); openSinglePagePreview(srcFile, entry.pageNum); });
       thumb.appendChild(preview);
       const num = document.createElement('div');
