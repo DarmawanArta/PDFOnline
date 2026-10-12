@@ -1841,7 +1841,7 @@
           <button type="button" class="active" data-mode="noocr">Tanpa OCR</button>
           <button type="button" data-mode="ocr"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>OCR<span class="premium-badge">Lock</span></button>
         </div>
-        <p class="ocr-hint" id="wordOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
+        <p class="ocr-hint" id="wordOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy — tata letak, garis tabel, logo, dan stempel dibuat semirip PDF-nya. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="wordPoolCount">0</span>)</h2>
@@ -1889,7 +1889,7 @@
           <button type="button" class="active" data-mode="noocr">Tanpa OCR</button>
           <button type="button" data-mode="ocr"><svg class="lockicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>OCR<span class="premium-badge">Lock</span></button>
         </div>
-        <p class="ocr-hint" id="excelOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
+        <p class="ocr-hint" id="excelOcrHint">Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy — tata letak, garis tabel, logo, dan stempel dibuat semirip PDF-nya. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).</p>
       </div>
       <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;padding-bottom:0;">
         <h2>Berkas diunggah (<span id="excelPoolCount">0</span>)</h2>
@@ -6368,6 +6368,237 @@ async function buildDocxBytes(pages){
   return await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 }
 
+// ---------- PDF ke Word/Excel yang meniru tata letak PDF ----------
+// Teks dibaca beserta posisi/ukuran/tebal/warnanya; grafik (logo, garis tabel, stempel) dirender jadi gambar latar, lalu teksnya dihapus dari gambar itu.
+function newCanvas(w, h){
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+  return c;
+}
+function layoutFontInfo(page, tc, fontName){
+  let name = '';
+  try{ const f = page.commonObjs.get(fontName); name = (f && f.name) || ''; }catch(e){}
+  const st = (tc.styles && tc.styles[fontName] && tc.styles[fontName].fontFamily) || '';
+  const probe = name + ' ' + st;
+  return {
+    bold: /bold|black|heavy|semibold|demi/i.test(name),
+    italic: /italic|oblique/i.test(name),
+    fam: /courier|mono|consolas/i.test(probe) ? 'Courier New' : (/times|georgia|garamond|cambria|palatino|serif/i.test(probe) && !/sans/i.test(probe) ? 'Times New Roman' : 'Arial')
+  };
+}
+// Menggabungkan potongan teks pada baris yang sama menjadi segmen {x, base, size, w, str, bold, italic, fam}
+function buildLayoutSegments(page, tc, vp){
+  const items = [];
+  tc.items.forEach(it => {
+    if(!it.str || !it.str.trim()) return;
+    const t = pdfjsLib.Util.transform(vp.transform, it.transform);
+    const size = Math.hypot(t[2], t[3]);
+    if(!size || size < 1) return;
+    items.push({ x: t[4], base: t[5], size, w: it.width * (vp.scale || 1), str: it.str, ...layoutFontInfo(page, tc, it.fontName) });
+  });
+  items.sort((a, b) => (Math.abs(a.base - b.base) > 0.3 * Math.min(a.size, b.size)) ? a.base - b.base : a.x - b.x);
+  const segs = [];
+  items.forEach(it => {
+    const last = segs[segs.length - 1];
+    if(last && Math.abs(last.base - it.base) <= 0.3 * last.size && last.bold === it.bold && last.italic === it.italic &&
+       Math.abs(last.size - it.size) < 0.5 && it.x - (last.x + last.w) < 0.3 * last.size && it.x >= last.x){
+      const gap = it.x - (last.x + last.w);
+      last.str += (gap > 0.15 * last.size && !/\s$/.test(last.str) && !/^\s/.test(it.str) ? ' ' : '') + it.str;
+      last.w = it.x + it.w - last.x;
+    } else segs.push({ ...it });
+  });
+  return segs;
+}
+
+// Menghapus teks dari gambar latar: per segmen, cari warna latar (paling dominan) dan warna teks (paling jauh dari latar),
+// lalu kembalikan piksel yang berada di antara keduanya ke warna latar. Piksel warna lain (mis. stempel yang menimpa teks) tidak disentuh.
+function eraseSegmentsFromCanvas(pg, protect){
+  const SC = pg.scale, cv = pg.canvas, ctx = cv.getContext('2d');
+  pg.segs.forEach(s => {
+    const x0 = Math.max(0, Math.floor((s.x - 1) * SC)), x1 = Math.min(cv.width, Math.ceil((s.x + s.w + 1) * SC));
+    const y0 = Math.max(0, Math.floor((s.base - 0.85 * s.size - 1) * SC)), y1 = Math.min(cv.height, Math.ceil((s.base + 0.24 * s.size + 1) * SC));
+    const w = x1 - x0, h = y1 - y0;
+    if(w < 2 || h < 2) return;
+    const img = ctx.getImageData(x0, y0, w, h), d = img.data, cnt = {};
+    for(let i = 0; i < d.length; i += 4){ const k = (d[i] >> 4) << 8 | (d[i+1] >> 4) << 4 | (d[i+2] >> 4); cnt[k] = (cnt[k] || 0) + 1; }
+    let bk = 0, bc = -1; for(const k in cnt) if(cnt[k] > bc){ bc = cnt[k]; bk = +k; }
+    const bg = [((bk >> 8) & 15) * 17, ((bk >> 4) & 15) * 17, (bk & 15) * 17];
+    let tc = bg, td = 0;
+    for(let i = 0; i < d.length; i += 4){ const dist = (d[i]-bg[0])**2 + (d[i+1]-bg[1])**2 + (d[i+2]-bg[2])**2; if(dist > td){ td = dist; tc = [d[i], d[i+1], d[i+2]]; } }
+    if(td < 40 * 40){ s.color = null; return; } // tidak ada teks yang terlihat
+    const vx = tc[0]-bg[0], vy = tc[1]-bg[1], vz = tc[2]-bg[2], vv = vx*vx + vy*vy + vz*vz;
+    for(let i = 0; i < d.length; i += 4){
+      const px = (i / 4) % w + x0, py = Math.floor(i / 4 / w) + y0;
+      if(protect && protect(px, py)) continue;
+      const rx = d[i]-bg[0], ry = d[i+1]-bg[1], rz = d[i+2]-bg[2];
+      const t = (rx*vx + ry*vy + rz*vz) / vv;                     // posisi di antara latar (0) dan warna teks (1)
+      if(t < 0.008 || t > 1.15) continue;
+      const ex = rx - t*vx, ey = ry - t*vy, ez = rz - t*vz;       // jarak tegak lurus dari garis latar-teks
+      if(ex*ex + ey*ey + ez*ez > 45 * 45) continue;               // warna lain (stempel, dsb.) dibiarkan
+      d[i] = bg[0]; d[i+1] = bg[1]; d[i+2] = bg[2];
+    }
+    ctx.putImageData(img, x0, y0);
+    const hex = c => c.map(v => v.toString(16).padStart(2, '0')).join('');
+    s.color = (tc[0] + tc[1] + tc[2] > 3 * 70 || Math.max(...tc) - Math.min(...tc) > 40) ? hex(tc) : null;
+  });
+}
+async function extractLayoutPages(pdfBytes, onProgress, wantImage){
+  const pdf = await pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise;
+  const out = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    if(onProgress) onProgress(p, pdf.numPages);
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({ scale: 1 });
+    const SC = Math.min(2, 3000 / Math.max(vp.width, vp.height)); // gambar latar ~144 dpi, dibatasi agar memori aman
+    const cv = newCanvas(vp.width * SC, vp.height * SC);
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    await page.render({ canvasContext: ctx, viewport: page.getViewport({ scale: SC }) }).promise;
+    const tc = await page.getTextContent();
+    const pg = { w: vp.width, h: vp.height, segs: buildLayoutSegments(page, tc, vp), canvas: cv, scale: SC };
+    pg.rules = detectRules(pg); // garis tabel dideteksi SEBELUM teks dihapus, dan dilindungi dari penghapusan
+    eraseSegmentsFromCanvas(pg, rulePixelTest(pg));
+    if(wantImage) pg.png = dataUrlToBytes(cv.toDataURL('image/png'));
+    pg.canvas = null; cv.width = cv.height = 1; // lepas memori kanvas
+    page.cleanup();
+    out.push(pg);
+  }
+  return out;
+}
+
+// ---------- Word: gambar latar + teks asli di posisi yang sama (frame) ----------
+function layoutXmlEsc(s){
+  return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+async function buildDocxLayoutBytes(pages){
+  const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const tw = pt => Math.round(pt * 20), emu = pt => Math.round(pt * 12700);
+  const sect = pg => '<w:sectPr><w:pgSz w:w="' + tw(pg.w) + '" w:h="' + tw(pg.h) + '"/>' +
+    '<w:pgMar w:top="0" w:right="0" w:bottom="0" w:left="0" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr>';
+  const zip = new JSZip();
+  const rels = [], body = [];
+  pages.forEach((pg, i) => {
+    zip.file('word/media/p' + (i + 1) + '.png', pg.png);
+    rels.push('<Relationship Id="rIdImg' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/p' + (i + 1) + '.png"/>');
+    pg.segs.forEach(s => {
+      const lineH = Math.ceil(s.size * 1.15);
+      const top = Math.max(0, s.base - 0.93 * s.size);
+      const w = Math.max(s.w * 1.06 + 4, Math.min(pg.w - s.x - 1, s.w * 1.15 + 2 * s.size)), fs = Math.round(s.size * 2); // kotak tidak boleh lebih sempit dari teksnya
+      body.push('<w:p><w:pPr><w:framePr w:w="' + tw(Math.max(w, 6)) + '" w:h="' + tw(lineH) + '" w:hRule="exact" w:wrap="around" w:vAnchor="page" w:hAnchor="page" w:x="' + tw(s.x) + '" w:y="' + tw(top) + '"/>' +
+        '<w:spacing w:before="0" w:after="0" w:line="' + tw(lineH) + '" w:lineRule="exact"/><w:ind w:left="0" w:right="0"/></w:pPr>' +
+        '<w:r><w:rPr><w:rFonts w:ascii="' + s.fam + '" w:hAnsi="' + s.fam + '" w:cs="' + s.fam + '"/>' + (s.bold ? '<w:b/>' : '') + (s.italic ? '<w:i/>' : '') + (s.color ? '<w:color w:val="' + s.color + '"/>' : '') +
+        '<w:sz w:val="' + fs + '"/><w:szCs w:val="' + fs + '"/></w:rPr><w:t xml:space="preserve">' + layoutXmlEsc(s.str) + '</w:t></w:r></w:p>');
+    });
+    const n = i + 1, cx = emu(pg.w), cy = emu(pg.h);
+    const pic = '<w:r><w:drawing><wp:anchor distT="0" distB="0" distL="0" distR="0" simplePos="0" relativeHeight="' + n + '" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1">' +
+      '<wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionH><wp:positionV relativeFrom="page"><wp:posOffset>0</wp:posOffset></wp:positionV>' +
+      '<wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:wrapNone/><wp:docPr id="' + n + '" name="Latar ' + n + '"/><wp:cNvGraphicFramePr/>' +
+      '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+      '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="' + n + '" name="p' + n + '.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
+      '<pic:blipFill><a:blip r:embed="rIdImg' + n + '"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+      '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>' +
+      '</a:graphicData></a:graphic></wp:anchor></w:drawing></w:r>';
+    const last = i === pages.length - 1;
+    body.push('<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="20" w:lineRule="exact"/>' + (last ? '' : sect(pg)) + '</w:pPr>' + pic + '</w:p>');
+  });
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"';
+  zip.file('[Content_Types].xml', head + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/>' +
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>');
+  zip.file('_rels/.rels', head + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>');
+  zip.file('word/_rels/document.xml.rels', head + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels.join('') + '</Relationships>');
+  zip.file('word/document.xml', head + '<w:document ' + NS + '><w:body>' + body.join('') + sect(pages[pages.length - 1]) + '</w:body></w:document>');
+  return await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+}
+
+// ---------- Excel: teks ke baris/kolom sesuai posisi, garis tabel dibaca dari gambar latar ----------
+// Mencari garis lurus (horizontal/vertikal) berwarna gelap-netral pada gambar latar, hasilnya dalam satuan pt.
+function detectRules(pg){
+  const cv = pg.canvas, W = cv.width, H = cv.height, SC = pg.scale;
+  const d = cv.getContext('2d').getImageData(0, 0, W, H).data;
+  const dark = (x, y) => { const i = (y * W + x) * 4; const r = d[i], g = d[i+1], b = d[i+2]; return r < 130 && g < 130 && b < 130 && Math.max(r,g,b) - Math.min(r,g,b) < 50; };
+  const MIN = 14 * SC; // garis minimal ~14pt
+  const find = (outerN, innerN, isDark) => {
+    const lines = [];
+    for(let o = 0; o < outerN; o++){
+      let run = 0;
+      for(let k = 0; k <= innerN; k++){
+        if(k < innerN && isDark(o, k)) run++;
+        else { if(run >= MIN) lines.push({ o, a: k - run, b: k }); run = 0; }
+      }
+    }
+    // gabungkan baris piksel bersebelahan dengan rentang yang tumpang tindih menjadi satu garis
+    const merged = [];
+    lines.forEach(l => {
+      const m = merged.find(q => l.o - q.oEnd <= 1 && l.o - q.oStart <= 4 && Math.min(q.b, l.b) - Math.max(q.a, l.a) > 0.5 * (l.b - l.a));
+      if(m){ m.oEnd = l.o; m.a = Math.min(m.a, l.a); m.b = Math.max(m.b, l.b); }
+      else merged.push({ oStart: l.o, oEnd: l.o, a: l.a, b: l.b });
+    });
+    return merged.map(m => ({ pos: (m.oStart + m.oEnd + 1) / 2 / SC, a: m.a / SC, b: m.b / SC, thick: (m.oEnd - m.oStart + 1) / SC, o0: m.oStart, o1: m.oEnd, a0: m.a, b0: m.b })).filter(l => l.thick <= 2);
+  };
+  return { h: find(H, W, (y, x) => dark(x, y)), v: find(W, H, (x, y) => dark(x, y)) };
+}
+async function buildXlsxLayoutBytes(pages){
+  const wb = new ExcelJS.Workbook();
+  pages.forEach((pg, pi) => {
+    const ws = wb.addWorksheet('Halaman ' + (pi + 1), { views: [{ showGridLines: false }] });
+    // baris: kelompokkan segmen berdasarkan garis dasar teks
+    const rowsBase = [];
+    pg.segs.slice().sort((a, b) => a.base - b.base).forEach(s => {
+      const r = rowsBase.find(q => Math.abs(q.base - s.base) <= 0.4 * s.size);
+      if(r){ r.segs.push(s); r.size = Math.max(r.size, s.size); } else rowsBase.push({ base: s.base, size: s.size, segs: [s] });
+    });
+    // kolom: kelompokkan posisi awal teks (toleransi 9pt)
+    const xs = pg.segs.map(s => s.x).sort((a, b) => a - b), anchors = [];
+    xs.forEach(x => { if(!anchors.length || x - anchors[anchors.length - 1] > 9) anchors.push(x); });
+    const colOf = x => { let c = 0; anchors.forEach((a, i) => { if(a <= x + 4.5) c = i; }); return c; };
+    anchors.forEach((a, i) => { ws.getColumn(i + 1).width = Math.max(1.5, ((i + 1 < anchors.length ? anchors[i + 1] : pg.w) - a) / 5.25 - 0.7); });
+    // baris teks + baris pemisah untuk jarak kosong (supaya teks tidak saling menumpuk dan jarak seperti di PDF)
+    let sheetRow = 0;
+    rowsBase.forEach((r, ri) => {
+      const row = ws.getRow(++sheetRow);
+      r.xr = sheetRow;
+      const nat = Math.max(11, r.size * 1.35);
+      const gap = ri + 1 < rowsBase.length ? rowsBase[ri + 1].base - r.base : 0;
+      row.height = nat;
+      r.segs.sort((a, b) => a.x - b.x).forEach(s => {
+        const cell = row.getCell(colOf(s.x) + 1);
+        cell.value = (cell.value ? cell.value + ' ' : '') + s.str;
+        cell.font = { name: s.fam, size: Math.round(s.size * 2) / 2, bold: s.bold, italic: s.italic, ...(s.color ? { color: { argb: 'FF' + s.color.toUpperCase() } } : {}) };
+        cell.alignment = { vertical: 'bottom' };
+      });
+      if(gap > nat + 3) ws.getRow(++sheetRow).height = Math.min(60, gap - nat);
+    });
+    // garis tabel -> border sel (ke baris teks terdekat; garis yang lebih dekat ke baris berikutnya jadi border atasnya)
+    const rules = pg.rules;
+    const setB = (r, c, side) => { const cell = ws.getCell(r.xr, c + 1); cell.border = { ...(cell.border || {}), [side]: { style: 'thin', color: { argb: 'FF000000' } } }; };
+    rules.h.forEach(l => {
+      let ri = -1; rowsBase.forEach((r, i) => { if(r.base <= l.pos + 1.5) ri = i; });
+      let target = ri >= 0 ? rowsBase[ri] : rowsBase[0], side = ri >= 0 ? 'bottom' : 'top';
+      const nx = rowsBase[ri + 1];
+      if(ri >= 0 && nx && (nx.base - 0.85 * nx.size) - l.pos < (l.pos - rowsBase[ri].base) - 0.25 * rowsBase[ri].size){ target = nx; side = 'top'; }
+      if(!target) return;
+      for(let c = 0; c < anchors.length; c++){
+        const cs = anchors[c], ce = c + 1 < anchors.length ? anchors[c + 1] : pg.w, ov = Math.min(ce, l.b) - Math.max(cs, l.a);
+        if(ov > 0.5 * (ce - cs) || ov > 6) setB(target, c, side);
+      }
+    });
+    rules.v.forEach(l => {
+      let c = -1; anchors.forEach((a, i) => { if(a < l.pos - 1) c = i; });
+      rowsBase.forEach(r => { if(r.base > l.a - 2 && r.base - r.size < l.b + 2){ if(c >= 0) setB(r, c, 'right'); else setB(r, 0, 'left'); } });
+    });
+    ws.pageSetup = { paperSize: 9, orientation: pg.w > pg.h ? 'landscape' : 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+    if(!rowsBase.length) ws.getCell(1, 1).value = '(halaman tanpa teks)';
+  });
+  return new Uint8Array(await wb.xlsx.writeBuffer());
+}
+
+function rulePixelTest(pg){
+  const hs = pg.rules.h, vs = pg.rules.v;
+  return (px, py) => hs.some(l => py >= l.o0 && py <= l.o1 && px >= l.a0 && px < l.b0) || vs.some(l => px >= l.o0 && px <= l.o1 && py >= l.a0 && py < l.b0);
+}
+
 function buildXlsxBytes(pages){
   const wb = XLSX.utils.book_new();
   pages.forEach((rows, pi) => {
@@ -6394,8 +6625,8 @@ async function buildPptxBytes(pages){
 
 // ---------- PDF ke Word / Excel / PowerPoint (satu alur untuk ketiganya) ----------
 const OFFICE_TOOLS = [
-  { kind: 'word',  ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', build: buildDocxBytes },
-  { kind: 'excel', ext: '.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', build: buildXlsxBytes },
+  { kind: 'word',  ext: '.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', build: buildDocxBytes, buildLayout: buildDocxLayoutBytes },
+  { kind: 'excel', ext: '.xlsx', mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', build: buildXlsxBytes, buildLayout: buildXlsxLayoutBytes },
   { kind: 'ppt',   ext: '.pptx', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', build: buildPptxBytes },
 ];
 const officeState = {};
@@ -6421,7 +6652,7 @@ function initOfficeTool(cfg){
       toggleWrap.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
       $('#' + k + 'OcrHint').textContent = mode === 'ocr'
         ? 'Mode OCR aktif — proses lebih lambat karena tiap halaman dibaca sebagai gambar (cocok untuk PDF hasil scan/foto).'
-        : 'Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).';
+        : (cfg.buildLayout ? 'Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy — tata letak, garis tabel, logo, dan stempel dibuat semirip PDF-nya. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).' : 'Tanpa OCR: untuk PDF dengan teks yang bisa diseleksi/di-copy. Pilih OCR kalau PDF-nya hasil scan/foto (teksnya tidak bisa diseleksi).');
     });
   });
 
@@ -6525,14 +6756,27 @@ async function processOfficeBatch(cfg){
       ocrWorker = await createOcrWorker(status => { $('#overlayText').textContent = 'OCR: ' + status + '…'; });
     }
     const results = [];
+    let fellBack = 0;
     for(const f of state.pool){
       const statusEl = document.querySelector('#' + k + 'Card_' + f.id + ' .cc-status');
-      const pages = await extractPdfPages(f.bytes, state.mode === 'ocr', ocrWorker, (p, total) => {
-        const label = (state.mode === 'ocr' ? 'OCR halaman ' : 'Membaca halaman ') + p + '/' + total;
-        if(statusEl) statusEl.textContent = label;
-        $('#overlayText').textContent = '"' + f.name + '" — ' + label;
-      });
-      const bytes = await cfg.build(pages);
+      const showProg = (label) => { if(statusEl) statusEl.textContent = label; $('#overlayText').textContent = '"' + f.name + '" — ' + label; };
+      let bytes = null;
+      if(state.mode !== 'ocr' && cfg.buildLayout){
+        try{
+          const lp = await extractLayoutPages(f.bytes, (p, total) => showProg('Membaca tata letak halaman ' + p + '/' + total), cfg.kind === 'word');
+          showProg('Menyusun ' + cfg.ext + '…');
+          bytes = await cfg.buildLayout(lp);
+        }catch(layoutErr){
+          console.error('Mode tata letak gagal, beralih ke teks biasa:', layoutErr);
+          fellBack++;
+        }
+      }
+      if(!bytes){
+        const pages = await extractPdfPages(f.bytes, state.mode === 'ocr', ocrWorker, (p, total) => {
+          showProg((state.mode === 'ocr' ? 'OCR halaman ' : 'Membaca halaman ') + p + '/' + total);
+        });
+        bytes = await cfg.build(pages);
+      }
       const outName = f.name.replace(/\.pdf$/i, '') + cfg.ext;
       results.push({ name: outName, bytes });
       if(statusEl) statusEl.textContent = 'Selesai → ' + cfg.ext;
@@ -6551,7 +6795,7 @@ async function processOfficeBatch(cfg){
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 4000);
     }
-    toast(results.length + ' berkas ' + cfg.ext.toUpperCase().slice(1) + ' berhasil diunduh');
+    toast(results.length + ' berkas ' + cfg.ext.toUpperCase().slice(1) + ' berhasil diunduh' + (fellBack ? ' (' + fellBack + ' berkas memakai mode teks biasa karena mode tata letak gagal)' : ''));
   }catch(err){
     console.error(err);
     toast('Terjadi kesalahan saat memproses PDF ke ' + cfg.ext.toUpperCase().slice(1) + ((err && err.message) ? ': ' + err.message : ''));
