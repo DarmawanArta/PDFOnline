@@ -18,6 +18,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxtojson@2.2.0/dist/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 <style>
   :root{
     --bg:#EEEBE2;
@@ -116,6 +117,33 @@
     background:#fff;border:1px solid var(--line);border-radius:10px;
     padding:14px 16px;margin:0 0 14px;max-width:560px;
   }
+  .merge-split{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;}
+  .merge-split-left{flex:0 1 560px;min-width:0;max-width:100%;}
+  .merge-preview{
+    flex:1 1 380px;min-width:0;position:sticky;top:0;align-self:flex-start;height:calc(100vh - 150px);min-height:420px;
+    display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .mp-head{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .mp-name{flex:1;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mp-close{border:none;background:none;font-size:20px;line-height:1;color:var(--ink-soft);cursor:pointer;flex-shrink:0;}
+  .mp-close:hover{color:var(--accent);}
+  .mp-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:7px;border-bottom:1px solid var(--line-soft);flex-shrink:0;}
+  .mp-nav button{
+    width:30px;height:28px;border:1px solid var(--line);background:#fff;border-radius:7px;font-size:16px;line-height:1;cursor:pointer;color:var(--ink);
+  }
+  .mp-nav button:hover:not(:disabled){border-color:var(--primary);color:var(--primary-dark);}
+  .mp-nav button:disabled{opacity:0.4;cursor:not-allowed;}
+  .mp-page{font-size:12px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;min-width:70px;text-align:center;}
+  .mp-body{flex:1;min-height:0;overflow:auto;padding:12px;background:#FAF9F5;display:flex;justify-content:center;align-items:flex-start;}
+  .mp-body canvas{display:block;background:#fff;box-shadow:var(--shadow);}
+  .mp-loading{color:var(--ink-soft);font-size:12.5px;padding:40px 0;}
+  .merge-item .mi-preview{
+    flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .merge-item .mi-preview:hover{background:var(--line-soft);color:var(--primary-dark);}
+  .merge-item .mi-meta{cursor:pointer;}
+  .merge-item.previewing{background:#fff;border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset;}
   .group-card-head{display:flex;align-items:center;gap:8px;margin-bottom:11px;}
   .group-card-head .gc-badge{
     width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;flex-shrink:0;
@@ -757,6 +785,18 @@
   }
   .symbol-custom-add:hover{border-color:var(--primary);color:var(--primary);}
   .symbol-custom-add svg{width:14px;height:14px;}
+  .text-style-list{display:flex;flex-direction:column;gap:4px;}
+  .text-style-item{display:flex;align-items:center;gap:6px;}
+  .text-style-item .ts-txt{
+    min-width:30px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700;
+    color:var(--ink-soft);text-align:center;border:1px solid var(--line);border-radius:5px;padding:2px 5px;background:#fff;
+  }
+  .text-style-item .ts-btn{width:24px;height:24px;border:1px solid var(--line);background:#fff;border-radius:5px;cursor:pointer;font-size:12px;color:var(--ink);padding:0;font-family:inherit;}
+  .text-style-item .ts-btn:hover{border-color:var(--primary);}
+  .text-style-item .ts-btn:disabled{opacity:0.35;cursor:not-allowed;}
+  .text-style-item .ts-btn.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .text-style-item input[type=number]{width:60px;}
+  .text-style-item .ts-unit{font-size:11px;color:var(--ink-soft);}
   .layer-scale-list{display:flex;flex-direction:column;gap:3px;}
   .layer-scale-item{display:flex;align-items:center;gap:6px;}
   .layer-scale-item .ls-icon{width:16px;height:16px;flex-shrink:0;color:var(--ink-soft);}
@@ -1195,7 +1235,7 @@
         <p class="ocr-hint" id="stampModeHint">Mode 1 Stempel: unggah satu gambar, dipakai berulang. Upgrade ke Banyak Stempel untuk unggah beberapa gambar berbeda sekaligus.</p>
         <div class="drop" id="stampDrop">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-          <p><b>Klik atau seret</b><br>bisa pilih beberapa PNG stempel</p>
+          <p><b>Klik atau seret</b><br>bisa pilih beberapa PNG stempel<br>atau tempel gambar/teks dari luar dengan <b>Ctrl+V</b></p>
         </div>
         <input type="file" id="stampInput" accept="image/png,image/jpeg" multiple>
         <div class="stamp-gallery" id="stampGallery" style="display:none;"></div>
@@ -1245,6 +1285,8 @@
             <button type="button" class="symbol-btn" data-symbol="circleFilled" title="Lingkaran Isi"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg></button>
             <button type="button" class="symbol-btn" data-symbol="square" title="Kotak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16"/></svg></button>
             <button type="button" class="symbol-btn" data-symbol="squareFilled" title="Kotak Isi"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"/></svg></button>
+            <button type="button" class="symbol-btn" data-symbol="rect" title="Persegi Panjang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12"/></svg></button>
+            <button type="button" class="symbol-btn" data-symbol="rectFilled" title="Persegi Panjang Isi"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="20" height="12"/></svg></button>
             <button type="button" class="symbol-btn" data-symbol="triangle" title="Segitiga"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M12 3L21 20H3Z"/></svg></button>
             <button type="button" class="symbol-btn" data-symbol="diamond" title="Wajik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M12 2L22 12L12 22L2 12Z"/></svg></button>
             <button type="button" class="symbol-btn" data-symbol="plus" title="Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 4V20M4 12H20"/></svg></button>
@@ -1255,6 +1297,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 4V20M4 12H20"/></svg>
             </button>
           </div>
+        </div>
+        <div class="toolbar-group" id="textStyleGroup" style="display:none;">
+          <label>Font teks</label>
+          <div class="text-style-list" id="textStyleList"></div>
         </div>
         <div class="toolbar-group" id="layerScaleGroup" style="display:none;">
           <label>Ukuran tiap simbol</label>
@@ -1358,7 +1404,21 @@
           <h3>Pilih sendiri PDF mana digabung ke mana</h3>
           <p>Unggah PDF di panel kiri, lalu klik "+ Grup gabungan baru" untuk membuat satu berkas hasil. Di tiap grup, pilih PDF mana saja yang masuk (mis. Grup 1 = PDF 1 &amp; 2, Grup 2 = PDF 3 &amp; 4), atur urutannya, dan beri nama filenya sendiri.</p>
         </div>
-        <div id="mergeGroupsList"></div>
+        <div class="merge-split">
+          <div id="mergeGroupsList" class="merge-split-left"></div>
+          <aside class="merge-preview" id="mergePreview" style="display:none;">
+            <div class="mp-head">
+              <span class="mp-name" id="mpName"></span>
+              <button type="button" class="mp-close" id="mpClose" title="Tutup pratinjau">×</button>
+            </div>
+            <div class="mp-nav">
+              <button type="button" id="mpPrev" title="Halaman sebelumnya">‹</button>
+              <span class="mp-page" id="mpPage">1 / 1</span>
+              <button type="button" id="mpNext" title="Halaman berikutnya">›</button>
+            </div>
+            <div class="mp-body" id="mpBody"></div>
+          </aside>
+        </div>
       </div>
     </section>
   </main>
@@ -2214,6 +2274,8 @@ const MARK_SYMBOL_DEFS = {
   circleFilled: { path: 'M3 12 A9 9 0 1 0 21 12 A9 9 0 1 0 3 12 Z', fill: true },
   square:       { path: 'M4 4 H20 V20 H4 Z', fill: false },
   squareFilled: { path: 'M4 4 H20 V20 H4 Z', fill: true },
+  rect:         { path: 'M2 6 H22 V18 H2 Z', fill: false, stretch: true }, // persegi panjang: bentuknya mengikuti ukuran kotak
+  rectFilled:   { path: 'M2 6 H22 V18 H2 Z', fill: true,  stretch: true },
   triangle:     { path: 'M12 3 L21 20 H3 Z', fill: false },
   diamond:      { path: 'M12 2 L22 12 L12 22 L2 12 Z', fill: false },
   plus:         { path: 'M12 4 V20 M4 12 H20', fill: false }
@@ -2221,12 +2283,80 @@ const MARK_SYMBOL_DEFS = {
 // Simbol/teks kustom yang ditambahkan pengguna sendiri: { [id]: teksNya }
 let customSymbolsMap = {};
 let customSymbolCounter = 0;
+// Gaya teks per simbol kustom: { [id]: { font:'Helvetica'|'Times'|'Courier', bold, italic, size(pt, kosong = otomatis) } }
+let customSymbolStyle = {};
+const TEXT_FONTS = {
+  Helvetica: { label: 'Sans (Helvetica)', cat: 'Standar PDF (bawaan)', css: 'Arial, Helvetica, sans-serif', std: ['Helvetica', 'HelveticaBold', 'HelveticaOblique', 'HelveticaBoldOblique'] },
+  Times:     { label: 'Serif (Times)',    cat: 'Standar PDF (bawaan)', css: '"Times New Roman", Times, serif', std: ['TimesRoman', 'TimesRomanBold', 'TimesRomanItalic', 'TimesRomanBoldItalic'] },
+  Courier:   { label: 'Mono (Courier)',   cat: 'Standar PDF (bawaan)', css: '"Courier New", Courier, monospace', std: ['Courier', 'CourierBold', 'CourierOblique', 'CourierBoldOblique'] }
+};
+// Font web (Google Fonts lewat Fontsource/jsDelivr): diunduh saat dipilih, lalu ditanam ke PDF. b = ada versi tebal, i = ada versi miring.
+const FONTSOURCE_BASE = 'https://cdn.jsdelivr.net/npm/@fontsource/';
+const FONTSOURCE_VER = '5.3.0';
+[
+  ['Roboto', 'roboto', 'Sans-serif', 'sans-serif', 1, 1], ['OpenSans', 'open-sans', 'Sans-serif', 'sans-serif', 1, 1, 'Open Sans'],
+  ['Montserrat', 'montserrat', 'Sans-serif', 'sans-serif', 1, 1], ['Poppins', 'poppins', 'Sans-serif', 'sans-serif', 1, 1],
+  ['Lato', 'lato', 'Sans-serif', 'sans-serif', 1, 1], ['Nunito', 'nunito', 'Sans-serif', 'sans-serif', 1, 1],
+  ['Merriweather', 'merriweather', 'Serif', 'serif', 1, 1], ['PlayfairDisplay', 'playfair-display', 'Serif', 'serif', 1, 1, 'Playfair Display'],
+  ['Lora', 'lora', 'Serif', 'serif', 1, 1], ['RobotoMono', 'roboto-mono', 'Monospace', 'monospace', 1, 1, 'Roboto Mono'],
+  ['Oswald', 'oswald', 'Tebal / judul', 'sans-serif', 1, 0], ['BebasNeue', 'bebas-neue', 'Tebal / judul', 'sans-serif', 0, 0, 'Bebas Neue'], ['Anton', 'anton', 'Tebal / judul', 'sans-serif', 0, 0],
+  ['Pacifico', 'pacifico', 'Tulisan tangan / dekoratif', 'cursive', 0, 0], ['DancingScript', 'dancing-script', 'Tulisan tangan / dekoratif', 'cursive', 1, 0, 'Dancing Script'],
+  ['Caveat', 'caveat', 'Tulisan tangan / dekoratif', 'cursive', 1, 0], ['GreatVibes', 'great-vibes', 'Tulisan tangan / dekoratif', 'cursive', 0, 0, 'Great Vibes'],
+  ['Lobster', 'lobster', 'Tulisan tangan / dekoratif', 'cursive', 0, 0], ['PermanentMarker', 'permanent-marker', 'Tulisan tangan / dekoratif', 'cursive', 0, 0, 'Permanent Marker']
+].forEach(([key, pkg, cat, generic, b, i, label]) => {
+  label = label || key;
+  TEXT_FONTS[key] = { label, cat, css: '"' + label + '", ' + generic, pkg, b: !!b, i: !!i };
+});
+// Varian yang benar-benar tersedia untuk sebuah font (font standar PDF selalu punya tebal & miring)
+function fontCaps(key){ const f = TEXT_FONTS[key]; return f.pkg ? { bold: f.b, italic: f.i } : { bold: true, italic: true }; }
+function webFontVariant(f, st){ return { weight: st.bold && f.b ? 700 : 400, style: st.italic && f.i ? 'italic' : 'normal' }; }
+function webFontUrl(f, v){ return FONTSOURCE_BASE + f.pkg + '@' + FONTSOURCE_VER + '/files/' + f.pkg + '-latin-' + v.weight + '-' + v.style + '.woff'; }
+const webFontBytes = {}, webFontFaces = {}, webFontFailed = {};
+function fetchWebFontBytes(url){
+  if(!webFontBytes[url]) webFontBytes[url] = fetch(url).then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+    .catch(err => { delete webFontBytes[url]; throw err; });
+  return webFontBytes[url];
+}
+function webFontKey(f, st){ const v = webFontVariant(f, st); return f.pkg + v.weight + v.style; }
+// Font siap dipakai (font standar, sudah termuat, atau pernah gagal -> jangan dicoba terus-menerus)
+function isTextFontReady(st){ const f = TEXT_FONTS[st.font]; return !f.pkg || !!webFontFaces[webFontKey(f, st)] || !!webFontFailed[webFontKey(f, st)]; }
+async function ensureTextFontLoaded(st){
+  const f = TEXT_FONTS[st.font];
+  if(!f.pkg) return true;
+  const key = webFontKey(f, st);
+  if(webFontFaces[key]) return true;
+  try{
+    const bytes = await fetchWebFontBytes(webFontUrl(f, webFontVariant(f, st)));
+    if(typeof FontFace !== 'undefined'){
+      const v = webFontVariant(f, st);
+      const face = new FontFace(f.label, bytes.slice(0), { weight: String(v.weight), style: v.style });
+      await face.load(); document.fonts.add(face);
+    }
+    webFontFaces[key] = true;
+    return true;
+  }catch(err){
+    console.error('Gagal memuat font ' + f.label, err);
+    webFontFailed[key] = true;
+    return false;
+  }
+}
+// Gaya efektif satu lapisan teks; tanda lama (tanpa info font) tetap tampil seperti dulu: Helvetica tebal, ukuran otomatis.
+function getTextStyle(layer){
+  const font = TEXT_FONTS[layer.font] ? layer.font : 'Helvetica', caps = fontCaps(font);
+  return {
+    font,
+    bold: caps.bold && (layer.bold === undefined ? true : !!layer.bold),
+    italic: caps.italic && !!layer.italic,
+    size: layer.size > 0 ? layer.size : null
+  };
+}
+function textCanvasFont(st, px){ return (st.italic ? 'italic ' : '') + (st.bold ? 'bold ' : '') + px + 'px ' + TEXT_FONTS[st.font].css; }
 // Ambil daftar id simbol yang sedang aktif, tersimpan sebagai snapshot di setiap tanda
 // (sehingga tanda yang sudah ditempel tidak berubah walau simbol kustom dihapus/diubah nanti).
 function buildSymbolsSnapshot(ids){
   return ids.map(id => {
     const obj = { id };
-    if(customSymbolsMap[id] !== undefined) obj.text = customSymbolsMap[id];
+    if(customSymbolsMap[id] !== undefined){ obj.text = customSymbolsMap[id]; Object.assign(obj, customSymbolStyle[id] || {}); }
     const sc = currentMarkSymbolScales[id];
     if(sc && Math.abs(sc - 1) > 0.001) obj.scale = sc;
     if(currentMarkSymbolLocked[id]) obj.locked = true;
@@ -2265,6 +2395,7 @@ function getSymbolComboKey(ids){
 }
 function getCheckDefaultSize(ids){
   const key = getSymbolComboKey(ids);
+  if(!defaultSize.checkBySymbol[key] && ids.length === 1 && MARK_SYMBOL_DEFS[ids[0]] && MARK_SYMBOL_DEFS[ids[0]].stretch) return { w: 0.28, h: 0.07 };
   return defaultSize.checkBySymbol[key] || defaultSize.check;
 }
 function setCheckDefaultSize(ids, wFrac, hFrac){
@@ -3363,8 +3494,9 @@ function renderMergePool(){
       <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus dari sumber">×</button>
     `;
-    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); showMergePreview(f); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
+      if(mpState.fileId === f.id) closeMergePreview();
       mergePool = mergePool.filter(x => x.id !== f.id);
       mergeGroups.forEach(g => { g.fileIds = g.fileIds.filter(id => id !== f.id); });
       renderMergePool();
@@ -3378,6 +3510,68 @@ $('#addGroupBtn').addEventListener('click', () => {
   mergeGroupCounter++;
   mergeGroups.push({ id: 'g' + Math.random().toString(36).slice(2,9), outName: 'potongan' + mergeGroupCounter + '.pdf', fileIds: [] });
   renderMergeGroups();
+});
+
+// ---------- Pratinjau besar di samping (menu Gabung PDF) ----------
+const mpState = { fileId: null, doc: null, page: 1, total: 0, token: 0 };
+
+async function showMergePreview(f){
+  mpState.fileId = f.id; mpState.page = 1; mpState.doc = null; mpState.total = 0;
+  const panel = $('#mergePreview');
+  panel.style.display = 'flex';
+  $('#mpName').textContent = f.name;
+  $('#mpBody').innerHTML = '<div class="mp-loading">Memuat pratinjau…</div>';
+  renderMergeGroups(); // sorot baris yang sedang dipratinjau
+  const tok = ++mpState.token;
+  try{
+    const doc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
+    if(tok !== mpState.token) return;
+    mpState.doc = doc; mpState.total = doc.numPages;
+    await renderMergePreviewPage();
+  }catch(err){
+    console.error(err);
+    if(tok === mpState.token) $('#mpBody').innerHTML = '<div class="mp-loading">Gagal memuat pratinjau — berkas mungkin rusak.</div>';
+  }
+}
+
+async function renderMergePreviewPage(){
+  const doc = mpState.doc;
+  if(!doc) return;
+  const tok = ++mpState.token;
+  const body = $('#mpBody');
+  $('#mpPage').textContent = mpState.page + ' / ' + mpState.total;
+  $('#mpPrev').disabled = mpState.page <= 1;
+  $('#mpNext').disabled = mpState.page >= mpState.total;
+  const page = await doc.getPage(mpState.page);
+  const vp1 = page.getViewport({ scale: 1 });
+  const fit = Math.max(240, body.clientWidth - 24) / vp1.width; // selebar panel
+  const dpr = window.devicePixelRatio || 1;
+  const vp = page.getViewport({ scale: fit * dpr });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+  canvas.style.width = Math.round(vp1.width * fit) + 'px';
+  canvas.style.height = Math.round(vp1.height * fit) + 'px';
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  if(tok !== mpState.token) return; // sudah pindah halaman/berkas
+  body.innerHTML = '';
+  body.appendChild(canvas);
+  body.scrollTop = 0;
+}
+
+function closeMergePreview(){
+  mpState.token++; mpState.fileId = null; mpState.doc = null;
+  $('#mergePreview').style.display = 'none';
+  $('#mpBody').innerHTML = '';
+  renderMergeGroups();
+}
+$('#mpClose').addEventListener('click', closeMergePreview);
+$('#mpPrev').addEventListener('click', () => { if(mpState.doc && mpState.page > 1){ mpState.page--; renderMergePreviewPage(); } });
+$('#mpNext').addEventListener('click', () => { if(mpState.doc && mpState.page < mpState.total){ mpState.page++; renderMergePreviewPage(); } });
+let mpResizeTimer = null;
+window.addEventListener('resize', () => {
+  if(!mpState.doc) return;
+  clearTimeout(mpResizeTimer);
+  mpResizeTimer = setTimeout(renderMergePreviewPage, 200);
 });
 
 function renderMergeGroups(){
@@ -3417,12 +3611,16 @@ function renderMergeGroups(){
             <div class="mi-name">${escapeHtml(f.name)}</div>
             <div class="mi-sub">${f.pageCount ?? '?'} halaman</div>
           </div>
+          <button class="mi-preview" title="Pratinjau di samping"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <div class="mi-actions">
             <button class="mi-up" ${idx===0 ? 'disabled' : ''} title="Naikkan urutan">▲</button>
             <button class="mi-down" ${idx===g.fileIds.length-1 ? 'disabled' : ''} title="Turunkan urutan">▼</button>
           </div>
           <button class="mi-remove" title="Keluarkan dari grup">×</button>
         `;
+        if(mpState.fileId === fid) row.classList.add('previewing');
+        row.querySelector('.mi-preview').addEventListener('click', (e) => { e.stopPropagation(); showMergePreview(f); });
+        row.querySelector('.mi-meta').addEventListener('click', () => showMergePreview(f));
         row.querySelector('.mi-up').addEventListener('click', () => {
           if(idx === 0) return;
           [g.fileIds[idx-1], g.fileIds[idx]] = [g.fileIds[idx], g.fileIds[idx-1]];
@@ -7064,8 +7262,9 @@ function placeStamp(centerXFrac, centerYFrac){
   const d = getActiveDoc();
   const activeStampImg = placeMode === 'stamp' ? getActiveStamp() : null;
   const defs = placeMode === 'stamp' ? getStampDefaultSize(activeStampImg && activeStampImg.id) : getCheckDefaultSize(currentMarkSymbols);
-  const wFrac = defs.w;
-  const hFrac = defs.h;
+  const fit = placeMode === 'check' ? textFitFracs(buildSymbolsSnapshot(currentMarkSymbols)) : null;
+  const wFrac = fit ? fit.w : defs.w;
+  const hFrac = fit ? fit.h : defs.h;
   const p = {
     id: 'p' + (placementCounter++),
     type: placeMode,
@@ -7144,8 +7343,10 @@ $('#symbolPicker').addEventListener('click', (e) => {
     const chip = del.closest('.symbol-btn');
     const id = chip.dataset.symbol;
     delete customSymbolsMap[id];
+    delete customSymbolStyle[id];
     chip.remove();
     saveCustomSymbols();
+    saveCustomSymbolStyles();
     const idx = currentMarkSymbols.indexOf(id);
     if(idx >= 0){
       currentMarkSymbols.splice(idx, 1);
@@ -7153,6 +7354,7 @@ $('#symbolPicker').addEventListener('click', (e) => {
       refreshSymbolPickerActiveState();
       applySymbolsToSelected();
     }
+    refreshSizeInputs();
     return;
   }
   const btn = e.target.closest('.symbol-btn');
@@ -7190,6 +7392,7 @@ function saveCustomSymbols(){
   try{ localStorage.setItem('pdfOnlie_customSymbols', JSON.stringify(customSymbolsMap)); }catch(err){}
 }
 function loadCustomSymbols(){
+  try{ customSymbolStyle = JSON.parse(localStorage.getItem('pdfOnlie_customSymbolStyles') || '{}') || {}; }catch(err){ customSymbolStyle = {}; }
   try{
     const raw = localStorage.getItem('pdfOnlie_customSymbols');
     if(!raw) return;
@@ -7202,21 +7405,49 @@ function loadCustomSymbols(){
   }catch(err){}
 }
 loadCustomSymbols();
-async function handleAddCustomSymbol(){
-  const input = $('#customSymbolInput');
-  const text = input.value.trim();
-  if(!text){ toast('Ketik simbol atau teks terlebih dahulu'); return; }
+async function addCustomSymbolFromText(text){
+  if(!text){ toast('Ketik simbol atau teks terlebih dahulu'); return false; }
   const ok = await textSupportedByFont(text);
   if(!ok){
     toast('Simbol/karakter ini belum didukung — gunakan huruf, angka, atau tanda baca dasar (contoh: OK, LUNAS, V, #, N/A)');
-    return;
+    return false;
   }
   const id = 'custom' + (customSymbolCounter++);
   addCustomSymbolChip(text, id);
   saveCustomSymbols();
-  input.value = '';
   selectMarkSymbol(id);
+  return true;
 }
+async function handleAddCustomSymbol(){
+  const input = $('#customSymbolInput');
+  if(await addCustomSymbolFromText(input.value.trim())) input.value = '';
+}
+
+// Tempel dari luar (Ctrl+V) di menu Tempel Stempel: gambar -> stempel, berkas PDF/Word/Excel -> dokumen, teks -> simbol teks.
+// Tempel biasa di kolom isian (input/textarea) tidak diganggu.
+document.addEventListener('paste', async (e) => {
+  if($('#stampView').style.display === 'none') return;
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  const cd = e.clipboardData;
+  if(!cd) return;
+  const files = Array.from(cd.files || []);
+  const images = files.filter(f => f.type.startsWith('image/'));
+  const docs = files.filter(f => !f.type.startsWith('image/'));
+  if(images.length || docs.length){
+    e.preventDefault();
+    if(images.length){ setPlaceMode('stamp'); handleStampFiles(images); }
+    if(docs.length) await handlePdfFiles(docs);
+    return;
+  }
+  const text = (cd.getData('text/plain') || '').replace(/\s+/g, ' ').trim();
+  if(text){
+    e.preventDefault();
+    if(text.length > 40){ toast('Teks yang ditempel terlalu panjang (maksimal 40 karakter) untuk dijadikan simbol'); return; }
+    setPlaceMode('check');
+    await addCustomSymbolFromText(text);
+  }
+});
 $('#addCustomSymbolBtn').addEventListener('click', handleAddCustomSymbol);
 $('#customSymbolInput').addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); handleAddCustomSymbol(); } });
 $('#checkColorSwatches').addEventListener('click', (e) => {
@@ -7282,8 +7513,12 @@ function redrawStampsForPage(justPlacedLast){
         const scale = layer.scale || 1;
         const gOpen = scale !== 1 ? `<g transform="translate(12 12) scale(${scale}) translate(-12 -12)">` : '<g>';
         if(layer.text){
-          const fontPx = Math.max(8, 16 / Math.max(1, layer.text.length * 0.55));
-          inner += `${gOpen}<text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family="IBM Plex Sans, sans-serif" font-weight="700" fill="${col}">${escapeHtml(layer.text)}</text></g>`;
+          const st = getTextStyle(layer);
+          if(!isTextFontReady(st)) ensureTextFontLoaded(st).then(ok => { if(ok) redrawStampsForPage(); });
+          const boxPt = Math.min(p.wFrac * pageBaseW, p.hFrac * pageBaseH);
+          // ukuran font eksplisit (pt) -> satuan viewBox 24: pt * 24 / sisi terpendek kotak (pt); kosong = otomatis muat di kotak
+          const fontPx = (st.size && boxPt > 0) ? st.size * 24 / boxPt : Math.max(8, 16 / Math.max(1, layer.text.length * 0.55));
+          inner += `${gOpen}<text x="12" y="12.5" text-anchor="middle" dominant-baseline="middle" font-size="${fontPx}" font-family='${TEXT_FONTS[st.font].css.replace(/'/g, '')}' font-weight="${st.bold ? 700 : 400}" font-style="${st.italic ? 'italic' : 'normal'}" fill="${col}">${escapeHtml(layer.text)}</text></g>`;
         } else {
           const def = MARK_SYMBOL_DEFS[layer.id] || MARK_SYMBOL_DEFS.check;
           const fill = p.fillColor || (def.fill ? col : 'none');
@@ -7291,10 +7526,17 @@ function redrawStampsForPage(justPlacedLast){
           const pathAttrs = fill !== 'none'
             ? `fill="${fill}" stroke="${col}" stroke-width="${(2*sw).toFixed(2)}" stroke-linejoin="round"`
             : `fill="none" stroke="${col}" stroke-width="${(3*sw).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"`;
-          inner += `${gOpen}<path d="${def.path}" ${pathAttrs}/></g>`;
+          const wPt = p.wFrac * pageBaseW, hPt = p.hFrac * pageBaseH;
+          if(def.stretch && wPt > 0 && hPt > 0){
+            const m = Math.min(wPt, hPt), bw = 24 * wPt / m, bh = 24 * hPt / m;
+            const mg = (fill !== 'none' ? 1 : 1.5) * sw; // setengah tebal garis, supaya garis tetap di dalam kotak
+            inner += `${gOpen}<rect x="${(12 - bw / 2 + mg).toFixed(3)}" y="${(12 - bh / 2 + mg).toFixed(3)}" width="${(bw - 2 * mg).toFixed(3)}" height="${(bh - 2 * mg).toFixed(3)}" ${pathAttrs}/></g>`;
+          } else {
+            inner += `${gOpen}<path d="${def.path}" ${pathAttrs}/></g>`;
+          }
         }
       });
-      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;">${inner}</svg><div class="handle"></div><div class="del">×</div>`;
+      el.innerHTML = `<svg viewBox="0 0 24 24" style="width:100%;height:100%;display:block;pointer-events:none;overflow:visible;">${inner}</svg><div class="handle"></div><div class="del">×</div>`;
     } else {
       const img = getStampById(p.imgId) || getActiveStamp();
       const src = img ? img.dataUrl : '';
@@ -7404,6 +7646,7 @@ function refreshSizeInputs(){
     yInput.value = pageBaseH ? Math.round(hFrac*pageBaseH) : '';
   }
   renderLayerScaleUI();
+  renderTextStyleUI();
 }
 
 // Ikon mini untuk baris "Ukuran tiap simbol" (mewakili tiap simbol yang sedang ditumpuk)
@@ -7418,6 +7661,78 @@ function getLayerIconSvg(id){
 // Saat 2 simbol atau lebih ditumpuk dalam satu tanda, tampilkan slider ukuran per simbol
 // supaya tiap simbol bisa punya ukurannya sendiri-sendiri (mis. kotak besar, centang kecil
 // di tengahnya) dan tidak saling tumpang tindih 1:1.
+// ---------- Gaya teks kustom: font, tebal/miring, ukuran (pt) ----------
+function saveCustomSymbolStyles(){
+  try{ localStorage.setItem('pdfOnlie_customSymbolStyles', JSON.stringify(customSymbolStyle)); }catch(err){}
+}
+// Ukuran kotak (pecahan halaman) yang pas untuk satu teks berukuran pt eksplisit; null bila tidak berlaku.
+function textFitFracs(layers){
+  if(!pageBaseW || !pageBaseH || layers.length !== 1 || layers[0].text === undefined) return null;
+  const st = getTextStyle(layers[0]);
+  if(!st.size) return null;
+  const ctx = (textFitFracs._ctx = textFitFracs._ctx || document.createElement('canvas').getContext('2d'));
+  ctx.font = textCanvasFont(st, st.size);
+  const wPt = ctx.measureText(layers[0].text).width + st.size * 0.5, hPt = st.size * 1.35;
+  return { w: clamp(wPt / pageBaseW, 0.01, 1), h: clamp(hPt / pageBaseH, 0.01, 1) };
+}
+function selectedCheckPlacement(){
+  const d = getActiveDoc();
+  if(!d || !selectedStampId) return null;
+  const p = (d.pages[activePage] || []).find(x => x.id === selectedStampId);
+  return p || null;
+}
+async function setTextStyle(id, patch){
+  const p = selectedCheckPlacement();
+  const target = p && p.type === 'check' ? p : null;
+  if(customSymbolsMap[id] !== undefined){ // jadi default untuk tanda baru berikutnya
+    customSymbolStyle[id] = Object.assign({}, customSymbolStyle[id], patch);
+    saveCustomSymbolStyles();
+  }
+  if(target){
+    if(!target.symbols) target.symbols = getSymbolLayers(target);
+    target.symbols.forEach(l => { if(l.id === id) Object.assign(l, patch); });
+    const changed = target.symbols.find(l => l.id === id);
+    if(changed && changed.text !== undefined) await ensureTextFontLoaded(getTextStyle(changed)); // butuh font termuat untuk mengukur lebar teks
+    const fit = textFitFracs(target.symbols); // satu teks berukuran eksplisit: kotak ikut dipas, titik tengah tetap
+    if(fit){
+      const cx = target.xFrac + target.wFrac / 2, cy = target.yFrac + target.hFrac / 2;
+      target.wFrac = fit.w; target.hFrac = fit.h;
+      target.xFrac = clamp(cx - fit.w / 2, 0, 1 - fit.w); target.yFrac = clamp(cy - fit.h / 2, 0, 1 - fit.h);
+    }
+    redrawStampsForPage();
+  }
+  refreshSizeInputs();
+}
+function renderTextStyleUI(){
+  const group = $('#textStyleGroup'), listEl = $('#textStyleList');
+  const sel = selectedCheckPlacement();
+  let layers = null;
+  if(sel){ if(sel.type === 'check') layers = getSymbolLayers(sel); }
+  else if(placeMode === 'check') layers = buildSymbolsSnapshot(currentMarkSymbols);
+  const textLayers = (layers || []).filter(l => l.text !== undefined);
+  if(!textLayers.length){ group.style.display = 'none'; listEl.innerHTML = ''; return; }
+  group.style.display = 'flex';
+  listEl.innerHTML = '';
+  textLayers.forEach(layer => {
+    const st = getTextStyle(layer);
+    const row = document.createElement('div');
+    row.className = 'text-style-item';
+    row.innerHTML = `<span class="ts-txt" title="${escapeHtml(layer.text)}">${escapeHtml(layer.text)}</span>
+      <select title="Jenis font">${[...new Set(Object.values(TEXT_FONTS).map(f => f.cat))].map(cat => `<optgroup label="${cat}">${Object.keys(TEXT_FONTS).filter(k => TEXT_FONTS[k].cat === cat).map(k => `<option value="${k}"${k === st.font ? ' selected' : ''}>${TEXT_FONTS[k].label}</option>`).join('')}</optgroup>`).join('')}</select>
+      <button type="button" class="ts-btn ts-b${st.bold ? ' active' : ''}" ${fontCaps(st.font).bold ? '' : 'disabled'} title="${fontCaps(st.font).bold ? 'Tebal' : 'Font ini tidak punya versi tebal'}"><b>B</b></button>
+      <button type="button" class="ts-btn ts-i${st.italic ? ' active' : ''}" ${fontCaps(st.font).italic ? '' : 'disabled'} title="${fontCaps(st.font).italic ? 'Miring' : 'Font ini tidak punya versi miring'}"><i>I</i></button>
+      <input type="number" min="4" max="300" step="1" placeholder="Auto" value="${st.size || ''}" title="Ukuran font dalam pt. Kosongkan = otomatis menyesuaikan kotak.">
+      <span class="ts-unit">pt</span>`;
+    if(!isTextFontReady(st)) ensureTextFontLoaded(st).then(ok => { if(ok) redrawStampsForPage(); }); // siapkan font sebelum dipakai menempel
+    const select = row.querySelector('select'), num = row.querySelector('input');
+    select.addEventListener('change', () => setTextStyle(layer.id, { font: select.value }));
+    row.querySelector('.ts-b').addEventListener('click', () => setTextStyle(layer.id, { bold: !st.bold }));
+    row.querySelector('.ts-i').addEventListener('click', () => setTextStyle(layer.id, { italic: !st.italic }));
+    num.addEventListener('change', () => { const v = parseFloat(num.value); setTextStyle(layer.id, { size: v > 0 ? clamp(v, 4, 300) : undefined }); });
+    listEl.appendChild(row);
+  });
+}
+
 function renderLayerScaleUI(){
   const group = $('#layerScaleGroup');
   const listEl = $('#layerScaleList');
@@ -7608,10 +7923,29 @@ async function processAll(){
       if(!hasAny) continue;
       $('#overlayText').textContent = 'Memproses "' + d.name + '"…';
       const pdfDoc = await PDFDocument.load(d.bytes.slice(0));
-      let customFont = null;
-      async function getCustomFont(){
-        if(!customFont) customFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-        return customFont;
+      const textFontCache = {};
+      let fontkitRegistered = false;
+      async function getTextFont(st){
+        const f = TEXT_FONTS[st.font];
+        if(f.pkg){
+          const key = webFontKey(f, st);
+          if(!textFontCache[key]){
+            try{
+              if(!fontkitRegistered){ pdfDoc.registerFontkit(fontkit); fontkitRegistered = true; }
+              const bytes = await fetchWebFontBytes(webFontUrl(f, webFontVariant(f, st)));
+              textFontCache[key] = await pdfDoc.embedFont(new Uint8Array(bytes), { subset: true });
+            }catch(err){
+              console.error('Font ' + f.label + ' gagal ditanam, memakai Helvetica', err);
+              if(!getTextFont.warned) getTextFont.warned = {};
+              if(!getTextFont.warned[f.label]){ getTextFont.warned[f.label] = true; toast('Font "' + f.label + '" gagal diunduh — dipakai Helvetica sebagai pengganti'); }
+              return getTextFont({ font: 'Helvetica', bold: st.bold, italic: st.italic });
+            }
+          }
+          return textFontCache[key];
+        }
+        const key = st.font + (st.bold ? 'B' : '') + (st.italic ? 'I' : '');
+        if(!textFontCache[key]) textFontCache[key] = await pdfDoc.embedFont(StandardFonts[f.std[(st.bold ? 1 : 0) + (st.italic ? 2 : 0)]]);
+        return textFontCache[key];
       }
       const embeddedCache = {}; // imgId -> embedded pdf-lib image, cached per document
       async function getEmbeddedImg(imgId){
@@ -7649,10 +7983,11 @@ async function processAll(){
               const lx = x + (w - lw) / 2, ly = y + (h - lh) / 2;
               if(layer.text){
                 try{
-                  const font = await getCustomFont();
-                  let fontSize = lh * 0.72;
+                  const st = getTextStyle(layer);
+                  const font = await getTextFont(st);
+                  let fontSize = st.size ? st.size * layerScale : lh * 0.72;
                   let textWidth = font.widthOfTextAtSize(layer.text, fontSize);
-                  if(textWidth > lw * 0.94){
+                  if(!st.size && textWidth > lw * 0.94){ // ukuran otomatis: dikecilkan agar muat di kotak
                     fontSize = fontSize * (lw * 0.94 / textWidth);
                     textWidth = font.widthOfTextAtSize(layer.text, fontSize);
                   }
@@ -7668,7 +8003,12 @@ async function processAll(){
                 const yTop = ly + lh; // drawSvgPath berangkat dari titik atas (svg y-axis dibalik otomatis)
                 const thickness = Math.max(1, scaleVal * 3 * (p.strokeScale || 1));
                 const fillHex = p.fillColor || (def.fill ? (p.color || '#1D8A4C') : null);
-                if(fillHex){
+                if(def.stretch){
+                  const mg = thickness / 2;
+                  const rectOpts = { x: lx + mg, y: ly + mg, width: Math.max(1, lw - thickness), height: Math.max(1, lh - thickness), borderColor: color, borderWidth: thickness, borderOpacity: opacity };
+                  if(fillHex){ const fc = hexToRgbFrac(fillHex); rectOpts.color = rgb(fc.r, fc.g, fc.b); rectOpts.opacity = opacity; }
+                  page.drawRectangle(rectOpts);
+                } else if(fillHex){
                   const fc = hexToRgbFrac(fillHex);
                   const fillColorObj = rgb(fc.r, fc.g, fc.b);
                   page.drawSvgPath(def.path, { x: lx, y: yTop, scale: scaleVal, color: fillColorObj, opacity, borderColor: color, borderWidth: thickness, borderOpacity: opacity, borderLineCap: LineCapStyle.Round });
