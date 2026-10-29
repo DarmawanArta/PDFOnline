@@ -137,6 +137,17 @@
   .mp-body{flex:1;min-height:0;overflow:auto;padding:12px;background:#FAF9F5;display:flex;justify-content:center;align-items:flex-start;}
   .mp-body canvas{display:block;background:#fff;box-shadow:var(--shadow);}
   .mp-loading{color:var(--ink-soft);font-size:12.5px;padding:40px 0;}
+  .mp-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line-soft);flex-shrink:0;}
+  .mp-actions button{border:1px solid var(--primary);background:#fff;color:var(--primary-dark);border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+  .mp-actions button:hover:not(:disabled){background:var(--primary);color:#fff;}
+  .mp-actions button:disabled{opacity:0.4;cursor:not-allowed;border-color:var(--line);color:var(--ink-soft);}
+  .mp-info{font-size:11.5px;color:var(--ink-soft);}
+  .mp-info.in{color:var(--primary-dark);font-weight:600;}
+  .split-card.previewing{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset;}
+  .split-card .sc-preview{flex-shrink:0;width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .split-card .sc-preview:hover{background:var(--line-soft);color:var(--primary-dark);}
+  .split-card .sc-meta{cursor:pointer;}
+  .range-row.active-range{background:rgba(47,122,76,0.09);border-radius:7px;}
   .merge-item .mi-preview{
     flex-shrink:0;width:24px;height:24px;border-radius:50%;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;
     display:flex;align-items:center;justify-content:center;
@@ -1458,7 +1469,26 @@
           <h3>Potong PDF jadi beberapa berkas</h3>
           <p>Unggah satu atau beberapa PDF di panel kiri. Untuk tiap PDF, tentukan rentang halaman yang mau dipotong (mis. halaman 1–3, lalu 4–10) — boleh lebih dari satu rentang per PDF, dan boleh sekaligus untuk beberapa PDF berbeda. Beri nama tiap hasilnya sendiri.</p>
         </div>
-        <div id="splitCardsList"></div>
+        <div class="merge-split">
+          <div id="splitCardsList" class="merge-split-left" style="flex-basis:640px;"></div>
+          <aside class="merge-preview" id="splitPreview" style="display:none;">
+            <div class="mp-head">
+              <span class="mp-name" id="spName"></span>
+              <button type="button" class="mp-close" id="spClose" title="Tutup pratinjau">×</button>
+            </div>
+            <div class="mp-nav">
+              <button type="button" id="spPrev" title="Halaman sebelumnya">‹</button>
+              <span class="mp-page" id="spPage">1 / 1</span>
+              <button type="button" id="spNext" title="Halaman berikutnya">›</button>
+            </div>
+            <div class="mp-actions">
+              <button type="button" id="spSetFrom" title="Jadikan halaman ini awal rentang terpilih">Awal = hal. 1</button>
+              <button type="button" id="spSetTo" title="Jadikan halaman ini akhir rentang terpilih">Akhir = hal. 1</button>
+              <span class="mp-info" id="spInfo"></span>
+            </div>
+            <div class="mp-body" id="spBody"></div>
+          </aside>
+        </div>
       </div>
     </section>
   </main>
@@ -3496,7 +3526,7 @@ function renderMergePool(){
     `;
     el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); showMergePreview(f); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
-      if(mpState.fileId === f.id) closeMergePreview();
+      if(mergePreview.fileId() === f.id) closeMergePreview();
       mergePool = mergePool.filter(x => x.id !== f.id);
       mergeGroups.forEach(g => { g.fileIds = g.fileIds.filter(id => id !== f.id); });
       renderMergePool();
@@ -3512,67 +3542,70 @@ $('#addGroupBtn').addEventListener('click', () => {
   renderMergeGroups();
 });
 
-// ---------- Pratinjau besar di samping (menu Gabung PDF) ----------
-const mpState = { fileId: null, doc: null, page: 1, total: 0, token: 0 };
-
-async function showMergePreview(f){
-  mpState.fileId = f.id; mpState.page = 1; mpState.doc = null; mpState.total = 0;
-  const panel = $('#mergePreview');
-  panel.style.display = 'flex';
-  $('#mpName').textContent = f.name;
-  $('#mpBody').innerHTML = '<div class="mp-loading">Memuat pratinjau…</div>';
-  renderMergeGroups(); // sorot baris yang sedang dipratinjau
-  const tok = ++mpState.token;
-  try{
-    const doc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
-    if(tok !== mpState.token) return;
-    mpState.doc = doc; mpState.total = doc.numPages;
-    await renderMergePreviewPage();
-  }catch(err){
-    console.error(err);
-    if(tok === mpState.token) $('#mpBody').innerHTML = '<div class="mp-loading">Gagal memuat pratinjau — berkas mungkin rusak.</div>';
+// ---------- Pratinjau besar di samping (dipakai menu Gabung & Split PDF) ----------
+// o: { panel, name, close, prev, next, page, body } = selektor elemen; onChange() dipanggil saat berkas dibuka/ditutup;
+// onPage(halaman, total) dipanggil tiap halaman selesai ditampilkan.
+function makeSidePreview(o){
+  const st = { fileId: null, doc: null, page: 1, total: 0, token: 0 };
+  const el = k => $(o[k]);
+  async function renderPage(){
+    const doc = st.doc;
+    if(!doc) return;
+    const tok = ++st.token, body = el('body');
+    el('page').textContent = st.page + ' / ' + st.total;
+    el('prev').disabled = st.page <= 1;
+    el('next').disabled = st.page >= st.total;
+    if(o.onPage) o.onPage(st.page, st.total);
+    const page = await doc.getPage(st.page);
+    const vp1 = page.getViewport({ scale: 1 });
+    const fit = Math.max(240, body.clientWidth - 24) / vp1.width; // selebar panel
+    const vp = page.getViewport({ scale: fit * (window.devicePixelRatio || 1) });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+    canvas.style.width = Math.round(vp1.width * fit) + 'px';
+    canvas.style.height = Math.round(vp1.height * fit) + 'px';
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    if(tok !== st.token) return; // sudah pindah halaman/berkas
+    body.innerHTML = '';
+    body.appendChild(canvas);
+    body.scrollTop = 0;
   }
+  async function show(f){
+    st.fileId = f.id; st.page = 1; st.doc = null; st.total = 0;
+    el('panel').style.display = 'flex';
+    el('name').textContent = f.name;
+    el('body').innerHTML = '<div class="mp-loading">Memuat pratinjau…</div>';
+    if(o.onChange) o.onChange(); // sorot baris yang sedang dipratinjau
+    const tok = ++st.token;
+    try{
+      const doc = await pdfjsLib.getDocument({ data: f.bytes.slice(0) }).promise;
+      if(tok !== st.token) return;
+      st.doc = doc; st.total = doc.numPages;
+      await renderPage();
+    }catch(err){
+      console.error(err);
+      if(tok === st.token) el('body').innerHTML = '<div class="mp-loading">Gagal memuat pratinjau — berkas mungkin rusak.</div>';
+    }
+  }
+  function close(){
+    st.token++; st.fileId = null; st.doc = null;
+    el('panel').style.display = 'none';
+    el('body').innerHTML = '';
+    if(o.onChange) o.onChange();
+  }
+  el('close').addEventListener('click', close);
+  el('prev').addEventListener('click', () => { if(st.doc && st.page > 1){ st.page--; renderPage(); } });
+  el('next').addEventListener('click', () => { if(st.doc && st.page < st.total){ st.page++; renderPage(); } });
+  let timer = null;
+  window.addEventListener('resize', () => { if(!st.doc) return; clearTimeout(timer); timer = setTimeout(renderPage, 200); });
+  return { show, close, fileId: () => st.fileId, page: () => st.page, refresh: () => { if(st.doc && o.onPage) o.onPage(st.page, st.total); } };
 }
-
-async function renderMergePreviewPage(){
-  const doc = mpState.doc;
-  if(!doc) return;
-  const tok = ++mpState.token;
-  const body = $('#mpBody');
-  $('#mpPage').textContent = mpState.page + ' / ' + mpState.total;
-  $('#mpPrev').disabled = mpState.page <= 1;
-  $('#mpNext').disabled = mpState.page >= mpState.total;
-  const page = await doc.getPage(mpState.page);
-  const vp1 = page.getViewport({ scale: 1 });
-  const fit = Math.max(240, body.clientWidth - 24) / vp1.width; // selebar panel
-  const dpr = window.devicePixelRatio || 1;
-  const vp = page.getViewport({ scale: fit * dpr });
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
-  canvas.style.width = Math.round(vp1.width * fit) + 'px';
-  canvas.style.height = Math.round(vp1.height * fit) + 'px';
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-  if(tok !== mpState.token) return; // sudah pindah halaman/berkas
-  body.innerHTML = '';
-  body.appendChild(canvas);
-  body.scrollTop = 0;
-}
-
-function closeMergePreview(){
-  mpState.token++; mpState.fileId = null; mpState.doc = null;
-  $('#mergePreview').style.display = 'none';
-  $('#mpBody').innerHTML = '';
-  renderMergeGroups();
-}
-$('#mpClose').addEventListener('click', closeMergePreview);
-$('#mpPrev').addEventListener('click', () => { if(mpState.doc && mpState.page > 1){ mpState.page--; renderMergePreviewPage(); } });
-$('#mpNext').addEventListener('click', () => { if(mpState.doc && mpState.page < mpState.total){ mpState.page++; renderMergePreviewPage(); } });
-let mpResizeTimer = null;
-window.addEventListener('resize', () => {
-  if(!mpState.doc) return;
-  clearTimeout(mpResizeTimer);
-  mpResizeTimer = setTimeout(renderMergePreviewPage, 200);
+const mergePreview = makeSidePreview({
+  panel: '#mergePreview', name: '#mpName', close: '#mpClose', prev: '#mpPrev', next: '#mpNext', page: '#mpPage', body: '#mpBody',
+  onChange: () => renderMergeGroups()
 });
+const showMergePreview = f => mergePreview.show(f);
+const closeMergePreview = () => mergePreview.close();
 
 function renderMergeGroups(){
   const wrap = $('#mergeGroupsList');
@@ -3618,7 +3651,7 @@ function renderMergeGroups(){
           </div>
           <button class="mi-remove" title="Keluarkan dari grup">×</button>
         `;
-        if(mpState.fileId === fid) row.classList.add('previewing');
+        if(mergePreview.fileId() === fid) row.classList.add('previewing');
         row.querySelector('.mi-preview').addEventListener('click', (e) => { e.stopPropagation(); showMergePreview(f); });
         row.querySelector('.mi-meta').addEventListener('click', () => showMergePreview(f));
         row.querySelector('.mi-up').addEventListener('click', () => {
@@ -3748,7 +3781,7 @@ async function handleSplitFiles(fileListArg){
     splitPool.push({
       id: 's' + Math.random().toString(36).slice(2,9),
       name: file.name, bytes: buf, pageCount,
-      ranges: [{ id: 'r' + Math.random().toString(36).slice(2,9), from: 1, to: pageCount, outName: baseName + '_hal1-' + pageCount + '.pdf' }]
+      ranges: [{ id: 'r' + Math.random().toString(36).slice(2,9), from: 1, to: pageCount, outName: baseName + '_hal1-' + pageCount + '.pdf', auto: true }]
     });
   }
   renderSplitPool();
@@ -3775,8 +3808,9 @@ function renderSplitPool(){
       <button class="fi-preview" title="Pratinjau"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="fi-remove" title="Hapus">×</button>
     `;
-    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); openFilePreview(f.bytes, f.name); });
+    el.querySelector('.fi-preview').addEventListener('click', (e) => { e.stopPropagation(); splitPreview.show(f); });
     el.querySelector('.fi-remove').addEventListener('click', () => {
+      if(splitPreview.fileId() === f.id) splitPreview.close();
       splitPool = splitPool.filter(x => x.id !== f.id);
       renderSplitPool();
       renderSplitCards();
@@ -3785,25 +3819,67 @@ function renderSplitPool(){
   });
 }
 
+// Nama hasil otomatis (belum diganti manual) ikut berubah mengikuti rentang halamannya
+function syncSplitAutoName(f, r){
+  if(r.auto && r.from >= 1 && r.to >= r.from) r.outName = f.name.replace(/\.pdf$/i, '') + '_hal' + r.from + '-' + r.to + '.pdf';
+}
+// Rentang yang sedang dipilih untuk berkas f (yang terakhir diklik/diisi); default: rentang pertama
+function splitActiveRange(f){ return f.ranges.find(r => r.id === f.activeRangeId) || f.ranges[0] || null; }
+const splitPreview = makeSidePreview({
+  panel: '#splitPreview', name: '#spName', close: '#spClose', prev: '#spPrev', next: '#spNext', page: '#spPage', body: '#spBody',
+  onChange: () => renderSplitCards(),
+  onPage: (page) => {
+    const f = splitPool.find(x => x.id === splitPreview.fileId());
+    const r = f && splitActiveRange(f);
+    $('#spSetFrom').textContent = 'Awal = hal. ' + page;
+    $('#spSetTo').textContent = 'Akhir = hal. ' + page;
+    $('#spSetFrom').disabled = $('#spSetTo').disabled = !r;
+    const info = $('#spInfo');
+    if(!r){ info.textContent = 'Tambah rentang dulu di kartu kiri'; info.className = 'mp-info'; return; }
+    const valid = r.from >= 1 && r.to >= r.from;
+    const inside = valid && page >= r.from && page <= r.to;
+    info.textContent = valid ? ('Hal. ' + page + (inside ? ' termasuk' : ' di luar') + ' rentang ' + r.from + '–' + r.to) : 'Rentang belum valid';
+    info.className = 'mp-info' + (inside ? ' in' : '');
+  }
+});
+function setSplitRangeFromPreview(which){
+  const f = splitPool.find(x => x.id === splitPreview.fileId());
+  const r = f && splitActiveRange(f);
+  if(!r) return;
+  const page = splitPreview.page();
+  if(which === 'from'){ r.from = page; if(!(r.to >= page)) r.to = page; }
+  else { r.to = page; if(!(r.from >= 1 && r.from <= page)) r.from = page; }
+  f.activeRangeId = r.id;
+  syncSplitAutoName(f, r);
+  renderSplitCards();
+  splitPreview.refresh();
+}
+$('#spSetFrom').addEventListener('click', () => setSplitRangeFromPreview('from'));
+$('#spSetTo').addEventListener('click', () => setSplitRangeFromPreview('to'));
+
 function renderSplitCards(){
   const wrap = $('#splitCardsList');
   $('#splitEmptyHint').style.display = splitPool.length ? 'none' : 'block';
   wrap.innerHTML = '';
   splitPool.forEach((f) => {
     const card = document.createElement('div');
-    card.className = 'split-card';
+    card.className = 'split-card' + (splitPreview.fileId() === f.id ? ' previewing' : '');
 
     const head = document.createElement('div');
     head.className = 'split-card-head';
     head.innerHTML = `
       <div class="sc-icon">PDF</div>
-      <div class="sc-meta">
+      <div class="sc-meta" title="Klik untuk pratinjau di samping">
         <div class="sc-name">${escapeHtml(f.name)}</div>
         <div class="sc-sub">${f.pageCount} halaman</div>
       </div>
+      <button class="sc-preview" title="Pratinjau di samping"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button class="sc-del" title="Hapus berkas ini">×</button>
     `;
+    head.querySelector('.sc-preview').addEventListener('click', () => splitPreview.show(f));
+    head.querySelector('.sc-meta').addEventListener('click', () => splitPreview.show(f));
     head.querySelector('.sc-del').addEventListener('click', () => {
+      if(splitPreview.fileId() === f.id) splitPreview.close();
       splitPool = splitPool.filter(x => x.id !== f.id);
       renderSplitPool();
       renderSplitCards();
@@ -3812,7 +3888,7 @@ function renderSplitCards(){
 
     f.ranges.forEach((r) => {
       const row = document.createElement('div');
-      row.className = 'range-row';
+      row.className = 'range-row' + (splitPreview.fileId() === f.id && splitActiveRange(f) === r ? ' active-range' : '');
       const invalid = !(r.from >= 1 && r.to >= r.from && r.to <= f.pageCount);
       row.innerHTML = `
         <label>Dari halaman</label>
@@ -3823,9 +3899,15 @@ function renderSplitCards(){
         <button class="rr-del" title="Hapus rentang ini">×</button>
         ${invalid ? `<div class="rr-err">Rentang tidak valid — halaman harus antara 1 dan ${f.pageCount}, dan "sampai" ≥ "dari".</div>` : ''}
       `;
-      row.querySelector('.rr-from').addEventListener('input', (e) => { r.from = parseInt(e.target.value,10) || 0; renderSplitCards(); });
-      row.querySelector('.rr-to').addEventListener('input', (e) => { r.to = parseInt(e.target.value,10) || 0; renderSplitCards(); });
-      row.querySelector('.rr-name').addEventListener('input', (e) => { r.outName = e.target.value; });
+      row.addEventListener('focusin', () => {  // rentang yang sedang dipakai menerima tombol "Awal/Akhir" dari pratinjau
+        if(f.activeRangeId === r.id) return;
+        f.activeRangeId = r.id;
+        card.querySelectorAll('.range-row').forEach(x => x.classList.toggle('active-range', x === row && splitPreview.fileId() === f.id));
+        splitPreview.refresh();
+      });
+      row.querySelector('.rr-from').addEventListener('change', (e) => { r.from = parseInt(e.target.value,10) || 0; syncSplitAutoName(f, r); renderSplitCards(); splitPreview.refresh(); });
+      row.querySelector('.rr-to').addEventListener('change', (e) => { r.to = parseInt(e.target.value,10) || 0; syncSplitAutoName(f, r); renderSplitCards(); splitPreview.refresh(); });
+      row.querySelector('.rr-name').addEventListener('input', (e) => { r.outName = e.target.value; r.auto = false; });
       row.querySelector('.rr-del').addEventListener('click', () => {
         f.ranges = f.ranges.filter(x => x.id !== r.id);
         renderSplitPool(); renderSplitCards();
